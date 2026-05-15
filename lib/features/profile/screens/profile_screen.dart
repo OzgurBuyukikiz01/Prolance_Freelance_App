@@ -1,17 +1,22 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/widgets/skill_chip.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../core/widgets/user_avatar.dart';
+import '../../jobs/screens/job_detail_screen.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 
@@ -23,7 +28,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final UserModel _user = UserModel.dummy();
+  final List<PlatformFile> _portfolioFiles = [];
 
   // Dummy review data
   final List<Map<String, dynamic>> _reviews = [
@@ -52,8 +57,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final user = state.currentUser;
+    final activeJobs = state.activeMyJobs;
+    final hasHistory = user.completedJobs > 0 || user.totalEarnings > 0 || user.rating > 0;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Profile',
@@ -63,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.textPrimary,
           ),
         ),
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         actions: [
           IconButton(
@@ -98,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Profile header
             FadeInUp(
               duration: const Duration(milliseconds: 400),
-              child: _buildProfileHeader(),
+              child: _buildProfileHeader(user),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -106,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 100),
-              child: _buildStatsRow(),
+              child: _buildStatsRow(user),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -114,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 150),
-              child: _buildProfileCompletion(),
+              child: _buildProfileCompletion(user),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -122,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 200),
-              child: _buildAboutMe(),
+              child: _buildAboutMe(user),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -130,7 +139,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 250),
-              child: _buildSkills(),
+              child: _buildSkills(user),
+            ),
+            const SizedBox(height: AppConstants.paddingLg),
+            FadeInUp(
+              duration: const Duration(milliseconds: 400),
+              delay: const Duration(milliseconds: 280),
+              child: _buildActiveJobs(activeJobs),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -138,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 300),
-              child: _buildPortfolio(),
+              child: _buildPortfolio(context),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -146,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 350),
-              child: _buildReviews(),
+              child: _buildReviews(hasHistory),
             ),
             const SizedBox(height: AppConstants.paddingXl),
           ],
@@ -155,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(UserModel user) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingLg),
       decoration: BoxDecoration(
@@ -172,12 +187,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: [
           UserAvatar(
-            imageUrl: _user.avatarUrl,
+            imageUrl: user.avatarUrl,
             size: UserAvatarSize.xlarge,
           ),
           const SizedBox(height: AppConstants.paddingMd),
           Text(
-            _user.name,
+            user.name,
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -186,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            _user.title,
+            user.title,
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -204,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                _user.location,
+                user.location,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: AppColors.textSecondary,
@@ -213,28 +228,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          RatingBarIndicator(
-            rating: _user.rating,
-            itemBuilder: (context, index) => const Icon(
-              Iconsax.star1,
-              color: AppColors.warning,
+          if (user.rating > 0)
+            RatingBarIndicator(
+              rating: user.rating,
+              itemBuilder: (context, index) => const Icon(
+                Iconsax.star1,
+                color: AppColors.warning,
+              ),
+              itemCount: 5,
+              itemSize: 20,
+              unratedColor: AppColors.grey300,
+            )
+          else
+            Text(
+              'No rating yet',
+              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondary),
             ),
-            itemCount: 5,
-            itemSize: 20,
-            unratedColor: AppColors.grey300,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(UserModel user) {
     return Row(
       children: [
         Expanded(
           child: StatCard(
             icon: Iconsax.briefcase,
-            value: '${_user.completedJobs}',
+            value: '${user.completedJobs}',
             label: 'Jobs Done',
           ),
         ),
@@ -242,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(
           child: StatCard(
             icon: Iconsax.dollar_circle,
-            value: '\$${(_user.totalEarnings / 1000).toStringAsFixed(1)}k',
+            value: '\$${(user.totalEarnings / 1000).toStringAsFixed(1)}k',
             label: 'Earnings',
           ),
         ),
@@ -250,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(
           child: StatCard(
             icon: Iconsax.star1,
-            value: _user.rating.toString(),
+            value: user.rating.toString(),
             label: 'Rating',
             iconColor: AppColors.warning,
           ),
@@ -259,7 +280,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileCompletion() {
+  Widget _buildProfileCompletion(UserModel user) {
+    final double completion = () {
+      double v = 0.2;
+      if (user.location != 'Not set') v += 0.2;
+      if (user.skills.isNotEmpty) v += 0.25;
+      if (user.bio.trim().isNotEmpty) v += 0.2;
+      if (user.completedJobs > 0) v += 0.15;
+      return v.clamp(0.15, 1.0);
+    }();
+
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingLg),
       decoration: BoxDecoration(
@@ -290,12 +320,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CircularPercentIndicator(
                 radius: 40,
                 lineWidth: 8,
-                percent: 0.85,
+                percent: completion,
                 progressColor: AppColors.primary,
                 backgroundColor: AppColors.grey200,
                 circularStrokeCap: CircularStrokeCap.round,
                 center: Text(
-                  '85%',
+                  '${(completion * 100).round()}%',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -340,7 +370,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAboutMe() {
+  Widget _buildAboutMe(UserModel user) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingLg),
@@ -368,7 +398,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: AppConstants.paddingSm),
           Text(
-            _user.bio,
+            user.bio,
             style: GoogleFonts.poppins(
               fontSize: 14,
               height: 1.6,
@@ -380,7 +410,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSkills() {
+  Widget _buildSkills(UserModel user) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingLg),
@@ -410,7 +440,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _user.skills
+            children: user.skills
                 .map((skill) => SkillChip(
                       label: skill,
                       variant: SkillChipVariant.primary,
@@ -422,21 +452,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPortfolio() {
-    const colors = [
-      Color(0xFF6C63FF),
-      Color(0xFF00BFA6),
-      Color(0xFFFFB74D),
-      Color(0xFF2196F3),
-      Color(0xFFE91E63),
-      Color(0xFF9C27B0),
-    ];
-
+  Widget _buildActiveJobs(List<dynamic> jobs) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingLg),
       decoration: BoxDecoration(
         color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Active Jobs',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (jobs.isEmpty)
+            Text(
+              'No active jobs yet.',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            )
+          else
+            ...jobs.take(5).map(
+                  (job) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(job.title),
+                    subtitle: Text(job.category),
+                    trailing: const Icon(Iconsax.arrow_right_3, size: 18),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+                    ),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickPortfolioFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowMultiple: true,
+      withData: true,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+    );
+    if (result == null) return;
+    setState(() {
+      _portfolioFiles.addAll(result.files);
+    });
+  }
+
+  Future<void> _downloadPortfolioFile(PlatformFile file) async {
+    final bytes = file.bytes;
+    if (bytes == null) return;
+    await FileSaver.instance.saveFile(
+      name: file.name.split('.').first,
+      bytes: bytes,
+      ext: file.extension ?? 'bin',
+      mimeType: MimeType.other,
+    );
+  }
+
+  Widget _buildPortfolio(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppConstants.paddingLg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppConstants.radiusLg),
         boxShadow: [
           BoxShadow(
@@ -457,32 +545,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: AppConstants.paddingMd),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1,
-            ),
-            itemCount: 6,
-            itemBuilder: (context, index) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: colors[index % colors.length].withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                ),
-              );
-            },
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _pickPortfolioFiles,
+            icon: const Icon(Iconsax.add),
+            label: const Text('Add from device (jpg/png/pdf)'),
           ),
+          const SizedBox(height: AppConstants.paddingMd),
+          if (_portfolioFiles.isEmpty)
+            Text(
+              'No portfolio files yet.',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            )
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.4,
+              ),
+              itemCount: _portfolioFiles.length,
+              itemBuilder: (context, index) {
+                final file = _portfolioFiles[index];
+                final isPdf = (file.extension ?? '').toLowerCase() == 'pdf';
+                return Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                    border: Border.all(color: AppColors.grey300),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Icon(
+                            isPdf ? Icons.picture_as_pdf : Icons.image,
+                            size: 42,
+                            color: isPdf ? Colors.red : AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => _downloadPortfolioFile(file),
+                              child: const Text('Download'),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => setState(() => _portfolioFiles.removeAt(index)),
+                            icon: const Icon(Iconsax.trash, size: 18),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildReviews() {
+  Widget _buildReviews(bool hasHistory) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingLg),
@@ -509,15 +648,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: AppConstants.paddingMd),
-          ...List.generate(_reviews.length, (index) {
-            final review = _reviews[index];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: index < _reviews.length - 1 ? AppConstants.paddingMd : 0,
-              ),
-              child: _buildReviewCard(review),
-            );
-          }),
+          if (!hasHistory)
+            Text(
+              'No reviews yet. Complete jobs to receive reviews.',
+              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondary),
+            )
+          else
+            ...List.generate(_reviews.length, (index) {
+              final review = _reviews[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index < _reviews.length - 1 ? AppConstants.paddingMd : 0,
+                ),
+                child: _buildReviewCard(review),
+              );
+            }),
         ],
       ),
     );

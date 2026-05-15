@@ -2,6 +2,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:readmore/readmore.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -9,6 +10,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/widgets/user_avatar.dart';
 import 'submit_proposal_screen.dart';
 
@@ -40,16 +42,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final job = widget.job;
+    final currentUser = context.watch<AppState>().currentUser;
+    final isOwnJob = job.clientName == currentUser.name;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // Custom SliverAppBar
           SliverAppBar(
             expandedHeight: 120,
             pinned: true,
-            backgroundColor: AppColors.surface,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             leading: IconButton(
               icon: const Icon(Iconsax.arrow_left),
               onPressed: () => Navigator.pop(context),
@@ -147,7 +151,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             bottom: MediaQuery.of(context).padding.bottom + AppConstants.paddingMd,
           ),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
                 color: AppColors.grey300.withValues(alpha: 0.3),
@@ -156,36 +160,51 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SubmitProposalScreen(job: job),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingMd),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
+          child: Align(
+            child: SizedBox(
+              width: 220,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (isOwnJob) {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (_) => Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Review Proposals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 8),
+                              Text('This is your own job. You can only review incoming proposals.\nCurrent proposals: ${job.proposalCount}'),
+                            ],
+                          ),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SubmitProposalScreen(job: job),
+                        ),
+                      );
+                    }
+                  },
                   borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                     ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'Submit Proposal',
-                  style: AppTextStyles.buttonMedium.copyWith(color: AppColors.white),
+                    alignment: Alignment.center,
+                    child: Text(
+                      isOwnJob ? 'Review Proposals' : 'Submit Proposal',
+                      style: AppTextStyles.buttonMedium.copyWith(color: AppColors.white),
+                    ),
+                  ),
                 ),
               ),
             ),

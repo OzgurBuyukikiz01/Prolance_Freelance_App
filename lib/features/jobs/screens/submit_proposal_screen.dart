@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -68,8 +69,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Iconsax.tick_circle5,
-                  size: 64,
+                  Icons.check_circle_rounded,
+                  size: 56,
                   color: AppColors.success,
                 ),
               ),
@@ -172,7 +173,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
               const SizedBox(height: AppConstants.paddingSm),
               TextFormField(
                 controller: _bidController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   hintText: 'Enter your bid amount',
                   prefixText: '\$ ',
@@ -220,6 +222,7 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
               TextFormField(
                 controller: _deliveryTimeController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   hintText: 'Number of days to complete',
                   suffixText: 'days',

@@ -1,12 +1,14 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/widgets/user_avatar.dart';
 import 'job_detail_screen.dart';
 
@@ -40,16 +42,52 @@ class _JobsScreenState extends State<JobsScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _refreshFromSource();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   void _loadJobs() {
-    setState(() {
-      _jobs = JobModel.dummyList();
-      _applySort();
-    });
+    _refreshFromSource();
+  }
+
+  void _refreshFromSource() {
+    final source = context.read<AppState>().jobs;
+    final query = _searchController.text.trim().toLowerCase();
+    _jobs = source.where((job) {
+      final searchOk = query.isEmpty ||
+          job.title.toLowerCase().contains(query) ||
+          job.skills.join(' ').toLowerCase().contains(query);
+
+      final categoryOk = _selectedCategory == null ||
+          job.category.toLowerCase().contains(_selectedCategory!.toLowerCase());
+
+      final experienceOk = _selectedExperienceLevel == null ||
+          job.experienceLevel == _selectedExperienceLevel;
+
+      final durationOk = _selectedDuration == null || job.duration == _selectedDuration;
+
+      final budgetOk = _selectedBudgetRange == null ||
+          _matchesBudgetRange(job, _selectedBudgetRange!);
+      return searchOk && categoryOk && experienceOk && durationOk && budgetOk;
+    }).toList();
+    _applySort();
+  }
+
+  bool _matchesBudgetRange(JobModel job, String range) {
+    final value = job.budgetMax;
+    if (range == 'Under \$500') return value < 500;
+    if (range == '\$500 - \$1,000') return value >= 500 && value <= 1000;
+    if (range == '\$1,000 - \$5,000') return value > 1000 && value <= 5000;
+    if (range == '\$5,000 - \$10,000') return value > 5000 && value <= 10000;
+    if (range == 'Over \$10,000') return value > 10000;
+    return true;
   }
 
   void _applySort() {
@@ -150,6 +188,7 @@ class _JobsScreenState extends State<JobsScreen> {
                           _selectedDuration = option;
                           break;
                       }
+                      _refreshFromSource();
                     });
                     Navigator.pop(context);
                   },
@@ -171,10 +210,10 @@ class _JobsScreenState extends State<JobsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Browse Jobs'),
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
@@ -208,7 +247,7 @@ class _JobsScreenState extends State<JobsScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => _loadJobs(),
+        onRefresh: () async => setState(_refreshFromSource),
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
@@ -243,7 +282,7 @@ class _JobsScreenState extends State<JobsScreen> {
                               vertical: AppConstants.paddingMd,
                             ),
                           ),
-                          onChanged: (_) => setState(() {}),
+                          onChanged: (_) => setState(_refreshFromSource),
                         ),
                       ),
                     ),

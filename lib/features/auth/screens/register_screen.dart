@@ -1,10 +1,13 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/state/app_state.dart';
 
 enum UserRole { freelancer, client }
 
@@ -35,7 +38,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _onCreateAccount() {
+  Future<void> _onCreateAccount() async {
     if (_formKey.currentState?.validate() ?? false) {
       if (!_agreedToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,6 +48,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         return;
       }
+      await context.read<AppState>().registerUser(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+            isFreelancer: _selectedRole == UserRole.freelancer,
+          );
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     }
   }
@@ -368,18 +378,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() => _agreedToTerms = !_agreedToTerms);
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              'I agree to the Terms & Conditions',
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text.rich(
+                            TextSpan(
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: AppColors.textPrimary,
                               ),
+                              children: [
+                                const TextSpan(text: 'I agree to the '),
+                                TextSpan(
+                                  text: 'Terms of Service',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const _TermsOfServicePage(),
+                                        ),
+                                      );
+                                    },
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -469,6 +496,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TermsOfServicePage extends StatelessWidget {
+  const _TermsOfServicePage();
+
+  @override
+  Widget build(BuildContext context) {
+    const text =
+        'This is a demo Terms of Service page for Prolance. By using this app, users agree to behave respectfully, provide accurate information, and avoid misuse of the platform. Accounts can be limited in case of abuse. Service terms may be updated from time to time.';
+    return Scaffold(
+      appBar: AppBar(title: const Text('Terms of Service')),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Text('$text\n\n$text\n\n$text'),
       ),
     );
   }

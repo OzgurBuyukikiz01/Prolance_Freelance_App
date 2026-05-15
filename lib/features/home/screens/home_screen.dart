@@ -3,11 +3,14 @@ import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/widgets/category_chip.dart';
 import '../../../core/widgets/job_card.dart';
+import '../../jobs/screens/job_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategoryIndex = 0;
+  String _query = '';
 
   static const List<String> _categories = [
     'All',
@@ -30,26 +34,30 @@ class _HomeScreenState extends State<HomeScreen> {
     'Marketing',
   ];
 
-  late final List<JobModel> _allJobs;
-  List<JobModel> get _recommendedJobs => _allJobs.take(4).toList();
-  List<JobModel> get _recentJobs => _allJobs.skip(4).take(6).toList();
-
-  @override
-  void initState() {
-    super.initState();
-    _allJobs = JobModel.dummyList();
-  }
-
-  void _onSearchTap() {
-    // TODO: Navigate to search screen
+  List<JobModel> _filteredJobs(List<JobModel> source) {
+    final selected = _categories[_selectedCategoryIndex];
+    return source.where((job) {
+      final categoryOk = selected == 'All' ||
+          job.category.toLowerCase().contains(selected.toLowerCase());
+      final queryOk = _query.trim().isEmpty ||
+          job.title.toLowerCase().contains(_query.toLowerCase()) ||
+          job.skills.join(' ').toLowerCase().contains(_query.toLowerCase());
+      return categoryOk && queryOk;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+    final allJobs = appState.jobs;
+    final filtered = _filteredJobs(allJobs);
+    final recommendedJobs = filtered.take(4).toList();
+    final recentJobs = filtered.skip(4).take(6).toList();
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         titleSpacing: 20,
@@ -62,6 +70,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.pushNamed(context, '/favorites'),
+            icon: const Icon(Iconsax.heart, color: AppColors.textPrimary, size: 22),
+          ),
           badges.Badge(
             badgeContent: const SizedBox(
               width: 6,
@@ -72,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(4),
             ),
             child: IconButton(
-              onPressed: () {},
+              onPressed: () => Navigator.pushNamed(context, '/notifications'),
               icon: const Icon(
                 Iconsax.notification,
                 color: AppColors.textPrimary,
@@ -93,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello, Özgür 👋',
+                  'Hello, ${appState.currentUser.name.split(' ').first} 👋',
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
@@ -115,38 +127,20 @@ class _HomeScreenState extends State<HomeScreen> {
           FadeInDown(
             duration: const Duration(milliseconds: 500),
             delay: const Duration(milliseconds: 100),
-            child: GestureDetector(
-              onTap: _onSearchTap,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.grey300),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.grey400.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Iconsax.search_normal_1,
-                      size: 22,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Search jobs, skills, or clients...',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.grey300),
+              ),
+              child: TextField(
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  icon: const Icon(Iconsax.search_normal_1),
+                  hintText: 'Search jobs, skills, or clients...',
+                  hintStyle: GoogleFonts.poppins(fontSize: 14),
+                  border: InputBorder.none,
                 ),
               ),
             ),
@@ -186,10 +180,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 260,
+            height: 230,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: _recommendedJobs.length,
+              itemCount: recommendedJobs.length,
               separatorBuilder: (context, index) => const SizedBox(width: 16),
               itemBuilder: (context, index) {
                 return FadeInRight(
@@ -198,16 +192,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: SizedBox(
                     width: 300,
                     child: JobCard(
-                      job: _recommendedJobs[index],
-                      onTap: () {},
+                      job: recommendedJobs[index],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => JobDetailScreen(job: recommendedJobs[index]),
+                          ),
+                        );
+                      },
                       onSaveToggle: (saved) {
-                        setState(() {
-                          final job = _recommendedJobs[index];
-                          final idx = _allJobs.indexWhere((j) => j.id == job.id);
-                          if (idx >= 0) {
-                            _allJobs[idx] = job.copyWith(isSaved: saved);
-                          }
-                        });
+                        appState.toggleFavorite(recommendedJobs[index].id, saved);
                       },
                     ),
                   ),
@@ -225,23 +220,22 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ...List.generate(_recentJobs.length, (index) {
+          ...List.generate(recentJobs.length, (index) {
             return FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: Duration(milliseconds: 350 + (index * 60)),
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: JobCard(
-                  job: _recentJobs[index],
-                  onTap: () {},
+                  job: recentJobs[index],
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => JobDetailScreen(job: recentJobs[index])),
+                    );
+                  },
                   onSaveToggle: (saved) {
-                    setState(() {
-                      final job = _recentJobs[index];
-                      final idx = _allJobs.indexWhere((j) => j.id == job.id);
-                      if (idx >= 0) {
-                        _allJobs[idx] = job.copyWith(isSaved: saved);
-                      }
-                    });
+                    appState.toggleFavorite(recentJobs[index].id, saved);
                   },
                 ),
               ),

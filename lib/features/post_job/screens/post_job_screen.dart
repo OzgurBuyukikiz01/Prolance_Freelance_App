@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/models/job_model.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 
@@ -53,6 +57,21 @@ class _PostJobScreenState extends State<PostJobScreen> {
     'More than 6 months',
   ];
 
+  static const List<String> _presetSkills = [
+    'Flutter',
+    'Dart',
+    'JavaScript',
+    'TypeScript',
+    'Python',
+    'Java',
+    'C#',
+    'UI/UX',
+    'SEO',
+    'Social Media Marketing',
+    'Copywriting',
+    'Google Ads',
+  ];
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -65,6 +84,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
   }
 
   void _nextStep() {
+    if (_currentStep == 0 && !_validateStep1()) return;
+    if (_currentStep == 1 && !_validateStep2()) return;
     if (_currentStep < 2) {
       _pageController.nextPage(
         duration: AppConstants.animationNormal,
@@ -99,7 +120,76 @@ class _PostJobScreenState extends State<PostJobScreen> {
   }
 
   void _postJob() {
+    if (!_validateStep3()) return;
+
+    final appState = context.read<AppState>();
+    final min = double.tryParse(_minBudgetController.text.trim()) ?? 0;
+    final max = double.tryParse(_maxBudgetController.text.trim()) ?? 0;
+
+    appState.addJob(
+      JobModel(
+        id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        clientName: appState.currentUser.name,
+        clientAvatar: appState.currentUser.avatarUrl,
+        budgetMin: min,
+        budgetMax: max,
+        budgetType: _isFixedPrice ? 'fixed' : 'hourly',
+        category: _selectedCategory ?? 'General',
+        skills: _skills,
+        experienceLevel: _experienceLevel,
+        postedDate: DateTime.now(),
+        proposalCount: 0,
+        duration: _selectedDuration ?? 'Less than 1 month',
+        isSaved: false,
+        status: 'open',
+      ),
+    );
+
     _showSuccessDialog();
+  }
+
+  bool _validateStep1() {
+    final title = _titleController.text.trim();
+    final words = _descriptionController.text.trim().split(RegExp(r'\s+'));
+    if (title.isEmpty || _selectedCategory == null) {
+      _showError('Job Title and Category are required.');
+      return false;
+    }
+    if (words.length < 50) {
+      _showError('Description must have at least 50 words.');
+      return false;
+    }
+    return true;
+  }
+
+  bool _validateStep2() {
+    if (_skills.isEmpty) {
+      _showError('Please add at least one skill.');
+      return false;
+    }
+    if (_selectedDuration == null) {
+      _showError('Please select project duration.');
+      return false;
+    }
+    return true;
+  }
+
+  bool _validateStep3() {
+    final min = double.tryParse(_minBudgetController.text.trim());
+    final max = double.tryParse(_maxBudgetController.text.trim());
+    if (min == null || max == null || min <= 0 || max <= 0 || max < min) {
+      _showError('Please enter a valid budget range.');
+      return false;
+    }
+    return true;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppColors.error),
+    );
   }
 
   void _showSuccessDialog() {
@@ -149,7 +239,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   label: 'Done',
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.pop(context);
+                    Navigator.pop(context, true);
                   },
                 ),
               ),
@@ -259,12 +349,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: AppConstants.paddingLg),
           CustomTextField(
             controller: _titleController,
-            label: 'Job Title',
+            label: 'Job Title *',
             hint: 'e.g. Flutter Developer needed for mobile app',
           ),
           const SizedBox(height: AppConstants.paddingLg),
           Text(
-            'Category',
+            'Category *',
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -308,9 +398,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: AppConstants.paddingLg),
           CustomTextField(
             controller: _descriptionController,
-            label: 'Description',
+            label: 'Description *',
             hint: 'Describe your project in detail...',
             maxLines: 6,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Minimum 50 words required',
+            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -375,6 +470,23 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _presetSkills
+                .map(
+                  (skill) => ActionChip(
+                    label: Text(skill),
+                    onPressed: () {
+                      if (!_skills.contains(skill)) {
+                        setState(() => _skills.add(skill));
+                      }
+                    },
+                  ),
+                )
+                .toList(),
           ),
           if (_skills.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -546,7 +658,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _minBudgetController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     hintText: 'Min',
                     prefixText: '\$ ',
@@ -578,7 +691,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _maxBudgetController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     hintText: 'Max',
                     prefixText: '\$ ',

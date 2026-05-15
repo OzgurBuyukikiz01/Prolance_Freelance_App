@@ -2,10 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/models/user_model.dart';
+import '../../../core/state/app_state.dart';
 import '../../../core/widgets/custom_text_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = UserModel.dummy();
+    final user = context.read<AppState>().currentUser;
     _nameController = TextEditingController(text: user.name);
     _titleController = TextEditingController(text: user.title);
     _bioController = TextEditingController(text: user.bio);
@@ -109,6 +110,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _saveProfile() {
+    final current = context.read<AppState>().currentUser;
+    final updated = current.copyWith(
+      name: _nameController.text.trim(),
+      title: _titleController.text.trim(),
+      bio: _bioController.text.trim(),
+      location: _locationController.text.trim(),
+      skills: _skills,
+    );
+    context.read<AppState>().updateUser(updated);
     Navigator.pop(context);
   }
 
@@ -158,7 +168,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   ClipOval(
                     child: CachedNetworkImage(
-                      imageUrl: UserModel.dummy().avatarUrl,
+                      imageUrl: context.read<AppState>().currentUser.avatarUrl,
                       width: 120,
                       height: 120,
                       fit: BoxFit.cover,

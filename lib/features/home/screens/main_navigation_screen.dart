@@ -23,7 +23,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const JobsScreen(),
-    const PostJobScreen(),
     const MessagesScreen(),
     const ProfileScreen(),
   ];
@@ -37,14 +36,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
               color: AppColors.grey400.withValues(alpha: 0.12),
@@ -72,20 +71,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   onTap: () => _onPageChanged(1),
                 ),
                 _PostButton(
-                  onTap: () => _onPageChanged(2),
+                  onTap: () async {
+                    final posted = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PostJobScreen()),
+                    );
+                    if (posted == true && mounted) {
+                      _onPageChanged(0);
+                    }
+                  },
                 ),
                 _NavItem(
                   icon: Iconsax.message,
                   label: 'Messages',
-                  isSelected: _currentIndex == 3,
-                  onTap: () => _onPageChanged(3),
+                  isSelected: _currentIndex == 2,
+                  onTap: () => _onPageChanged(2),
                   badgeCount: 3,
                 ),
                 _NavItem(
                   icon: Iconsax.user,
                   label: 'Profile',
-                  isSelected: _currentIndex == 4,
-                  onTap: () => _onPageChanged(4),
+                  isSelected: _currentIndex == 3,
+                  onTap: () => _onPageChanged(3),
                 ),
               ],
             ),

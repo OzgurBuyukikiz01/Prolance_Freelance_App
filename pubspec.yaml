@@ -27,6 +27,9 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   timeago: ^3.7.0
   badges: ^3.1.2
+  shared_preferences: ^2.5.3
+  file_picker: ^8.1.2
+  file_saver: ^0.2.14
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,9 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/state/app_state.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,7 +24,17 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _navigateToOnboarding() async {
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/onboarding');
+    final appState = context.read<AppState>();
+    while (!appState.isReady) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+    }
+
+    if (appState.isLoggedIn) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pushReplacementNamed(context, '/onboarding');
+    }
   }
 
   @override
