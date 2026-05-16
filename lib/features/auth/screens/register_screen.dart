@@ -1,6 +1,5 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -59,10 +58,80 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Future<void> _presentTermsAcceptance() async {
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        final scheme = Theme.of(dialogContext).colorScheme;
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          backgroundColor: scheme.surfaceContainerHigh,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 560),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Terms of Service',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon:
+                            Icon(Icons.close, color: scheme.onSurfaceVariant),
+                        onPressed: () =>
+                            Navigator.of(dialogContext).pop(false),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: scheme.outlineVariant),
+                Expanded(
+                  child: _TermsScrollAcceptPanel(
+                    onAccept: () => Navigator.of(dialogContext).pop(true),
+                    onDecline: () => Navigator.of(dialogContext).pop(false),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    setState(() => _agreedToTerms = accepted == true);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(Iconsax.arrow_left, color: scheme.onSurface),
+          onPressed: () => Navigator.maybePop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLg),
@@ -83,7 +152,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: scheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -93,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -108,13 +177,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _nameController,
                     decoration: InputDecoration(
                       hintText: 'Full Name',
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.user,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                         size: 22,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: scheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
@@ -123,8 +192,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
-                        borderSide: const BorderSide(
-                            color: AppColors.grey300, width: 1),
+                        borderSide: BorderSide(
+                            color: scheme.outlineVariant, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius:
@@ -155,13 +224,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       hintText: 'Email',
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.sms,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                         size: 22,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: scheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
@@ -170,8 +239,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
-                        borderSide: const BorderSide(
-                            color: AppColors.grey300, width: 1),
+                        borderSide: BorderSide(
+                            color: scheme.outlineVariant, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius:
@@ -205,9 +274,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.lock_1,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                         size: 22,
                       ),
                       suffixIcon: IconButton(
@@ -215,7 +284,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _obscurePassword
                               ? Iconsax.eye_slash
                               : Iconsax.eye,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                           size: 22,
                         ),
                         onPressed: () {
@@ -224,7 +293,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: scheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
@@ -233,8 +302,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
-                        borderSide: const BorderSide(
-                            color: AppColors.grey300, width: 1),
+                        borderSide: BorderSide(
+                            color: scheme.outlineVariant, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius:
@@ -268,9 +337,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     obscureText: _obscureConfirmPassword,
                     decoration: InputDecoration(
                       hintText: 'Confirm Password',
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.lock_1,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                         size: 22,
                       ),
                       suffixIcon: IconButton(
@@ -278,7 +347,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _obscureConfirmPassword
                               ? Iconsax.eye_slash
                               : Iconsax.eye,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                           size: 22,
                         ),
                         onPressed: () {
@@ -288,7 +357,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: scheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
@@ -297,8 +366,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
-                        borderSide: const BorderSide(
-                            color: AppColors.grey300, width: 1),
+                        borderSide: BorderSide(
+                            color: scheme.outlineVariant, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius:
@@ -366,8 +435,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _agreedToTerms,
-                          onChanged: (value) {
-                            setState(() => _agreedToTerms = value ?? false);
+                          onChanged: (value) async {
+                            if (value == true) {
+                              await _presentTermsAcceptance();
+                            } else {
+                              setState(() => _agreedToTerms = false);
+                            }
                           },
                           activeColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
@@ -380,34 +453,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 2),
-                          child: Text.rich(
-                            TextSpan(
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: AppColors.textPrimary,
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 4,
+                            children: [
+                              Text(
+                                'I agree to the ',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: scheme.onSurface,
+                                ),
                               ),
-                              children: [
-                                const TextSpan(text: 'I agree to the '),
-                                TextSpan(
-                                  text: 'Terms of Service',
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () async {
+                                  await _presentTermsAcceptance();
+                                },
+                                child: Text(
+                                  'Terms of Service',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
                                     decoration: TextDecoration.underline,
                                   ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const _TermsOfServicePage(),
-                                        ),
-                                      );
-                                    },
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -467,7 +544,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         'Already have an account? ',
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                       TextButton(
@@ -501,19 +578,122 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-class _TermsOfServicePage extends StatelessWidget {
-  const _TermsOfServicePage();
+class _TermsScrollAcceptPanel extends StatefulWidget {
+  const _TermsScrollAcceptPanel({
+    required this.onAccept,
+    required this.onDecline,
+  });
+
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+
+  @override
+  State<_TermsScrollAcceptPanel> createState() =>
+      _TermsScrollAcceptPanelState();
+}
+
+class _TermsScrollAcceptPanelState extends State<_TermsScrollAcceptPanel> {
+  final ScrollController _scrollController = ScrollController();
+  bool _scrolledToBottom = false;
+
+  static final String _garbageBody = List.filled(
+    28,
+    'Prolance demo Terms. By using this platform you agree to placeholder obligations '
+        'including accurate listings, respectful messaging, and compliance with applicable law. '
+        'Fees, escrow, dispute resolution, and account termination are described here with filler '
+        'text so the scroll region is realistically long. Lorem ipsum dolor sit amet.',
+  ).join('\n\n');
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncShortContent());
+  }
+
+  void _syncShortContent() {
+    if (!_scrollController.hasClients) return;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    if (maxExtent <= 12 && !_scrolledToBottom) {
+      setState(() => _scrolledToBottom = true);
+    }
+  }
+
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 32) {
+      if (!_scrolledToBottom) setState(() => _scrolledToBottom = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    const text =
-        'This is a demo Terms of Service page for Prolance. By using this app, users agree to behave respectfully, provide accurate information, and avoid misuse of the platform. Accounts can be limited in case of abuse. Service terms may be updated from time to time.';
-    return Scaffold(
-      appBar: AppBar(title: const Text('Terms of Service')),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Text('$text\n\n$text\n\n$text'),
-      ),
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Scrollbar(
+            thumbVisibility: true,
+            controller: _scrollController,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              child: Text(
+                _garbageBody,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  height: 1.55,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _scrolledToBottom
+                    ? 'You can accept below.'
+                    : 'Scroll to the bottom to enable Accept.',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: scheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.onDecline,
+                      child: const Text('Decline'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed:
+                          _scrolledToBottom ? widget.onAccept : null,
+                      child: const Text('Accept'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -533,6 +713,7 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -544,11 +725,11 @@ class _RoleCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.08)
-              : AppColors.surface,
+              : scheme.surfaceContainerHighest,
           borderRadius:
               BorderRadius.circular(AppConstants.radiusMd),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.grey300,
+            color: isSelected ? AppColors.primary : scheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -566,7 +747,7 @@ class _RoleCard extends StatelessWidget {
             Icon(
               icon,
               size: 32,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 12),
             Text(
@@ -575,7 +756,7 @@ class _RoleCard extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                color: isSelected ? AppColors.primary : scheme.onSurface,
               ),
             ),
           ],

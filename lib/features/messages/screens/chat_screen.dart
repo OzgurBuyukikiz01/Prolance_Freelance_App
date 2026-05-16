@@ -1,21 +1,26 @@
-import 'package:animate_do/animate_do.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/message_model.dart';
+import '../../../core/repositories/message_repository.dart';
+import '../../../core/widgets/coming_soon_dialog.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
+    required this.conversationId,
     required this.userName,
     required this.userAvatar,
     this.isOnline = false,
   });
 
+  final String conversationId;
   final String userName;
   final String userAvatar;
   final bool isOnline;
@@ -32,7 +37,15 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _messages = Message.dummyList();
+    _messages = widget.conversationId.startsWith('job_')
+        ? <Message>[]
+        : Message.dummyList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context
+          .read<MessageRepository>()
+          .markConversationRead(widget.conversationId);
+    });
   }
 
   @override
@@ -40,6 +53,45 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAttachment() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowMultiple: true,
+      withData: true,
+      allowedExtensions: const [
+        'pdf',
+        'doc',
+        'docx',
+        'ppt',
+        'pptx',
+        'jpg',
+        'png',
+      ],
+    );
+    if (result == null || result.files.isEmpty) return;
+    setState(() {
+      for (final f in result.files) {
+        _messages.insert(
+          0,
+          Message(
+            id: 'att_${DateTime.now().millisecondsSinceEpoch}_${f.name}',
+            senderId: 'user_me',
+            text: f.name,
+            timestamp: DateTime.now(),
+            isMe: true,
+            type: ChatMessageType.file,
+          ),
+        );
+      }
+    });
+    if (!mounted) return;
+    final repo = context.read<MessageRepository>();
+    final preview = result.files.length == 1
+        ? result.files.single.name
+        : '${result.files.length} attachments';
+    repo.recordOutboundPreview(widget.conversationId, preview);
   }
 
   void _sendMessage() {
@@ -59,26 +111,31 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       _messageController.clear();
     });
+    if (!mounted) return;
+    context
+        .read<MessageRepository>()
+        .recordOutboundPreview(widget.conversationId, text);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Icon(
             Iconsax.arrow_left,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         titleSpacing: 0,
         title: InkWell(
-          onTap: () {},
+          onTap: () => showComingSoonDialog(
+            context,
+            feature: 'Contact profile',
+          ),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -93,21 +150,24 @@ class _ChatScreenState extends State<ChatScreen> {
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          color: AppColors.grey200,
-                          child: const Center(
+                        placeholder: (_, _) => Container(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          child: Center(
                             child: SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
                           ),
                         ),
-                        errorWidget: (_, __, ___) => Container(
-                          color: AppColors.grey300,
+                        errorWidget: (_, _, _) => Container(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: Icon(
                             Iconsax.user,
-                            color: AppColors.grey600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             size: 20,
                           ),
                         ),
@@ -125,7 +185,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ? AppColors.success
                               : AppColors.grey500,
                           border: Border.all(
-                            color: AppColors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             width: 2,
                           ),
                         ),
@@ -144,7 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -155,7 +215,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           fontSize: 12,
                           color: widget.isOnline
                               ? AppColors.success
-                              : AppColors.textSecondary,
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -167,7 +227,10 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => showComingSoonDialog(
+              context,
+              feature: 'Video call',
+            ),
             icon: Icon(
               Iconsax.video,
               color: AppColors.primary,
@@ -175,7 +238,10 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () => showComingSoonDialog(
+              context,
+              feature: 'Voice call',
+            ),
             icon: Icon(
               Iconsax.call,
               color: AppColors.primary,
@@ -185,7 +251,10 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(
+      body: Builder(
+        builder: (context) {
+          final scheme = Theme.of(context).colorScheme;
+          return Column(
         children: [
           Expanded(
             child: ListView.builder(
@@ -195,21 +264,17 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return FadeInUp(
-                  delay: Duration(milliseconds: 30 * (_messages.length - index)),
-                  duration: const Duration(milliseconds: 300),
-                  child: _MessageBubble(message: message),
-                );
+                return _MessageBubble(message: message);
               },
             ),
           ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: scheme.surfaceContainerLow,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.grey400.withValues(alpha: 0.08),
+                  color: scheme.shadow.withValues(alpha: 0.1),
                   blurRadius: 12,
                   offset: const Offset(0, -4),
                 ),
@@ -220,10 +285,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: _pickAttachment,
                     icon: Icon(
                       Iconsax.attach_circle,
-                      color: AppColors.textSecondary,
+                      color: scheme.onSurfaceVariant,
                       size: 28,
                     ),
                   ),
@@ -232,7 +297,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 120),
                       decoration: BoxDecoration(
-                        color: AppColors.grey100,
+                        color: scheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
@@ -245,7 +310,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           hintText: 'Type a message...',
                           hintStyle: GoogleFonts.poppins(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: scheme.onSurfaceVariant,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -255,7 +320,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: AppColors.textPrimary,
+                          color: scheme.onSurface,
                         ),
                       ),
                     ),
@@ -267,18 +332,21 @@ class _ChatScreenState extends State<ChatScreen> {
                         ? Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: () {},
+                              onTap: () => showComingSoonDialog(
+                                context,
+                                feature: 'Voice message',
+                              ),
                               borderRadius: BorderRadius.circular(24),
                               child: Container(
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: AppColors.grey300,
+                                  color: scheme.surfaceContainerHighest,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Iconsax.microphone_2,
-                                  color: AppColors.grey600,
+                                  color: scheme.onSurfaceVariant,
                                   size: 24,
                                 ),
                               ),
@@ -317,6 +385,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ],
+      );
+        },
       ),
     );
   }
@@ -329,6 +399,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Align(
       alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -338,7 +409,7 @@ class _MessageBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: message.isMe ? AppColors.primary : AppColors.grey200,
+          color: message.isMe ? AppColors.primary : scheme.surfaceContainerHigh,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
@@ -347,7 +418,7 @@ class _MessageBubble extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.grey400.withValues(alpha: 0.1),
+              color: scheme.shadow.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -357,14 +428,46 @@ class _MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              message.text,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: message.isMe ? AppColors.white : AppColors.textPrimary,
+            if (message.type == ChatMessageType.file)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Iconsax.document,
+                      size: 18,
+                      color: message.isMe
+                          ? AppColors.white
+                          : AppColors.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        message.text,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: message.isMe
+                              ? AppColors.white
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Text(
+                message.text,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: message.isMe ? AppColors.white : Theme.of(context).colorScheme.onSurface,
+                ),
               ),
-            ),
             const SizedBox(height: 4),
             Text(
               timeago.format(message.timestamp),
@@ -372,7 +475,7 @@ class _MessageBubble extends StatelessWidget {
                 fontSize: 11,
                 color: message.isMe
                     ? AppColors.white.withValues(alpha: 0.8)
-                    : AppColors.textSecondary,
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

@@ -15,13 +15,23 @@ class JobCard extends StatelessWidget {
     required this.job,
     this.onTap,
     this.onSaveToggle,
+    this.matchPercent,
   });
 
   final JobModel job;
   final VoidCallback? onTap;
   final void Function(bool)? onSaveToggle;
 
+  /// Skill overlap score vs profile (home demo).
+  final int? matchPercent;
+
   String _formatBudget(JobModel job) {
+    if (job.listingKind == JobListingKinds.freelancerSeeking) {
+      if (job.budgetType == 'hourly') {
+        return '\$${job.budgetMin.toInt()}-\$${job.budgetMax.toInt()}/hr target';
+      }
+      return '\$${job.budgetMin.toInt()}-\$${job.budgetMax.toInt()} target';
+    }
     if (job.budgetType == 'hourly') {
       return '\$${job.budgetMin.toInt()}-\$${job.budgetMax.toInt()}/hr';
     }
@@ -30,6 +40,7 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -38,7 +49,7 @@ class JobCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -47,7 +58,7 @@ class JobCard extends StatelessWidget {
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: AppColors.grey400.withValues(alpha: 0.08),
+                color: scheme.shadow.withValues(alpha: 0.08),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -61,25 +72,73 @@ class JobCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      job.title,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (job.listingKind ==
+                            JobListingKinds.freelancerSeeking)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Open to work',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        Text(
+                          job.title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
+                  if (matchPercent != null && matchPercent! > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$matchPercent% match',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ),
                   IconButton(
                     onPressed: () => onSaveToggle?.call(!job.isSaved),
                     icon: Icon(
                       job.isSaved ? Iconsax.heart5 : Iconsax.heart,
                       color: job.isSaved
                           ? AppColors.error
-                          : AppColors.textSecondary,
+                          : scheme.onSurfaceVariant,
                       size: 20,
                     ),
                     padding: EdgeInsets.zero,
@@ -102,7 +161,7 @@ class JobCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -142,28 +201,30 @@ class JobCard extends StatelessWidget {
                   Icon(
                     Iconsax.clock,
                     size: 13,
-                    color: AppColors.textSecondary,
+                    color: scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     timeago.format(job.postedDate),
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppColors.textSecondary,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                   const Spacer(),
                   Icon(
                     Iconsax.document_text,
                     size: 13,
-                    color: AppColors.textSecondary,
+                    color: scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${job.proposalCount} proposals',
+                    job.listingKind == JobListingKinds.freelancerSeeking
+                        ? 'Seeking role'
+                        : '${job.proposalCount} proposals',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppColors.textSecondary,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ],

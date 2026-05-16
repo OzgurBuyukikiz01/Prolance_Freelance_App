@@ -42,7 +42,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLg),
@@ -53,6 +52,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildFormContent() {
+    final scheme = Theme.of(context).colorScheme;
     return Form(
       key: _formKey,
       child: Column(
@@ -66,8 +66,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Iconsax.arrow_left),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.textPrimary,
+                backgroundColor: scheme.surfaceContainerHighest,
+                foregroundColor: scheme.onSurface,
               ),
             ),
           ),
@@ -96,7 +96,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: GoogleFonts.poppins(
               fontSize: 28,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: scheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -108,7 +108,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color: AppColors.textSecondary,
+              color: scheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),
@@ -119,13 +119,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: 'Email',
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Iconsax.sms,
-                color: AppColors.textSecondary,
+                color: scheme.onSurfaceVariant,
                 size: 22,
               ),
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: scheme.surfaceContainerHighest,
               border: OutlineInputBorder(
                 borderRadius:
                     BorderRadius.circular(AppConstants.radiusMd),
@@ -134,8 +134,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               enabledBorder: OutlineInputBorder(
                 borderRadius:
                     BorderRadius.circular(AppConstants.radiusMd),
-                borderSide: const BorderSide(
-                    color: AppColors.grey300, width: 1),
+                borderSide: BorderSide(
+                    color: scheme.outlineVariant, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius:
@@ -213,6 +213,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildSuccessContent() {
+    final scheme = Theme.of(context).colorScheme;
     return FadeIn(
       duration: const Duration(milliseconds: 500),
       child: Column(
@@ -226,8 +227,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Iconsax.arrow_left),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.textPrimary,
+                backgroundColor: scheme.surfaceContainerHighest,
+                foregroundColor: scheme.onSurface,
               ),
             ),
           ),
@@ -256,7 +257,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -266,7 +267,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color: AppColors.textSecondary,
+              color: scheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),

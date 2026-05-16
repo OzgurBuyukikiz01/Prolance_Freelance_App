@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  FREELANCER
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  avatarUrl   String
+  role        UserRole @default(FREELANCER)
+  skills      Json     @default("[]")
+  location    String   @default("Remote")
+  createdAt   DateTime @default(now())
+}
+
+model Job {
+  id               String     @id @default(cuid())
+  title            String
+  description      String
+  clientName       String
+  clientAvatar     String
+  budgetMin        Float
+  budgetMax        Float
+  budgetType       String
+  category         String
+  skills           Json
+  experienceLevel  String
+  duration         String
+  proposalCount    Int        @default(0)
+  isSaved          Boolean    @default(false)
+  status           String     @default("open")
+  isUserPosted     Boolean    @default(false)
+  postedDate       DateTime   @default(now())
+  proposals        Proposal[]
+}
+
+model Proposal {
+  id             String   @id @default(cuid())
+  jobId          String
+  job            Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  bid            Float
+  deliveryDays   Int
+  coverLetter    String
+  attachments    Json     @default("[]")
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+}
+
+model Conversation {
+  id             String    @id @default(cuid())
+  participantIds Json    @default("[]")
+  lastMessageAt  DateTime?
+  messages       Message[]
+}
+
+model Message {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  body           String
+  attachmentUrl  String?
+  createdAt      DateTime       @default(now())
+}

@@ -1,10 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/feed_notification_item.dart';
 import '../models/job_model.dart';
 import '../models/user_model.dart';
+import '../repositories/job_remote_repository.dart';
+import '../theme/theme_preference.dart';
 
 class AppState extends ChangeNotifier {
   AppState();
@@ -12,30 +17,79 @@ class AppState extends ChangeNotifier {
   static const _kLoggedIn = 'logged_in';
   static const _kJobs = 'jobs_json';
   static const _kUser = 'user_json';
-  static const _kDarkMode = 'dark_mode';
+  static const _kDarkMode = 'dark_mode'; // legacy — migrated to [_kThemePreference]
+  static const _kThemePreference = 'theme_preference';
   static const _kLanguage = 'language';
   static const _kPassword = 'password';
 
   bool _isReady = false;
   bool _isLoggedIn = false;
-  bool _darkMode = false;
+  ThemePreference _themePreference = ThemePreference.system;
   String _languageCode = 'en';
   String _currentPassword = 'admin';
   UserModel _currentUser = UserModel.dummy();
   List<JobModel> _jobs = JobModel.dummyList();
 
+  final List<FeedNotificationItem> _feedNotifications = [];
+  final Map<String, Timer> _moderationTimers = {};
+  Timer? _proposalCelebrationTimer;
+  bool _showProposalSentCelebration = false;
+
+  /// User-posted jobs approved (`open`) but kept off Home until the approval popup is dismissed.
+  final Set<String> _jobIdsHeldUntilApprovalDismiss = <String>{};
+
+  /// FIFO queue for approval popups (one dialog at a time).
+  final List<PendingApprovalPopup> _approvalPopupQueue = [];
+
   bool get isReady => _isReady;
   bool get isLoggedIn => _isLoggedIn;
-  bool get darkMode => _darkMode;
+  ThemePreference get themePreference => _themePreference;
+
+  /// Resolved Flutter theme mode (light / dark / follow system).
+  ThemeMode get themeMode => switch (_themePreference) {
+        ThemePreference.light => ThemeMode.light,
+        ThemePreference.dark => ThemeMode.dark,
+        ThemePreference.system => ThemeMode.system,
+      };
+
+  /// Whether dark palette is forced on (not system).
+  bool get darkMode => _themePreference == ThemePreference.dark;
   String get languageCode => _languageCode;
   UserModel get currentUser => _currentUser;
   List<JobModel> get jobs => List.unmodifiable(_jobs);
+  List<FeedNotificationItem> get feedNotifications =>
+      List.unmodifiable(_feedNotifications);
+
+  bool get showProposalSentCelebration => _showProposalSentCelebration;
+
+  /// Next approval popup to show (after moderation); null if queue empty.
+  PendingApprovalPopup? get pendingApprovalPopupHead =>
+      _approvalPopupQueue.isEmpty ? null : _approvalPopupQueue.first;
+
+  bool shouldHideApprovedJobFromOwnerHome(String jobId) =>
+      _jobIdsHeldUntilApprovalDismiss.contains(jobId);
+
+  void dismissPendingApprovalPopup() {
+    if (_approvalPopupQueue.isEmpty) return;
+    final head = _approvalPopupQueue.removeAt(0);
+    _jobIdsHeldUntilApprovalDismiss.remove(head.jobId);
+    notifyListeners();
+  }
+
+  void _enqueueApprovalPopup(String jobId, String jobTitle) {
+    _jobIdsHeldUntilApprovalDismiss.add(jobId);
+    _approvalPopupQueue
+        .add(PendingApprovalPopup(jobId: jobId, title: jobTitle));
+  }
+
   List<JobModel> get favoriteJobs =>
       _jobs.where((job) => job.isSaved).toList(growable: false);
   List<JobModel> get activeMyJobs => _jobs
       .where((job) =>
           job.clientName == _currentUser.name &&
-          (job.status == 'open' || job.status == 'in_progress'))
+          (job.status == 'open' ||
+              job.status == 'in_progress' ||
+              job.status == 'pending_review'))
       .toList(growable: false);
 
   String t(String en, String tr) => _languageCode == 'tr' ? tr : en;
@@ -43,7 +97,18 @@ class AppState extends ChangeNotifier {
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _isLoggedIn = prefs.getBool(_kLoggedIn) ?? false;
-    _darkMode = prefs.getBool(_kDarkMode) ?? false;
+    final storedPref = prefs.getString(_kThemePreference);
+    if (storedPref != null) {
+      _themePreference = ThemePreference.fromStored(storedPref);
+    } else if (prefs.containsKey(_kDarkMode)) {
+      final legacyDark = prefs.getBool(_kDarkMode) ?? false;
+      _themePreference =
+          legacyDark ? ThemePreference.dark : ThemePreference.light;
+      await prefs.setString(_kThemePreference, _themePreference.name);
+    } else {
+      _themePreference = ThemePreference.system;
+      await prefs.setString(_kThemePreference, _themePreference.name);
+    }
     _languageCode = prefs.getString(_kLanguage) ?? 'en';
     _currentPassword = prefs.getString(_kPassword) ?? 'admin';
 
@@ -56,12 +121,100 @@ class AppState extends ChangeNotifier {
     if (rawJobs != null) {
       final decoded = jsonDecode(rawJobs) as List<dynamic>;
       _jobs = decoded
-          .map((entry) => _jobFromJson(entry as Map<String, dynamic>))
+          .map((entry) => JobModel.fromJson(entry as Map<String, dynamic>))
           .toList(growable: true);
     }
 
+    final remoteJobs = await JobRemoteRepository.tryFetchAll();
+    if (remoteJobs != null && remoteJobs.isNotEmpty) {
+      _jobs = remoteJobs;
+      await _persistJobs();
+    }
+
+    _resumePendingModerationTimers();
+
     _isReady = true;
     notifyListeners();
+  }
+
+  void _resumePendingModerationTimers() {
+    for (final j in _jobs) {
+      if (j.status == 'pending_review' && j.isUserPosted) {
+        _scheduleModerationPublish(j.id, j.title);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final t in _moderationTimers.values) {
+      t.cancel();
+    }
+    _moderationTimers.clear();
+    _proposalCelebrationTimer?.cancel();
+    super.dispose();
+  }
+
+  void triggerProposalSentCelebration() {
+    _proposalCelebrationTimer?.cancel();
+    _showProposalSentCelebration = true;
+    notifyListeners();
+    _proposalCelebrationTimer = Timer(const Duration(seconds: 5), () {
+      _showProposalSentCelebration = false;
+      notifyListeners();
+    });
+  }
+
+  void dismissProposalSentCelebration() {
+    _proposalCelebrationTimer?.cancel();
+    _showProposalSentCelebration = false;
+    notifyListeners();
+  }
+
+  void addFeedNotification(FeedNotificationItem item) {
+    _feedNotifications.insert(0, item);
+    notifyListeners();
+  }
+
+  void markAllFeedNotificationsRead() {
+    for (var i = 0; i < _feedNotifications.length; i++) {
+      _feedNotifications[i] =
+          _feedNotifications[i].copyWith(isRead: true);
+    }
+    notifyListeners();
+  }
+
+  void removeFeedNotification(String id) {
+    _feedNotifications.removeWhere((n) => n.id == id);
+    notifyListeners();
+  }
+
+  void _scheduleModerationPublish(String jobId, String jobTitle) {
+    _moderationTimers[jobId]?.cancel();
+    final secs = 10 + Random().nextInt(6);
+    _moderationTimers[jobId] = Timer(Duration(seconds: secs), () async {
+      _moderationTimers.remove(jobId);
+      final i = _jobs.indexWhere((j) => j.id == jobId);
+      if (i < 0) return;
+      if (_jobs[i].status != 'pending_review') return;
+      _jobs[i] = _jobs[i].copyWith(status: 'open');
+      await _persistJobs();
+      await JobRemoteRepository.tryCreate(_jobs[i]);
+      addFeedNotification(
+        FeedNotificationItem(
+          id: 'post_live_${jobId}_${DateTime.now().millisecondsSinceEpoch}',
+          title: t('Post approved', 'İlanınız onaylandı'),
+          description: t(
+            '"$jobTitle" is now live on Home.',
+            '"$jobTitle" yayına alındı ve ana sayfada görünüyor.',
+          ),
+          createdAt: DateTime.now(),
+          type: FeedNotificationType.job,
+        ),
+      );
+      _enqueueApprovalPopup(jobId, jobTitle);
+      notifyListeners();
+    });
   }
 
   Future<void> setLanguage(String code) async {
@@ -71,11 +224,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setDarkMode(bool enabled) async {
-    _darkMode = enabled;
+  Future<void> setThemePreference(ThemePreference preference) async {
+    _themePreference = preference;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kDarkMode, enabled);
+    await prefs.setString(_kThemePreference, preference.name);
     notifyListeners();
+  }
+
+  /// Backwards compatibility for older call sites (maps to light vs dark only).
+  Future<void> setDarkMode(bool enabled) async {
+    await setThemePreference(
+      enabled ? ThemePreference.dark : ThemePreference.light,
+    );
   }
 
   Future<bool> login({
@@ -114,6 +274,8 @@ class AppState extends ChangeNotifier {
       bio: isFreelancer
           ? 'New freelancer profile. Add your portfolio and skills to start getting jobs.'
           : 'New client profile. Create your first project to start hiring.',
+      hourlyRate: 0,
+      website: '',
       rating: 0,
       completedJobs: 0,
       totalEarnings: 0,
@@ -161,8 +323,28 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> addJob(JobModel job) async {
-    _jobs.insert(0, job);
+    final toInsert =
+        job.isUserPosted ? job.copyWith(status: 'pending_review') : job;
+    _jobs.insert(0, toInsert);
     await _persistJobs();
+    await JobRemoteRepository.tryCreate(toInsert);
+
+    if (toInsert.isUserPosted && toInsert.status == 'pending_review') {
+      addFeedNotification(
+        FeedNotificationItem(
+          id: 'post_rcv_${toInsert.id}',
+          title: t('Post received', 'İlanınız iletilmiştir'),
+          description: t(
+            'Your listing is being reviewed. It will appear on Home once approved (usually within moments in this demo).',
+            'İlanınız inceleniyor; onaylanınca ana sayfada görünecektir.',
+          ),
+          createdAt: DateTime.now(),
+          type: FeedNotificationType.job,
+        ),
+      );
+      _scheduleModerationPublish(toInsert.id, toInsert.title);
+    }
+
     notifyListeners();
   }
 
@@ -170,47 +352,9 @@ class AppState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _kJobs,
-      jsonEncode(_jobs.map(_jobToJson).toList(growable: false)),
+      jsonEncode(_jobs.map((j) => j.toJson()).toList(growable: false)),
     );
   }
-
-  static Map<String, dynamic> _jobToJson(JobModel job) => {
-        'id': job.id,
-        'title': job.title,
-        'description': job.description,
-        'clientName': job.clientName,
-        'clientAvatar': job.clientAvatar,
-        'budgetMin': job.budgetMin,
-        'budgetMax': job.budgetMax,
-        'budgetType': job.budgetType,
-        'category': job.category,
-        'skills': job.skills,
-        'experienceLevel': job.experienceLevel,
-        'postedDate': job.postedDate.toIso8601String(),
-        'proposalCount': job.proposalCount,
-        'duration': job.duration,
-        'isSaved': job.isSaved,
-        'status': job.status,
-      };
-
-  static JobModel _jobFromJson(Map<String, dynamic> json) => JobModel(
-        id: json['id'] as String,
-        title: json['title'] as String,
-        description: json['description'] as String,
-        clientName: json['clientName'] as String,
-        clientAvatar: json['clientAvatar'] as String,
-        budgetMin: (json['budgetMin'] as num).toDouble(),
-        budgetMax: (json['budgetMax'] as num).toDouble(),
-        budgetType: json['budgetType'] as String,
-        category: json['category'] as String,
-        skills: (json['skills'] as List<dynamic>).map((e) => '$e').toList(),
-        experienceLevel: json['experienceLevel'] as String,
-        postedDate: DateTime.parse(json['postedDate'] as String),
-        proposalCount: json['proposalCount'] as int,
-        duration: json['duration'] as String,
-        isSaved: json['isSaved'] as bool,
-        status: json['status'] as String,
-      );
 
   static Map<String, dynamic> _userToJson(UserModel user) => {
         'id': user.id,
@@ -219,6 +363,8 @@ class AppState extends ChangeNotifier {
         'avatarUrl': user.avatarUrl,
         'title': user.title,
         'bio': user.bio,
+        'hourlyRate': user.hourlyRate,
+        'website': user.website,
         'rating': user.rating,
         'completedJobs': user.completedJobs,
         'totalEarnings': user.totalEarnings,
@@ -235,6 +381,8 @@ class AppState extends ChangeNotifier {
         avatarUrl: json['avatarUrl'] as String,
         title: json['title'] as String,
         bio: json['bio'] as String,
+        hourlyRate: (json['hourlyRate'] as num?)?.toDouble() ?? 0,
+        website: json['website'] as String? ?? '',
         rating: (json['rating'] as num).toDouble(),
         completedJobs: json['completedJobs'] as int,
         totalEarnings: json['totalEarnings'] as int,
@@ -243,4 +391,12 @@ class AppState extends ChangeNotifier {
         isFreelancer: json['isFreelancer'] as bool,
         joinedDate: DateTime.parse(json['joinedDate'] as String),
       );
+}
+
+/// Shown after moderation: job is `open` but hidden from owner's Home until dismissed.
+class PendingApprovalPopup {
+  PendingApprovalPopup({required this.jobId, required this.title});
+
+  final String jobId;
+  final String title;
 }

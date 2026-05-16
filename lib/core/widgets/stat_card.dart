@@ -27,15 +27,16 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final effectiveIconColor = iconColor ?? AppColors.primary;
-    final effectiveValueColor = valueColor ?? AppColors.textPrimary;
-    final effectiveLabelColor = labelColor ?? AppColors.textSecondary;
+    final effectiveValueColor = valueColor ?? scheme.onSurface;
+    final effectiveLabelColor = labelColor ?? scheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: useGradient ? AppColors.primaryGradient : null,
-        color: useGradient ? null : AppColors.white,
+        color: useGradient ? null : scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(

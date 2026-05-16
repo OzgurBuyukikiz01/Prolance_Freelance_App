@@ -5,6 +5,8 @@ class UserModel {
   final String avatarUrl;
   final String title; // e.g. "Senior Flutter Developer"
   final String bio;
+  final double hourlyRate;
+  final String website;
   final double rating;
   final int completedJobs;
   final int totalEarnings;
@@ -20,6 +22,8 @@ class UserModel {
     required this.avatarUrl,
     required this.title,
     required this.bio,
+    required this.hourlyRate,
+    required this.website,
     required this.rating,
     required this.completedJobs,
     required this.totalEarnings,
@@ -36,6 +40,8 @@ class UserModel {
     String? avatarUrl,
     String? title,
     String? bio,
+    double? hourlyRate,
+    String? website,
     double? rating,
     int? completedJobs,
     int? totalEarnings,
@@ -51,6 +57,8 @@ class UserModel {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       title: title ?? this.title,
       bio: bio ?? this.bio,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
+      website: website ?? this.website,
       rating: rating ?? this.rating,
       completedJobs: completedJobs ?? this.completedJobs,
       totalEarnings: totalEarnings ?? this.totalEarnings,
@@ -70,6 +78,8 @@ class UserModel {
       title: 'Senior Flutter Developer',
       bio:
           'Experienced Flutter developer with 5+ years building cross-platform mobile apps. Specialized in clean architecture, state management, and pixel-perfect UI implementations.',
+      hourlyRate: 75,
+      website: 'https://sarahchen.dev',
       rating: 4.9,
       completedJobs: 47,
       totalEarnings: 28500,

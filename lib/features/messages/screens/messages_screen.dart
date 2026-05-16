@@ -1,12 +1,13 @@
-import 'package:animate_do/animate_do.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/message_model.dart';
+import '../../../core/repositories/message_repository.dart';
 import 'chat_screen.dart';
 
 class MessagesScreen extends StatefulWidget {
@@ -19,15 +20,6 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
-  List<Conversation> _conversations = [];
-  List<Conversation> _filteredConversations = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _conversations = Conversation.dummyList();
-    _filteredConversations = List.from(_conversations);
-  }
 
   @override
   void dispose() {
@@ -36,41 +28,35 @@ class _MessagesScreenState extends State<MessagesScreen> {
     super.dispose();
   }
 
-  void _filterConversations(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredConversations = List.from(_conversations);
-      } else {
-        _filteredConversations = _conversations
-            .where((c) =>
-                c.userName.toLowerCase().contains(query.toLowerCase()) ||
-                c.lastMessage.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      }
-    });
-  }
-
-  void _removeConversation(Conversation conversation) {
-    setState(() {
-      _conversations.removeWhere((c) => c.id == conversation.id);
-      _filterConversations(_searchController.text);
-    });
+  List<Conversation> _filtered(List<Conversation> all, String query) {
+    final qc = query.trim().toLowerCase();
+    if (qc.isEmpty) return List.from(all);
+    return all
+        .where(
+          (c) =>
+              c.userName.toLowerCase().contains(qc) ||
+              c.lastMessage.toLowerCase().contains(qc),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final repo = context.watch<MessageRepository>();
+    final filtered =
+        _filtered(repo.conversations, _searchController.text);
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           'Messages',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -80,11 +66,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: scheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.grey400.withValues(alpha: 0.08),
+                    color: scheme.shadow.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -93,17 +79,17 @@ class _MessagesScreenState extends State<MessagesScreen> {
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
-                onChanged: _filterConversations,
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Search conversations...',
                   hintStyle: GoogleFonts.poppins(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: scheme.onSurfaceVariant,
                   ),
                   prefixIcon: Icon(
                     Iconsax.search_normal_1,
                     size: 20,
-                    color: AppColors.textSecondary,
+                    color: scheme.onSurfaceVariant,
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
@@ -113,7 +99,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 ),
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppColors.textPrimary,
+                  color: scheme.onSurface,
                 ),
               ),
             ),
@@ -121,45 +107,45 @@ class _MessagesScreenState extends State<MessagesScreen> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _filteredConversations.length,
+              itemCount: filtered.length,
               itemBuilder: (context, index) {
-                final conversation = _filteredConversations[index];
-                return FadeInUp(
-                  delay: Duration(milliseconds: 50 * index),
-                  duration: const Duration(milliseconds: 400),
-                  child: Dismissible(
-                    key: Key(conversation.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Iconsax.trash,
-                        color: AppColors.error,
-                        size: 24,
-                      ),
+                final conversation = filtered[index];
+                return Dismissible(
+                  key: Key(conversation.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    onDismissed: (_) => _removeConversation(conversation),
-                    child: _ConversationTile(
-                      conversation: conversation,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatScreen(
-                              userName: conversation.userName,
-                              userAvatar: conversation.userAvatar,
-                              isOnline: conversation.isOnline,
-                            ),
+                    child: Icon(
+                      Iconsax.trash,
+                      color: AppColors.error,
+                      size: 24,
+                    ),
+                  ),
+                  onDismissed: (_) =>
+                      context.read<MessageRepository>().removeConversation(
+                            conversation.id,
                           ),
-                        );
-                      },
-                    ),
+                  child: _ConversationTile(
+                    conversation: conversation,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            conversationId: conversation.id,
+                            userName: conversation.userName,
+                            userAvatar: conversation.userAvatar,
+                            isOnline: conversation.isOnline,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -183,6 +169,7 @@ class _ConversationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasUnread = conversation.unreadCount > 0;
+    final scheme = Theme.of(context).colorScheme;
 
     return Material(
       color: Colors.transparent,
@@ -194,12 +181,16 @@ class _ConversationTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: hasUnread
-                ? AppColors.primary.withValues(alpha: 0.06)
-                : AppColors.surface,
+                ? scheme.primary.withValues(alpha: 0.16)
+                : scheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.35),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.grey400.withValues(alpha: 0.06),
+                color: scheme.shadow.withValues(alpha: 0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -216,21 +207,24 @@ class _ConversationTile extends StatelessWidget {
                       width: 56,
                       height: 56,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(
-                        color: AppColors.grey200,
-                        child: const Center(
+                      placeholder: (_, _) => Container(
+                        color: scheme.surfaceContainerHighest,
+                        child: Center(
                           child: SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: scheme.primary,
+                            ),
                           ),
                         ),
                       ),
-                      errorWidget: (_, __, ___) => Container(
-                        color: AppColors.grey300,
+                      errorWidget: (_, _, _) => Container(
+                        color: scheme.surfaceContainerHighest,
                         child: Icon(
                           Iconsax.user,
-                          color: AppColors.grey600,
+                          color: scheme.onSurfaceVariant,
                           size: 28,
                         ),
                       ),
@@ -248,7 +242,7 @@ class _ConversationTile extends StatelessWidget {
                             ? AppColors.success
                             : AppColors.grey500,
                         border: Border.all(
-                          color: AppColors.white,
+                          color: scheme.surface,
                           width: 2,
                         ),
                       ),
@@ -270,7 +264,7 @@ class _ConversationTile extends StatelessWidget {
                               fontSize: 16,
                               fontWeight:
                                   hasUnread ? FontWeight.w600 : FontWeight.w500,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -280,7 +274,7 @@ class _ConversationTile extends StatelessWidget {
                           timeago.format(conversation.lastMessageTime),
                           style: GoogleFonts.poppins(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -295,8 +289,8 @@ class _ConversationTile extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                               color: hasUnread
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

@@ -7,6 +7,9 @@ class Conversation {
   final int unreadCount;
   final bool isOnline;
 
+  /// Ready for Supabase: DM channel participant UUIDs (empty in local demo).
+  final List<String> participantIds;
+
   const Conversation({
     required this.id,
     required this.userName,
@@ -15,7 +18,30 @@ class Conversation {
     required this.lastMessageTime,
     required this.unreadCount,
     required this.isOnline,
+    this.participantIds = const [],
   });
+
+  Conversation copyWith({
+    String? id,
+    String? userName,
+    String? userAvatar,
+    String? lastMessage,
+    DateTime? lastMessageTime,
+    int? unreadCount,
+    bool? isOnline,
+    List<String>? participantIds,
+  }) {
+    return Conversation(
+      id: id ?? this.id,
+      userName: userName ?? this.userName,
+      userAvatar: userAvatar ?? this.userAvatar,
+      lastMessage: lastMessage ?? this.lastMessage,
+      lastMessageTime: lastMessageTime ?? this.lastMessageTime,
+      unreadCount: unreadCount ?? this.unreadCount,
+      isOnline: isOnline ?? this.isOnline,
+      participantIds: participantIds ?? this.participantIds,
+    );
+  }
 
   static List<Conversation> dummyList() {
     final now = DateTime.now();
@@ -105,6 +131,8 @@ class Conversation {
   }
 }
 
+enum ChatMessageType { text, file }
+
 class Message {
   final String id;
   final String senderId;
@@ -112,13 +140,40 @@ class Message {
   final DateTime timestamp;
   final bool isMe;
 
+  /// Supabase storage URL when [type] is file.
+  final String? attachmentUrl;
+
+  final ChatMessageType type;
+
   const Message({
     required this.id,
     required this.senderId,
     required this.text,
     required this.timestamp,
     required this.isMe,
+    this.attachmentUrl,
+    this.type = ChatMessageType.text,
   });
+
+  Message copyWith({
+    String? id,
+    String? senderId,
+    String? text,
+    DateTime? timestamp,
+    bool? isMe,
+    String? attachmentUrl,
+    ChatMessageType? type,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      senderId: senderId ?? this.senderId,
+      text: text ?? this.text,
+      timestamp: timestamp ?? this.timestamp,
+      isMe: isMe ?? this.isMe,
+      attachmentUrl: attachmentUrl ?? this.attachmentUrl,
+      type: type ?? this.type,
+    );
+  }
 
   static List<Message> dummyList() {
     final now = DateTime.now();

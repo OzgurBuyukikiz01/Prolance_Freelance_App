@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/widgets/coming_soon_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/state/app_state.dart';
@@ -57,8 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingLg),
@@ -79,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: scheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -89,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -105,13 +106,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       hintText: 'Email',
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.sms,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                         size: 22,
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: scheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
@@ -120,8 +121,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
-                        borderSide: const BorderSide(
-                            color: AppColors.grey300, width: 1),
+                        borderSide: BorderSide(
+                            color: scheme.outlineVariant, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius:
@@ -152,9 +153,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Iconsax.lock_1,
-                        color: AppColors.textSecondary,
+                        color: scheme.onSurfaceVariant,
                         size: 22,
                       ),
                       suffixIcon: IconButton(
@@ -162,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _obscurePassword
                               ? Iconsax.eye_slash
                               : Iconsax.eye,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                           size: 22,
                         ),
                         onPressed: () {
@@ -170,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: scheme.surfaceContainerHighest,
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
@@ -179,8 +180,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       enabledBorder: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(AppConstants.radiusMd),
-                        borderSide: const BorderSide(
-                            color: AppColors.grey300, width: 1),
+                        borderSide: BorderSide(
+                            color: scheme.outlineVariant, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius:
@@ -274,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(
                         child: Container(
                           height: 1,
-                          color: AppColors.grey300,
+                          color: scheme.outlineVariant,
                         ),
                       ),
                       Padding(
@@ -283,14 +284,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           'Or continue with',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
-                            color: AppColors.textSecondary,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ),
                       Expanded(
                         child: Container(
                           height: 1,
-                          color: AppColors.grey300,
+                          color: scheme.outlineVariant,
                         ),
                       ),
                     ],
@@ -305,7 +306,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: () => showComingSoonDialog(
+                            context,
+                            feature: 'Google Sign-In',
+                          ),
                           icon: const Icon(Icons.g_mobiledata, size: 24),
                           label: Text(
                             'Google',
@@ -315,8 +319,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: const BorderSide(color: AppColors.grey300),
+                            foregroundColor: scheme.onSurface,
+                            side: BorderSide(color: scheme.outlineVariant),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius:
@@ -328,7 +332,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: () => showComingSoonDialog(
+                            context,
+                            feature: 'Apple Sign-In',
+                          ),
                           icon: const Icon(Icons.apple, size: 24),
                           label: Text(
                             'Apple',
@@ -338,8 +345,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: const BorderSide(color: AppColors.grey300),
+                            foregroundColor: scheme.onSurface,
+                            side: BorderSide(color: scheme.outlineVariant),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius:
@@ -363,7 +370,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         "Don't have an account? ",
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                       TextButton(

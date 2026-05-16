@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/theme/theme_preference.dart';
 
 import 'edit_profile_screen.dart';
 
@@ -28,69 +29,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Logout',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to logout?',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+      builder: (dialogContext) {
+        final scheme = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          title: Text(
+            'Logout',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
             ),
           ),
-          TextButton(
-            onPressed: () {
-              context.read<AppState>().logout();
-              if (!mounted) return;
-              Navigator.pop(context);
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-            },
-            child: Text(
-              'Logout',
-              style: GoogleFonts.poppins(
-                color: AppColors.error,
-                fontWeight: FontWeight.w600,
-              ),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: scheme.onSurfaceVariant,
             ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                context.read<AppState>().logout();
+                if (!mounted) return;
+                Navigator.pop(dialogContext);
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+              },
+              child: Text(
+                'Logout',
+                style: GoogleFonts.poppins(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          context.watch<AppState>().t('Settings', 'Ayarlar'),
+          app.t('Settings', 'Ayarlar'),
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: scheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Iconsax.arrow_left),
+          icon: Icon(Iconsax.arrow_left, color: scheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -102,12 +107,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppConstants.paddingMd),
 
             // Account section
-            _buildSectionHeader(context.watch<AppState>().t('Account', 'Hesap')),
-            _buildSettingsCard(
+            _buildSectionHeader(context, app.t('Account', 'Hesap')),
+            _buildSettingsCard(context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.user_edit,
-                  title: context.watch<AppState>().t('Edit Profile', 'Profili Duzenle'),
+                  title: app.t('Edit Profile', 'Profili Duzenle'),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -117,22 +122,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                   },
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.lock_1,
-                  title: context.watch<AppState>().t('Change Password', 'Sifre Degistir'),
+                  title: app.t('Change Password', 'Sifre Degistir'),
                   onTap: _openChangePassword,
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.wallet_3,
-                  title: context.watch<AppState>().t('Payment Methods', 'Odeme Yontemleri'),
+                  title: app.t('Payment Methods', 'Odeme Yontemleri'),
                   onTap: _openPaymentMethod,
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.verify,
-                  title: context.watch<AppState>().t('Verification', 'Dogrulama'),
+                  title: app.t('Verification', 'Dogrulama'),
                   onTap: _openVerification,
                 ),
               ],
@@ -140,30 +145,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppConstants.paddingLg),
 
             // Preferences section
-            _buildSectionHeader(context.watch<AppState>().t('Preferences', 'Tercihler')),
-            _buildSettingsCard(
+            _buildSectionHeader(context, app.t('Preferences', 'Tercihler')),
+            _buildSettingsCard(context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.global,
-                  title: context.watch<AppState>().t('Language', 'Dil'),
+                  title: app.t('Language', 'Dil'),
                   trailing: Text(
                     _selectedLanguage == 'tr' ? 'Turkce' : 'English',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                   onTap: _openLanguagePicker,
                 ),
-                _buildDivider(),
-                _buildSettingsTile(
-                  icon: Iconsax.moon,
-                  title: context.watch<AppState>().t('Dark Mode', 'Karanlik Mod'),
-                  trailing: Switch(
-                    value: context.watch<AppState>().darkMode,
-                    onChanged: (value) => context.read<AppState>().setDarkMode(value),
-                    activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
-                    activeThumbColor: AppColors.primary,
+                _buildDivider(context),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.paddingMd,
+                    vertical: AppConstants.paddingMd,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.palette_outlined,
+                            size: 22,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              app.t('Appearance', 'Gorunum'),
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SegmentedButton<ThemePreference>(
+                        segments: [
+                          ButtonSegment<ThemePreference>(
+                            value: ThemePreference.light,
+                            icon: const Icon(Icons.light_mode_outlined, size: 18),
+                            label: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(app.t('Light', 'Acik')),
+                            ),
+                          ),
+                          ButtonSegment<ThemePreference>(
+                            value: ThemePreference.dark,
+                            icon: const Icon(Icons.dark_mode_outlined, size: 18),
+                            label: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(app.t('Dark', 'Karanlik')),
+                            ),
+                          ),
+                          ButtonSegment<ThemePreference>(
+                            value: ThemePreference.system,
+                            icon:
+                                const Icon(Icons.brightness_auto_outlined, size: 18),
+                            label: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(app.t('System', 'Sistem')),
+                            ),
+                          ),
+                        ],
+                        selected: <ThemePreference>{app.themePreference},
+                        multiSelectionEnabled: false,
+                        showSelectedIcon: false,
+                        onSelectionChanged: (Set<ThemePreference> selected) {
+                          if (selected.isEmpty) return;
+                          context
+                              .read<AppState>()
+                              .setThemePreference(selected.first);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -171,34 +236,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppConstants.paddingLg),
 
             // Support section
-            _buildSectionHeader(context.watch<AppState>().t('Support', 'Destek')),
-            _buildSettingsCard(
+            _buildSectionHeader(context, app.t('Support', 'Destek')),
+            _buildSettingsCard(context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.message_question,
-                  title: context.watch<AppState>().t('Help Center', 'Yardim Merkezi'),
+                  title: app.t('Help Center', 'Yardim Merkezi'),
                   onTap: _openHelpCenter,
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.warning_2,
-                  title: context.watch<AppState>().t('Report a Problem', 'Problem Bildir'),
+                  title: app.t('Report a Problem', 'Problem Bildir'),
                   onTap: _openReportProblem,
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.document_text,
-                  title: context.watch<AppState>().t('Terms of Service', 'Kullanim Kosullari'),
+                  title: app.t('Terms of Service', 'Kullanim Kosullari'),
                   onTap: () => _openLongTextPage(
                     title: 'Terms of Service',
                     text:
                         'This is a demo Terms of Service page. By continuing to use Prolance, you agree to use the platform responsibly, respect other users, and comply with applicable laws. The service is provided as-is for demonstration purposes.',
                   ),
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.shield_tick,
-                  title: context.watch<AppState>().t('Privacy Policy', 'Gizlilik Politikasi'),
+                  title: app.t('Privacy Policy', 'Gizlilik Politikasi'),
                   onTap: () => _openLongTextPage(
                     title: 'Privacy Policy',
                     text:
@@ -210,20 +275,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppConstants.paddingLg),
 
             // Danger Zone section
-            _buildSectionHeader(context.watch<AppState>().t('Danger Zone', 'Tehlikeli Alan')),
-            _buildSettingsCard(
+            _buildSectionHeader(context, app.t('Danger Zone', 'Tehlikeli Alan')),
+            _buildSettingsCard(context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.logout,
-                  title: context.watch<AppState>().t('Logout', 'Cikis Yap'),
+                  title: app.t('Logout', 'Cikis Yap'),
                   titleColor: AppColors.error,
                   iconColor: AppColors.error,
                   onTap: _showLogoutDialog,
                 ),
-                _buildDivider(),
+                _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.trash,
-                  title: context.watch<AppState>().t('Delete Account', 'Hesabi Sil'),
+                  title: app.t('Delete Account', 'Hesabi Sil'),
                   titleColor: AppColors.error,
                   iconColor: AppColors.error,
                   onTap: _deleteAccount,
@@ -237,7 +302,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(
         left: AppConstants.paddingSm,
@@ -248,25 +314,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: scheme.onSurfaceVariant,
           letterSpacing: 0.5,
         ),
       ),
     );
   }
 
-  Widget _buildSettingsCard({required List<Widget> children}) {
+  Widget _buildSettingsCard(BuildContext context, {required List<Widget> children}) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppConstants.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(children: children),
     );
@@ -280,8 +343,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color? titleColor,
     Color? iconColor,
   }) {
-    final effectiveTitleColor = titleColor ?? AppColors.textPrimary;
-    final effectiveIconColor = iconColor ?? AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final effectiveTitleColor = titleColor ?? scheme.onSurface;
+    final effectiveIconColor = iconColor ?? scheme.onSurfaceVariant;
 
     return InkWell(
       onTap: onTap,
@@ -313,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icon(
                   Iconsax.arrow_right_3,
                   size: 20,
-                  color: AppColors.textSecondary,
+                  color: scheme.onSurfaceVariant,
                 ),
           ],
         ),
@@ -321,13 +385,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 54),
       child: Divider(
         height: 1,
         thickness: 1,
-        color: AppColors.grey200,
+        color: scheme.outlineVariant.withValues(alpha: 0.35),
       ),
     );
   }
@@ -425,46 +490,102 @@ class _SimpleAssistantPageState extends State<_SimpleAssistantPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Help Center Assistant')),
+      backgroundColor: scheme.surface,
+      appBar: AppBar(
+        title: Text(
+          'Help Center Assistant',
+          style: TextStyle(color: scheme.onSurface),
+        ),
+        iconTheme: IconThemeData(color: scheme.onSurface),
+      ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
-              itemBuilder: (_, i) => Align(
-                alignment: i.isEven ? Alignment.centerLeft : Alignment.centerRight,
-                child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: i.isEven ? Colors.grey.shade200 : Colors.indigo.shade100,
-                    borderRadius: BorderRadius.circular(10),
+              itemBuilder: (_, i) {
+                final isAssistant = i.isEven;
+                return Align(
+                  alignment: isAssistant
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isAssistant
+                          ? scheme.surfaceContainerHighest
+                          : scheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: scheme.outlineVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Text(
+                      _messages[i],
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        height: 1.35,
+                        color: isAssistant
+                            ? scheme.onSurface
+                            : scheme.onPrimaryContainer,
+                      ),
+                    ),
                   ),
-                  child: Text(_messages[i]),
-                ),
-              ),
+                );
+              },
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(child: TextField(controller: _controller)),
-                IconButton(
-                  onPressed: () {
-                    final q = _controller.text.trim();
-                    if (q.isEmpty) return;
-                    setState(() {
-                      _messages.add(q);
-                      _messages.add('Thanks! We received your question and will guide you shortly.');
-                    });
-                    _controller.clear();
-                  },
-                  icon: const Icon(Icons.send),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: scheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Type your question…',
+                        hintStyle: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        filled: true,
+                        fillColor: scheme.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      final q = _controller.text.trim();
+                      if (q.isEmpty) return;
+                      setState(() {
+                        _messages.add(q);
+                        _messages.add(
+                          'Thanks! We received your question and will guide you shortly.',
+                        );
+                      });
+                      _controller.clear();
+                    },
+                    icon: Icon(Icons.send, color: scheme.primary),
+                  ),
+                ],
+              ),
             ),
           )
         ],

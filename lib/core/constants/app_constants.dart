@@ -27,10 +27,10 @@ class AppConstants {
   static const double radiusXl = 24.0;
   static const double radiusFull = 999.0;
 
-  // ============ Job Categories ============
-  static const List<String> jobCategories = [
-    'Mobile Development',
-    'Web Development',
+  /// Post-job wizard categories — single source for filters and skills JSON keys.
+  static const List<String> postJobCategories = [
+    'Mobile Dev',
+    'Web Dev',
     'UI/UX Design',
     'Data Science',
     'Cloud & DevOps',
@@ -39,5 +39,19 @@ class AppConstants {
     'Video Editing',
     'Digital Marketing',
     'Blockchain',
+  ];
+
+  /// Jobs browse filter chip options (aligned with [postJobCategories]).
+  static const List<String> jobCategories = postJobCategories;
+
+  /// Home horizontal chips after "All" (substring match against [JobModel.category]).
+  static const List<String> homeCategoryChips = [
+    'Mobile Dev',
+    'Web Dev',
+    'UI/UX',
+    'Data Science',
+    'Design',
+    'Writing',
+    'Marketing',
   ];
 }

@@ -4,15 +4,18 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import 'package:readmore/readmore.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/models/user_model.dart';
+import '../../../core/navigation/main_nav_controller.dart';
+import '../../../core/navigation/proposal_route.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/widgets/user_avatar.dart';
-import 'submit_proposal_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
   const JobDetailScreen({super.key, required this.job});
@@ -33,6 +36,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   String _formatBudget(JobModel job) {
+    if (job.listingKind == JobListingKinds.freelancerSeeking) {
+      if (job.budgetType == 'hourly') {
+        return '\$${job.budgetMin.toStringAsFixed(0)} - \$${job.budgetMax.toStringAsFixed(0)}/hr target';
+      }
+      return '\$${job.budgetMin.toStringAsFixed(0)} - \$${job.budgetMax.toStringAsFixed(0)} target';
+    }
     if (job.budgetType == 'fixed') {
       return '\$${job.budgetMin.toStringAsFixed(0)} - \$${job.budgetMax.toStringAsFixed(0)}';
     }
@@ -62,7 +71,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               IconButton(
                 icon: const Icon(Iconsax.share),
                 onPressed: () {
-                  // Share functionality
+                  Share.share(
+                    '${job.title}\n${job.category}\nShared from Prolance (demo)',
+                    subject: job.title,
+                  );
                 },
               ),
               IconButton(
@@ -71,7 +83,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   color: _isSaved ? AppColors.primary : null,
                 ),
                 onPressed: () {
-                  setState(() => _isSaved = !_isSaved);
+                  final next = !_isSaved;
+                  setState(() => _isSaved = next);
+                  context.read<AppState>().toggleFavorite(job.id, next);
                 },
               ),
             ],
@@ -87,14 +101,30 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (job.listingKind ==
+                            JobListingKinds.freelancerSeeking)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                bottom: AppConstants.paddingSm),
+                            child: Chip(
+                              visualDensity: VisualDensity.compact,
+                              label: const Text('Open to work'),
+                              backgroundColor: AppColors.secondary
+                                  .withValues(alpha: 0.12),
+                            ),
+                          ),
                         Text(
                           job.title,
-                          style: AppTextStyles.heading3,
+                          style: AppTextStyles.heading3.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                         const SizedBox(height: AppConstants.paddingSm),
                         Text(
                           'Posted ${timeago.format(job.postedDate)}',
-                          style: AppTextStyles.bodySmallSecondary,
+                          style: AppTextStyles.bodySmallSecondary.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -104,7 +134,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   // Client info section
                   FadeInUp(
                     delay: const Duration(milliseconds: 100),
-                    child: _buildClientSection(job),
+                    child: _buildClientSection(job, currentUser, isOwnJob),
                   ),
                   const SizedBox(height: AppConstants.paddingLg),
 
@@ -134,77 +164,79 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     delay: const Duration(milliseconds: 300),
                     child: _buildActivitySection(job),
                   ),
-                  const SizedBox(height: 100), // Space for bottom bar
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 350),
+                    child: _buildProposalCta(context, job, isOwnJob),
+                  ),
+                  const SizedBox(height: AppConstants.paddingXl),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: FadeInUp(
-        delay: const Duration(milliseconds: 350),
-        child: Container(
-          padding: EdgeInsets.only(
-            left: AppConstants.paddingMd,
-            right: AppConstants.paddingMd,
-            top: AppConstants.paddingMd,
-            bottom: MediaQuery.of(context).padding.bottom + AppConstants.paddingMd,
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.grey300.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Align(
-            child: SizedBox(
-              width: 220,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    if (isOwnJob) {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (_) => Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Review Proposals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 8),
-                              Text('This is your own job. You can only review incoming proposals.\nCurrent proposals: ${job.proposalCount}'),
-                            ],
-                          ),
+    );
+  }
+
+  Widget _buildProposalCta(BuildContext context, JobModel job, bool isOwnJob) {
+    final isSeeking =
+        job.listingKind == JobListingKinds.freelancerSeeking;
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (isOwnJob) {
+              showModalBottomSheet<void>(
+                context: context,
+                builder: (_) => Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isSeeking ? 'Your listing' : 'Review Proposals',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SubmitProposalScreen(job: job),
-                        ),
-                      );
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      isOwnJob ? 'Review Proposals' : 'Submit Proposal',
-                      style: AppTextStyles.buttonMedium.copyWith(color: AppColors.white),
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        isSeeking
+                            ? 'This is your open-to-work post. Others can discover it in the job feed.'
+                            : 'This is your own job. You can only review incoming proposals.\nCurrent proposals: ${job.proposalCount}',
+                      ),
+                    ],
                   ),
+                ),
+              );
+              return;
+            }
+            if (isSeeking) {
+              final nav = context.read<MainNavController>();
+              Navigator.pop(context);
+              nav.selectTab(2);
+              return;
+            }
+            Navigator.of(context).push(submitProposalRoute(job));
+          },
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+            ),
+            child: Center(
+              child: Text(
+                isOwnJob
+                    ? (isSeeking ? 'Your listing' : 'Review Proposals')
+                    : (isSeeking ? 'Go to Messages' : 'Submit Proposal'),
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.white,
                 ),
               ),
             ),
@@ -214,15 +246,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Widget _buildClientSection(JobModel job) {
+  Widget _buildClientSection(JobModel job, UserModel user, bool isOwnJob) {
+    final rating = isOwnJob ? user.rating : 4.75;
+    final location = isOwnJob ? user.location : 'Remote';
+    final memberYear =
+        isOwnJob ? user.joinedDate.year : job.postedDate.year - 1;
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingMd),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey300.withValues(alpha: 0.2),
+            color: scheme.shadow.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -241,13 +280,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               children: [
                 Text(
                   job.clientName,
-                  style: AppTextStyles.heading6,
+                  style: AppTextStyles.heading6.copyWith(
+                    color: scheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: AppConstants.paddingXs),
                 Row(
                   children: [
                     RatingBarIndicator(
-                      rating: 4.8,
+                      rating: rating,
                       itemBuilder: (context, _) => const Icon(
                         Iconsax.star1,
                         color: AppColors.warning,
@@ -259,10 +300,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     ),
                     const SizedBox(width: AppConstants.paddingXs),
                     Text(
-                      '4.8',
+                      rating.toStringAsFixed(1),
                       style: AppTextStyles.bodySmall.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -270,18 +311,25 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 const SizedBox(height: AppConstants.paddingXs),
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 14, color: AppColors.textSecondary),
+                    Icon(Iconsax.location,
+                        size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: AppConstants.paddingXs),
-                    Text(
-                      'San Francisco, CA',
-                      style: AppTextStyles.bodySmallSecondary,
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: AppTextStyles.bodySmallSecondary.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppConstants.paddingXs),
                 Text(
-                  'Member since 2022',
-                  style: AppTextStyles.caption,
+                  'Member since $memberYear',
+                  style: AppTextStyles.caption.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -292,15 +340,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildDescriptionSection(JobModel job) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingMd),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey300.withValues(alpha: 0.2),
+            color: scheme.shadow.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -311,7 +361,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         children: [
           Text(
             'Description',
-            style: AppTextStyles.heading6,
+            style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: AppConstants.paddingSm),
           ReadMoreText(
@@ -329,7 +379,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               color: AppColors.primary,
               fontWeight: FontWeight.w600,
             ),
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: scheme.onSurface,
+            ),
           ),
         ],
       ),
@@ -337,12 +389,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildDetailsSection(JobModel job) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Details',
-          style: AppTextStyles.heading6,
+          style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
         ),
         const SizedBox(height: AppConstants.paddingMd),
         GridView.count(
@@ -380,12 +433,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildSkillsSection(JobModel job) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Skills Required',
-          style: AppTextStyles.heading6,
+          style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
         ),
         const SizedBox(height: AppConstants.paddingMd),
         Wrap(
@@ -419,18 +473,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildActivitySection(JobModel job) {
-    final lastViewed = job.postedDate.subtract(const Duration(hours: 2));
-    final interviewingCount = (job.proposalCount * 0.2).round().clamp(0, job.proposalCount);
-
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingMd),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey300.withValues(alpha: 0.2),
+            color: scheme.shadow.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -440,8 +493,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Activity on this job',
-            style: AppTextStyles.heading6,
+            'Project pulse',
+            style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: AppConstants.paddingMd),
           Row(
@@ -455,16 +508,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
               Expanded(
                 child: _ActivityItem(
-                  icon: Iconsax.eye,
-                  label: 'Last viewed',
-                  value: timeago.format(lastViewed),
+                  icon: Iconsax.clock,
+                  label: 'Posted',
+                  value: timeago.format(job.postedDate),
                 ),
               ),
               Expanded(
                 child: _ActivityItem(
-                  icon: Iconsax.people,
-                  label: 'Interviewing',
-                  value: '$interviewingCount',
+                  icon: Iconsax.crown,
+                  label: 'Experience',
+                  value: job.experienceLevel,
                 ),
               ),
             ],
@@ -488,14 +541,16 @@ class _DetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingMd),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.grey300.withValues(alpha: 0.2),
+            color: scheme.shadow.withValues(alpha: 0.12),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -511,7 +566,9 @@ class _DetailCard extends StatelessWidget {
               const SizedBox(width: AppConstants.paddingSm),
               Text(
                 label,
-                style: AppTextStyles.caption,
+                style: AppTextStyles.caption.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -522,7 +579,7 @@ class _DetailCard extends StatelessWidget {
               value,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -555,12 +612,14 @@ class _ActivityItem extends StatelessWidget {
           value,
           style: AppTextStyles.bodyMedium.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         Text(
           label,
-          style: AppTextStyles.caption,
+          style: AppTextStyles.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );

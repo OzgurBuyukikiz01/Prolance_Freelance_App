@@ -1,3 +1,10 @@
+abstract class JobListingKinds {
+  JobListingKinds._();
+
+  static const String jobOffer = 'job_offer';
+  static const String freelancerSeeking = 'freelancer_seeking';
+}
+
 class JobModel {
   final String id;
   final String title;
@@ -15,6 +22,10 @@ class JobModel {
   final String duration; // "Less than 1 month", "1-3 months", "3-6 months", "More than 6 months"
   final bool isSaved;
   final String status; // "open", "in_progress", "completed", "cancelled"
+  /// User-created posts from the app (excluded from home "Recommended", prioritized in "Recent").
+  final bool isUserPosted;
+  /// [JobListingKinds.jobOffer] or [JobListingKinds.freelancerSeeking].
+  final String listingKind;
 
   const JobModel({
     required this.id,
@@ -33,6 +44,8 @@ class JobModel {
     required this.duration,
     required this.isSaved,
     required this.status,
+    this.isUserPosted = false,
+    this.listingKind = JobListingKinds.jobOffer,
   });
 
   JobModel copyWith({
@@ -52,6 +65,8 @@ class JobModel {
     String? duration,
     bool? isSaved,
     String? status,
+    bool? isUserPosted,
+    String? listingKind,
   }) {
     return JobModel(
       id: id ?? this.id,
@@ -70,8 +85,55 @@ class JobModel {
       duration: duration ?? this.duration,
       isSaved: isSaved ?? this.isSaved,
       status: status ?? this.status,
+      isUserPosted: isUserPosted ?? this.isUserPosted,
+      listingKind: listingKind ?? this.listingKind,
     );
   }
+
+  factory JobModel.fromJson(Map<String, dynamic> json) {
+    final kind = json['listingKind'] as String?;
+    return JobModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      clientName: json['clientName'] as String,
+      clientAvatar: json['clientAvatar'] as String,
+      budgetMin: (json['budgetMin'] as num).toDouble(),
+      budgetMax: (json['budgetMax'] as num).toDouble(),
+      budgetType: json['budgetType'] as String,
+      category: json['category'] as String,
+      skills: (json['skills'] as List<dynamic>).map((e) => '$e').toList(),
+      experienceLevel: json['experienceLevel'] as String,
+      postedDate: DateTime.parse(json['postedDate'] as String),
+      proposalCount: json['proposalCount'] as int,
+      duration: json['duration'] as String,
+      isSaved: json['isSaved'] as bool,
+      status: json['status'] as String,
+      isUserPosted: json['isUserPosted'] as bool? ?? false,
+      listingKind: kind ?? JobListingKinds.jobOffer,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'clientName': clientName,
+        'clientAvatar': clientAvatar,
+        'budgetMin': budgetMin,
+        'budgetMax': budgetMax,
+        'budgetType': budgetType,
+        'category': category,
+        'skills': skills,
+        'experienceLevel': experienceLevel,
+        'postedDate': postedDate.toIso8601String(),
+        'proposalCount': proposalCount,
+        'duration': duration,
+        'isSaved': isSaved,
+        'status': status,
+        'isUserPosted': isUserPosted,
+        'listingKind': listingKind,
+      };
 
   static List<JobModel> dummyList() {
     final now = DateTime.now();
@@ -94,6 +156,7 @@ class JobModel {
         duration: '1-3 months',
         isSaved: true,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_2',
@@ -113,6 +176,7 @@ class JobModel {
         duration: 'Less than 1 month',
         isSaved: false,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_3',
@@ -132,6 +196,7 @@ class JobModel {
         duration: 'Less than 1 month',
         isSaved: true,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_4',
@@ -151,6 +216,7 @@ class JobModel {
         duration: '3-6 months',
         isSaved: false,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_5',
@@ -170,6 +236,7 @@ class JobModel {
         duration: 'Less than 1 month',
         isSaved: true,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_6',
@@ -189,6 +256,7 @@ class JobModel {
         duration: '1-3 months',
         isSaved: false,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_7',
@@ -208,6 +276,7 @@ class JobModel {
         duration: 'More than 6 months',
         isSaved: false,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_8',
@@ -227,6 +296,7 @@ class JobModel {
         duration: 'Less than 1 month',
         isSaved: true,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_9',
@@ -246,6 +316,7 @@ class JobModel {
         duration: '1-3 months',
         isSaved: false,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_10',
@@ -265,6 +336,7 @@ class JobModel {
         duration: '3-6 months',
         isSaved: true,
         status: 'open',
+        isUserPosted: false,
       ),
       JobModel(
         id: 'job_11',
@@ -284,6 +356,7 @@ class JobModel {
         duration: 'Less than 1 month',
         isSaved: false,
         status: 'open',
+        isUserPosted: false,
       ),
     ];
   }

@@ -21,6 +21,7 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -33,10 +34,10 @@ class CategoryChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.primary.withValues(alpha: 0.15)
-                : AppColors.background,
+                : scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.grey300,
+              color: isSelected ? AppColors.primary : scheme.outlineVariant,
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -47,7 +48,8 @@ class CategoryChip extends StatelessWidget {
                 Icon(
                   icon,
                   size: 20,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color:
+                      isSelected ? AppColors.primary : scheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
               ],
@@ -56,7 +58,7 @@ class CategoryChip extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  color: isSelected ? AppColors.primary : scheme.onSurface,
                 ),
               ),
             ],

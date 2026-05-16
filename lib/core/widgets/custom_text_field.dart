@@ -69,6 +69,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -79,7 +80,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -102,20 +103,20 @@ class _CustomTextFieldState extends State<CustomTextField> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: scheme.onSurface,
           ),
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: GoogleFonts.poppins(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),
             prefixIcon: widget.prefixIcon != null
                 ? Icon(
                     widget.prefixIcon,
                     size: 22,
-                    color: AppColors.textSecondary,
+                    color: scheme.onSurfaceVariant,
                   )
                 : null,
             suffixIcon: widget.obscureText
@@ -123,7 +124,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     icon: Icon(
                       _obscureText ? Iconsax.eye_slash : Iconsax.eye,
                       size: 22,
-                      color: AppColors.textSecondary,
+                      color: scheme.onSurfaceVariant,
                     ),
                     onPressed: () {
                       setState(() => _obscureText = !_obscureText);
@@ -131,7 +132,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   )
                 : widget.suffixIcon,
             filled: true,
-            fillColor: AppColors.background,
+            fillColor: scheme.surfaceContainerHighest,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -143,7 +144,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.grey300,
+                color: scheme.outlineVariant,
                 width: 1,
               ),
             ),
@@ -229,6 +230,7 @@ class _SearchTextFieldState extends State<SearchTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return TextField(
       controller: _controller,
       onChanged: widget.onChanged,
@@ -236,32 +238,32 @@ class _SearchTextFieldState extends State<SearchTextField> {
       style: GoogleFonts.poppins(
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        color: AppColors.textPrimary,
+        color: scheme.onSurface,
       ),
       decoration: InputDecoration(
         hintText: widget.hint,
         hintStyle: GoogleFonts.poppins(
           fontSize: 14,
-          color: AppColors.textSecondary,
+          color: scheme.onSurfaceVariant,
           fontWeight: FontWeight.w400,
         ),
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Iconsax.search_normal_1,
           size: 22,
-          color: AppColors.textSecondary,
+          color: scheme.onSurfaceVariant,
         ),
         suffixIcon: _hasText
             ? IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Iconsax.close_circle,
                   size: 22,
-                  color: AppColors.textSecondary,
+                  color: scheme.onSurfaceVariant,
                 ),
                 onPressed: _clear,
               )
             : null,
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: scheme.surfaceContainerHighest,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -273,7 +275,7 @@ class _SearchTextFieldState extends State<SearchTextField> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: AppColors.grey300,
+            color: scheme.outlineVariant,
             width: 1,
           ),
         ),

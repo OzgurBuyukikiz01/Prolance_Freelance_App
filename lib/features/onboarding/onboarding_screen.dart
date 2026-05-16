@@ -12,9 +12,6 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  static const Color _primary = Color(0xFF6C63FF);
-  static const Color _background = Color(0xFFF8F9FE);
-
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -56,6 +53,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
+  void _previousPage() {
+    if (_currentPage <= 0) return;
+    _pageController.previousPage(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void _skipToLogin() {
     Navigator.pushReplacementNamed(context, '/login');
   }
@@ -68,33 +73,60 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: FadeInDown(
-                  duration: const Duration(milliseconds: 600),
-                  child: TextButton(
-                    onPressed: _skipToLogin,
-                    child: Text(
-                      'Skip',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: _primary,
+              child: Row(
+                children: [
+                  if (_currentPage > 0)
+                    IconButton(
+                      tooltip: 'Previous',
+                      onPressed: _previousPage,
+                      icon: Icon(
+                        Iconsax.arrow_left_2,
+                        color: scheme.onSurface,
+                        size: 26,
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
+                  const Spacer(),
+                  FadeInDown(
+                    duration: const Duration(milliseconds: 600),
+                    child: TextButton(
+                      onPressed: _skipToLogin,
+                      child: Text(
+                        'Skip',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: scheme.primary,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  const Spacer(),
+                  if (_currentPage < _pages.length - 1)
+                    IconButton(
+                      tooltip: 'Next',
+                      onPressed: _nextPage,
+                      icon: Icon(
+                        Iconsax.arrow_right_3,
+                        color: scheme.onSurface,
+                        size: 26,
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 48),
+                ],
               ),
             ),
-            // PageView
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -108,7 +140,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            // Page indicator and button
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -117,8 +148,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     controller: _pageController,
                     count: _pages.length,
                     effect: ExpandingDotsEffect(
-                      activeDotColor: _primary,
-                      dotColor: _primary.withValues(alpha: 0.2),
+                      activeDotColor: scheme.primary,
+                      dotColor: scheme.brightness == Brightness.dark
+                          ? scheme.primary.withValues(alpha: 0.35)
+                          : scheme.primary.withValues(alpha: 0.2),
                       dotHeight: 8,
                       dotWidth: 8,
                       expansionFactor: 4,
@@ -134,8 +167,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: ElevatedButton(
                         onPressed: _nextPage,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: scheme.primary,
+                          foregroundColor: scheme.onPrimary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -184,10 +217,11 @@ class _OnboardingPageContent extends StatelessWidget {
     required this.pageIndex,
   });
 
-  static const Color _primary = Color(0xFF6C63FF);
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final primary = scheme.primary;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -204,14 +238,14 @@ class _OnboardingPageContent extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    _primary.withValues(alpha: 0.15),
-                    _primary.withValues(alpha: 0.05),
+                    primary.withValues(alpha: 0.22),
+                    primary.withValues(alpha: 0.08),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: _primary.withValues(alpha: 0.2),
+                    color: primary.withValues(alpha: 0.25),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -220,7 +254,7 @@ class _OnboardingPageContent extends StatelessWidget {
               child: Icon(
                 page.icon,
                 size: 72,
-                color: _primary,
+                color: primary,
               ),
             ),
           ),
@@ -234,7 +268,7 @@ class _OnboardingPageContent extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF2D3142),
+                color: scheme.onSurface,
               ),
             ),
           ),
@@ -248,7 +282,7 @@ class _OnboardingPageContent extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
-                color: const Color(0xFF6B7280),
+                color: scheme.onSurfaceVariant,
                 height: 1.6,
               ),
             ),

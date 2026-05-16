@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/location_catalog_service.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/widgets/custom_text_field.dart';
 
@@ -24,6 +25,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _locationController;
   late TextEditingController _websiteController;
   late List<String> _skills;
+  bool _locationsReady = false;
+  List<String> _locationSuggestions = [];
 
   @override
   void initState() {
@@ -32,10 +35,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: user.name);
     _titleController = TextEditingController(text: user.title);
     _bioController = TextEditingController(text: user.bio);
-    _hourlyRateController = TextEditingController(text: '75');
+    _hourlyRateController = TextEditingController(
+      text: user.hourlyRate > 0
+          ? (user.hourlyRate == user.hourlyRate.roundToDouble()
+              ? user.hourlyRate.toStringAsFixed(0)
+              : user.hourlyRate.toStringAsFixed(2))
+          : '',
+    );
     _locationController = TextEditingController(text: user.location);
-    _websiteController = TextEditingController(text: 'sarahchen.dev');
+    _websiteController = TextEditingController(text: user.website);
     _skills = List.from(user.skills);
+    LocationCatalogService.instance.ensureLoaded().then((_) {
+      if (mounted) setState(() => _locationsReady = true);
+    });
   }
 
   @override
@@ -59,7 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'Add Skill',
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           content: TextField(
@@ -67,12 +79,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             autofocus: true,
             decoration: InputDecoration(
               hintText: 'Enter skill name',
-              hintStyle: GoogleFonts.poppins(color: AppColors.textSecondary),
+              hintStyle: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurfaceVariant),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.radiusMd),
               ),
             ),
-            style: GoogleFonts.poppins(color: AppColors.textPrimary),
+            style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurface),
             onSubmitted: (value) {
               if (value.trim().isNotEmpty) {
                 setState(() => _skills.add(value.trim()));
@@ -85,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.poppins(color: AppColors.textSecondary),
+                style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
             TextButton(
@@ -111,11 +123,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _saveProfile() {
     final current = context.read<AppState>().currentUser;
+    final hourly = double.tryParse(_hourlyRateController.text.trim()) ?? 0;
     final updated = current.copyWith(
       name: _nameController.text.trim(),
       title: _titleController.text.trim(),
       bio: _bioController.text.trim(),
+      hourlyRate: hourly,
       location: _locationController.text.trim(),
+      website: _websiteController.text.trim(),
       skills: _skills,
     );
     context.read<AppState>().updateUser(updated);
@@ -125,17 +140,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           'Edit Profile',
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left),
@@ -259,9 +272,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             CustomTextField(
               controller: _locationController,
               label: 'Location',
-              hint: 'City, Country',
+              hint: 'Search city or country',
               prefixIcon: Iconsax.location,
+              onChanged: (value) {
+                if (!_locationsReady) return;
+                setState(() {
+                  _locationSuggestions =
+                      LocationCatalogService.instance.filter(value);
+                });
+              },
             ),
+            if (_locationsReady && _locationSuggestions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 180),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                  border: Border.all(color: AppColors.grey300),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _locationSuggestions.length,
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, color: AppColors.grey200),
+                  itemBuilder: (context, i) {
+                    final option = _locationSuggestions[i];
+                    return ListTile(
+                      dense: true,
+                      title: Text(
+                        option,
+                        style: GoogleFonts.poppins(fontSize: 13),
+                      ),
+                      onTap: () {
+                        _locationController.text = option;
+                        setState(() => _locationSuggestions = []);
+                        FocusScope.of(context).unfocus();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: AppConstants.paddingMd),
 
             CustomTextField(
@@ -279,7 +332,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: AppConstants.paddingSm),
@@ -293,13 +346,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      deleteIcon: const Icon(
+                      deleteIcon: Icon(
                         Iconsax.close_circle,
                         size: 18,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       onDeleted: () {
                         setState(() => _skills.remove(skill));
@@ -320,9 +373,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.grey200,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusSm),
-                      border: Border.all(color: AppColors.grey300),
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      borderRadius:
+                          BorderRadius.circular(AppConstants.radiusSm),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -330,7 +386,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Icon(
                           Iconsax.add,
                           size: 18,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -338,7 +394,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -354,6 +410,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saveProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primary,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.radiusMd),
+                  ),
+                ),
                 child: const Text('Save Changes'),
               ),
             ),

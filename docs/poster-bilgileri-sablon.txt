@@ -1,0 +1,27 @@
+# Bitirme posteri / afiş — doldurmanız gereken bilgiler
+# Bu dosyadaki değerleri kopyalayıp docs/chatgpt-poster-prompts.md içindeki [...] yer tutucularının yerine yapıştırın.
+
+PROJE_YONETIM_ARACI=Trello   # veya Monday, Jira, "Kullanılmadı"
+
+DANISMAN_ADI=Örnek Danışman Adı Soyadı
+# Danışman fotoğrafı: poster tasarımına yerleştirmek üzere yüksek çözünürlüklü bir JPG/PNG dosyası hazırlayın (dosya adını buraya not edin).
+DANISMAN_FOTO=danisman.jpg
+
+UYE1_AD=Ad Soyad
+UYE1_ROL=Örn. Takım Lideri / Geliştirici
+UYE1_FOTO=uye1.jpg
+
+UYE2_AD=Ad Soyad
+UYE2_ROL=Örn. Geliştirici
+UYE2_FOTO=uye2.jpg
+
+UYE3_AD=Ad Soyad
+UYE3_ROL=Örn. UI/UX
+UYE3_FOTO=uye3.jpg
+
+# İsteğe bağlı dördüncü üye
+UYE4_AD=
+UYE4_ROL=
+UYE4_FOTO=
+
+GITHUB_URL=https://github.com/OzgurBuyukikiz01/Prolance_Freelance_App.git
