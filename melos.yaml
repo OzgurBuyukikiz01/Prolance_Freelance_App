@@ -1,7 +1,0 @@
-name: prolance_workspace
-packages:
-  - .
-
-scripts:
-  analyze: flutter analyze lib test
-  test: flutter test

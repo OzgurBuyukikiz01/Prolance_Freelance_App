@@ -1,47 +1,53 @@
-# Prolance
+# Prolance Freelance App
 
-Cross-platform freelance marketplace (Flutter) with **Supabase** (Postgres + Auth + RLS + optional Edge Functions), **mock escrow**, **Next.js 3D landing**, and **Next.js admin** (service role).
+Monorepo layout:
 
-## Quick start — Flutter
+```
+client/     Flutter mobile app (Android, iOS, Web)
+web/        Next.js — marketing site + admin panel
+supabase/   Backend (Postgres, Auth, Storage, Edge Functions)
+```
+
+## Quick start
+
+### Mobile (Flutter)
 
 ```bash
+cd client
 flutter pub get
-flutter run --dart-define=USE_SUPABASE=true   # default
+flutter run
 ```
 
-Local Supabase: see [`docs/supabase-local.md`](docs/supabase-local.md).
-
-## Quick start — Supabase CLI
+### Web (landing + admin)
 
 ```bash
-supabase start
-supabase db reset   # migrations + seed
+cd web
+cp .env.example .env.local   # add SUPABASE_SERVICE_ROLE_KEY for admin actions
+npm install
+npm run dev
 ```
 
-## Monorepo layout
+- Site: http://localhost:3000
+- User login: `/login`
+- Admin login: `/admin/login`
+- Admin dashboard: `/dashboard`
 
-| Path | Stack |
-|------|--------|
-| `/` (this repo root) | Flutter app |
-| [`packages/landing`](packages/landing) | Next.js 15 + R3F hero |
-| [`packages/admin`](packages/admin) | Next.js 15 + Supabase service client |
-| [`supabase/`](supabase) | Migrations, Edge Functions, `seed.sql` |
+### Supabase
 
-## Scripts (Melos optional)
+Project ref: `cgxzpdhcaxiopdylwstr`
 
 ```bash
-dart pub global activate melos
-melos bootstrap   # if you extend workspace later
-flutter analyze lib test
-flutter test
+make deploy-supabase
 ```
 
-## Docs
+## Makefile
 
-- [`CHANGELOG.md`](CHANGELOG.md)
-- [`docs/changelog/`](docs/changelog/) — phase / release notes (Obsidian-style)
-- [`.cursor/rules/prolance.mdc`](.cursor/rules/prolance.mdc) — AI / contributor conventions
+```bash
+make help
+make dev              # Flutter mobile
+make dev-web-app      # Next.js
+make build-vercel     # Flutter web + Next.js for Vercel
+make deploy-web       # Vercel production
+```
 
-## Legacy backend
-
-[`backend/`](backend/) — Express + Prisma (optional bridge); primary data path is Supabase.
+See [DEPLOY.md](DEPLOY.md) for deployment details.

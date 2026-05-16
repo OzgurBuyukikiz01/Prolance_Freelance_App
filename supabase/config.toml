@@ -2,7 +2,7 @@
 # Run: supabase start (requires Supabase CLI)
 # https://supabase.com/docs/guides/cli
 
-project_id = "prolance_freelance_platform"
+project_id = "cgxzpdhcaxiopdylwstr"
 
 [api]
 enabled = true
@@ -46,7 +46,12 @@ image_transformation = { enabled = true }
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["http://localhost:3000", "http://127.0.0.1:54321"]
+# Mobile OAuth callback (io.prolance.app://login-callback) must also be added in Supabase Dashboard → Auth → URL Configuration.
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://127.0.0.1:54321",
+  "io.prolance.app://login-callback",
+]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
@@ -62,6 +67,13 @@ enable_confirmations = false
 enable_signup = false
 enable_confirmations = false
 
+# Google OAuth — set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env (local) and enable Google in Supabase Dashboard → Auth → Providers.
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083
@@ -69,3 +81,9 @@ policy = "per_worker"
 
 [functions.escrow]
 verify_jwt = true
+
+[functions.agora-token]
+verify_jwt = true
+
+[functions.send-push]
+verify_jwt = false

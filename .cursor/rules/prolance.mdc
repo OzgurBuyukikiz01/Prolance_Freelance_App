@@ -1,13 +1,13 @@
 ---
 description: Prolance Flutter + Supabase conventions
-globs: lib/**/*.dart, supabase/**/*.sql, packages/**/*
+globs: client/lib/**/*.dart, supabase/**/*.sql, web/**/*
 ---
 
 # Prolance
 
-- **Auth**: Supabase Auth + JWT; use [`AuthService`](lib/core/services/auth_service.dart). Do not reintroduce password-in-SharedPreferences auth.
-- **Routing**: [`GoRouter`](lib/core/navigation/app_router.dart) + `context.go` / `context.push`. Public routes: `/`, `/onboarding`, `/login`, `/register`, `/forgot-password`.
-- **Data**: Prefer Supabase tables in [`supabase/migrations/`](supabase/migrations/) with RLS. Job reads go through [`SupabaseJobRepository`](lib/core/repositories/supabase_job_repository.dart).
-- **Escrow**: Business logic in [`PaymentService`](lib/core/services/payment_service.dart); optional Edge Function [`supabase/functions/escrow`](supabase/functions/escrow).
-- **Tests**: `flutter test`; widget tests must call [`bootstrap()`](lib/main.dart) via `setUpAll` and use `SharedPreferences.setMockInitialValues({})`. Skip `Supabase.initialize` when `WidgetsBinding` is `AutomatedTestWidgetsFlutterBinding` (handled in [`bootstrap`](lib/main.dart)).
-- **Web / monorepo**: Next.js apps live under [`packages/landing`](packages/landing) and [`packages/admin`](packages/admin) (npm, not Dart).
+- **Auth**: Supabase Auth + JWT; use [`AuthService`](client/lib/core/services/auth_service.dart). Do not reintroduce password-in-SharedPreferences auth.
+- **Routing**: [`GoRouter`](client/lib/core/navigation/app_router.dart) + `context.go` / `context.push`. Public routes: `/`, `/onboarding`, `/login`, `/register`, `/forgot-password`.
+- **Data**: Prefer Supabase tables in [`supabase/migrations/`](supabase/migrations/) with RLS. Job reads go through [`SupabaseJobRepository`](client/lib/core/repositories/supabase_job_repository.dart).
+- **Escrow**: Business logic in [`PaymentService`](client/lib/core/services/payment_service.dart); optional Edge Function [`supabase/functions/escrow`](supabase/functions/escrow).
+- **Tests**: `cd client && flutter test`; widget tests must call [`bootstrap()`](client/lib/main.dart) via `setUpAll` and use `SharedPreferences.setMockInitialValues({})`.
+- **Monorepo**: Flutter mobile in [`client/`](client/); Next.js (landing + admin) in [`web/`](web/); backend in [`supabase/`](supabase/).
