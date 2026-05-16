@@ -107,6 +107,23 @@ The Supabase MCP tools in Cursor cannot change Auth URL settings; apply the abov
 
 After adding a custom domain on Vercel, update Site URL and Redirect URLs to that domain.
 
+### Auth URL checklist (production)
+
+Before MVP sign-off, confirm in [URL Configuration](https://supabase.com/dashboard/project/cgxzpdhcaxiopdylwstr/auth/url-configuration):
+
+| Check | Action |
+|-------|--------|
+| Site URL | Matches `NEXT_PUBLIC_SITE_URL` / canonical Vercel production host (no trailing slash) |
+| Web redirects | `https://<prod-host>/**` and `http://localhost:3000/**` for local dev |
+| Mobile deep link | `io.prolance.app://login-callback` (Flutter OAuth / magic link return) |
+| Legacy hosts removed | No `landing-*` or `admin-*` Vercel URLs |
+| Email confirmation | Dashboard → Auth → Providers → Email: note whether **Confirm email** is on; both web and mobile respect the same policy |
+| Password reset | Redirect URL allowed for `/login` (or your reset handler path) |
+
+**Cross-device smoke (manual):** Register on web → sign in on mobile with same email/password; repeat mobile → web. Support ticket from `/portal/support` or mobile Settings → appears in admin `/tickets`.
+
+See [docs/mvp-scope.md](docs/mvp-scope.md) for features intentionally outside this MVP.
+
 ## Supabase (database / functions)
 
 ```bash
