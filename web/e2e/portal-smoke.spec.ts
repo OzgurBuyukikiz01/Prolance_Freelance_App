@@ -5,14 +5,14 @@ const protectedPortalRoutes = ['/portal', '/portal/support', '/portal/jobs/new']
 test('GET /login returns 200 and shows auth form', async ({ page }) => {
   const response = await page.goto('/login');
   expect(response?.ok()).toBeTruthy();
-  await expect(page.getByRole('button', { name: 'Giriş Yap' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Kayıt Ol' })).toBeVisible();
+  await expect(page.locator('form').getByRole('button', { name: 'Giriş Yap' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Kayıt Ol' }).first()).toBeVisible();
 });
 
 test('GET /login?tab=signup returns 200', async ({ page }) => {
   const response = await page.goto('/login?tab=signup');
   expect(response?.ok()).toBeTruthy();
-  await expect(page.getByRole('button', { name: 'Kayıt Ol' })).toBeVisible();
+  await expect(page.locator('form').getByRole('button', { name: 'Kayıt Ol' })).toBeVisible();
 });
 
 for (const route of protectedPortalRoutes) {
