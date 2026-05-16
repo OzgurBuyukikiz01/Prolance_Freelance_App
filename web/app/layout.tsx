@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" className={inter.variable}>
-      <body className="font-sans">{children}</body>
+    <html lang="tr" className={`${inter.variable} font-sans`}>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   );
 }

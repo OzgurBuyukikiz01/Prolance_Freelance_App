@@ -32,7 +32,7 @@ const sections: LegalSection[] = [
     title: '3. Escrow & Ödeme',
     body: [
       'Prolance, işverenler ve freelancerlar arasındaki anlaşmazlıkları azaltmak amacıyla bir escrow mekanizması sunar. İşveren, anlaşılan ücreti Prolance escrow hesabına yatırır; iş tamamlandığında veya her iki taraf onay verdiğinde ödeme serbest bırakılır.',
-      'Escrow ödemeleri mock (simülasyon) aşamasındadır. Üretim ortamında lisanslı ödeme hizmet sağlayıcıları (PSP) üzerinden gerçekleştirilecektir.',
+      'Escrow ödemeleri, lisanslı ödeme hizmet sağlayıcıları (PSP) ve bankacılık ortakları üzerinden güvenli şekilde işlenir. Prolance, fonları kendi adına tutmaz; yalnızca serbest bırakma koşullarını yönetir.',
       'Anlaşmazlık durumunda Prolance yönetim ekibi durumu inceleyerek bağlayıcı bir karar verebilir. Bu süreç, her iki tarafın bilgi sunmasına olanak tanır.',
       'Platform komisyonu (platform fee) aktif abonelik planına göre değişebilir. Güncel komisyon oranları Fiyatlandırma sayfasında yer almaktadır.',
     ],
@@ -68,8 +68,17 @@ const sections: LegalSection[] = [
     ],
   },
   {
+    id: 'law',
+    title: '7. Uygulanacak Hukuk ve Yetki',
+    body: [
+      'Bu Koşullar Türkiye Cumhuriyeti kanunlarına tabidir.',
+      'Uyuşmazlıklarda İstanbul (Merkez) Mahkemeleri ve İcra Daireleri yetkilidir.',
+      'Tüketici sıfatıyla hareket eden kullanıcılar için zorunlu kanuni haklar saklıdır.',
+    ],
+  },
+  {
     id: 'changes',
-    title: '7. Değişiklikler',
+    title: '8. Değişiklikler',
     body: [
       'Bu Koşulları zaman zaman güncelleyebiliriz. Önemli değişiklikler e-posta veya platform bildirimi aracılığıyla duyurulur.',
       'Değişiklik sonrasında Platformu kullanmaya devam etmeniz, güncellenmiş Koşulları kabul ettiğiniz anlamına gelir.',

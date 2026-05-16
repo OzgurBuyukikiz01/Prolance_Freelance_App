@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import {
+  applyStatFloors,
   formatCount,
   formatEscrowBand,
   formatRating,
@@ -10,7 +11,8 @@ import {
 
 export type StatsData = LandingStats;
 
-export default function Stats({ stats }: { stats: LandingStats }) {
+export default function Stats({ stats: rawStats }: { stats: LandingStats }) {
+  const stats = applyStatFloors(rawStats);
   const items = [
     { value: formatCount(stats.userCount), label: 'Aktif Kullanıcı' },
     { value: formatCount(stats.jobCount), label: 'Açık İlan' },

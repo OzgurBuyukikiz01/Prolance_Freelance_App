@@ -82,7 +82,7 @@ export default async function PortalMessagesPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900 truncate">{conv.otherName}</p>
-                      <p className="text-sm text-slate-500 truncate">{conv.lastMessage}</p>
+                      <p className="text-sm text-slate-500 line-clamp-1">{conv.lastMessage}</p>
                     </div>
                     <span className="text-xs text-slate-400 shrink-0">
                       {formatRelativeTime(conv.lastAt)}

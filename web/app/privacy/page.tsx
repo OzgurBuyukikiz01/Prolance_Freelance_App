@@ -11,8 +11,18 @@ export const metadata = {
 
 const sections: LegalSection[] = [
   {
+    id: 'controller',
+    title: '1. Veri Sorumlusu',
+    body: [
+      'Veri Sorumlusu: Prolance Teknoloji A.Ş.',
+      'Adres: Maslak Mah. Büyükdere Cad. No: 255, Sarıyer / İstanbul 34398, Türkiye',
+      'İletişim: privacy@prolance.app',
+      'Prolance, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusu sıfatıyla hareket eder.',
+    ],
+  },
+  {
     id: 'collected',
-    title: '1. Toplanan Veriler',
+    title: '2. Toplanan Veriler',
     body: [
       'Prolance, hizmet sunumu ve güvenlik amacıyla aşağıdaki kişisel verileri işler:',
       '• Kimlik bilgileri: Ad, soyad, e-posta adresi, profil fotoğrafı',
@@ -24,7 +34,7 @@ const sections: LegalSection[] = [
   },
   {
     id: 'usage',
-    title: '2. Verilerin Kullanımı',
+    title: '3. Verilerin Kullanımı',
     body: [
       'Toplanan veriler aşağıdaki amaçlarla kullanılır:',
       '• Hesap oluşturma ve kimlik doğrulama',
@@ -38,7 +48,7 @@ const sections: LegalSection[] = [
   },
   {
     id: 'storage',
-    title: '3. Veri Saklama',
+    title: '4. Veri Saklama',
     body: [
       'Kişisel verileriniz, hesabınız aktif olduğu sürece ve yasal saklama yükümlülükleri kapsamında tutulur.',
       'Hesabınızı kapattığınızda, kişisel verileriniz 30 gün içinde silinir; ancak yasal yükümlülükler gereği bazı kayıtlar (fatura, escrow geçmişi) zorunlu saklama süreleri boyunca arşivlenebilir.',
@@ -47,7 +57,7 @@ const sections: LegalSection[] = [
   },
   {
     id: 'rights',
-    title: '4. Haklarınız',
+    title: '5. Haklarınız',
     body: [
       'KVKK ve GDPR kapsamında aşağıdaki haklara sahipsiniz:',
       '• Erişim hakkı: İşlenen kişisel verilerinize erişim talep edebilirsiniz.',
@@ -60,7 +70,7 @@ const sections: LegalSection[] = [
   },
   {
     id: 'cookies',
-    title: '5. Çerezler',
+    title: '6. Çerezler',
     body: [
       'Prolance web sitesi oturum yönetimi ve kullanıcı deneyimini iyileştirme amacıyla çerezler kullanır.',
       '• Zorunlu çerezler: Kimlik doğrulama ve güvenlik (oturumu kapatmadan kaldırılamaz)',
@@ -71,7 +81,7 @@ const sections: LegalSection[] = [
   },
   {
     id: 'contact',
-    title: '6. İletişim',
+    title: '7. İletişim',
     body: [
       'Gizlilik ile ilgili sorularınız için: privacy@prolance.app',
       'Yasal bildirimler için: legal@prolance.app',

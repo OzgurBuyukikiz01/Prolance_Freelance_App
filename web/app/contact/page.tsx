@@ -54,7 +54,17 @@ export default function ContactPage() {
             <p className="text-slate-600 text-[15px] leading-relaxed m-0">
               Prolance Teknoloji A.Ş.
               <br />
-              İstanbul, Türkiye
+              Maslak Mah. Büyükdere Cad. No: 255
+              <br />
+              Sarıyer / İstanbul 34398, Türkiye
+            </p>
+          </div>
+
+          <div className="mb-12 p-5 rounded-2xl border border-indigo-100 bg-indigo-50/80">
+            <p className="text-indigo-900 text-sm font-semibold m-0 mb-1">Yanıt süresi</p>
+            <p className="text-slate-600 text-sm m-0 leading-relaxed">
+              Destek taleplerine iş günlerinde ortalama <strong>24 saat</strong> içinde dönüş
+              yapıyoruz. Acil güvenlik bildirimleri önceliklidir.
             </p>
           </div>
 

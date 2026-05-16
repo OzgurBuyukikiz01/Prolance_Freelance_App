@@ -103,7 +103,15 @@ Remove any entries for deleted hosts, for example:
 - `https://landing-*.vercel.app/**`
 - `https://admin-*.vercel.app/**`
 
-The Supabase MCP tools in Cursor cannot change Auth URL settings; apply the above in the dashboard (or Management API) manually.
+Apply via dashboard (recommended) or Management API:
+
+```powershell
+# Requires a PAT with auth_config_write (Account → Access Tokens)
+$env:SUPABASE_ACCESS_TOKEN = "sbp_..."
+powershell -File scripts/apply-supabase-auth-urls.ps1
+```
+
+If the API returns *necessary privileges*, use the dashboard link above (the default Cursor MCP token often cannot PATCH auth config).
 
 After adding a custom domain on Vercel, update Site URL and Redirect URLs to that domain.
 
@@ -120,7 +128,36 @@ Before MVP sign-off, confirm in [URL Configuration](https://supabase.com/dashboa
 | Email confirmation | Dashboard → Auth → Providers → Email: note whether **Confirm email** is on; both web and mobile respect the same policy |
 | Password reset | Redirect URL allowed for `/login` (or your reset handler path) |
 
-**Cross-device smoke (manual):** Register on web → sign in on mobile with same email/password; repeat mobile → web. Support ticket from `/portal/support` or mobile Settings → appears in admin `/tickets`.
+**Cross-device smoke**
+
+| Method | Command / action |
+|--------|------------------|
+| Automated (web) | `cd web` then set `E2E_SUPABASE_ANON_KEY`, `E2E_TEST_EMAIL`, `E2E_TEST_PASSWORD` and run `npx playwright test e2e/cross-device-auth.spec.ts` |
+| Signup path (optional) | Add `E2E_ALLOW_SIGNUP=1` — may hit hosted Auth email rate limits |
+| Manual | Register on web → sign in on mobile with same email/password; repeat mobile → web |
+
+Support ticket from `/portal/support` or mobile Settings → appears in admin `/tickets`.
+
+### Git push and PR
+
+| Remote | Branch | Notes |
+|--------|--------|--------|
+| `upstream` (`OzgurBuyukikiz01/Prolance_Freelance_App`) | `launch/marketing-portal-calendar` | Push OK |
+| `origin` (`Mikailulsy/Prolance_Freelance_App`) | same | Often **permission denied** — use PAT/collaborator or push only to `upstream` |
+
+Open PR (after `gh auth login` or set `GH_TOKEN`):
+
+```bash
+gh pr create --repo OzgurBuyukikiz01/Prolance_Freelance_App --base main --head launch/marketing-portal-calendar
+```
+
+Or use: https://github.com/OzgurBuyukikiz01/Prolance_Freelance_App/compare/main...launch/marketing-portal-calendar
+
+### Migration verification (CLI optional)
+
+Remote DB already includes `job_schedule_items`, `proposals_delete_rls`, `avatar_public_read` (verify via Supabase MCP `list_migrations` or SQL).
+
+Local CLI (if installed): `supabase link --project-ref cgxzpdhcaxiopdylwstr` then `supabase db push`. On Windows without CLI: `npx supabase@latest link` / `npx supabase@latest db push`.
 
 See [docs/mvp-scope.md](docs/mvp-scope.md) for features intentionally outside this MVP.
 

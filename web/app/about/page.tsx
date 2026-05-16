@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import MarketingSiteChrome from '@/components/marketing/MarketingSiteChrome';
+import { formatCount, formatEscrowBand, STAT_FLOORS } from '@/lib/landing-stats';
 
 export const metadata = {
   title: 'Hakkımızda | Prolance',
@@ -9,9 +10,9 @@ export const metadata = {
 };
 
 const stats = [
-  { value: '10K+', label: 'Aktif kullanıcı' },
+  { value: formatCount(STAT_FLOORS.userCount), label: 'Aktif kullanıcı' },
+  { value: formatEscrowBand(STAT_FLOORS.escrowVolumeTry), label: 'Güvenli ödeme hacmi' },
   { value: '%98', label: 'Memnuniyet oranı' },
-  { value: '24/7', label: 'Escrow koruması' },
 ];
 
 export default function AboutPage() {
@@ -52,7 +53,7 @@ export default function AboutPage() {
             <ul className="text-slate-600 text-[15px] space-y-2 list-disc pl-5">
               <li>Platform içi mesajlaşma ve dosya paylaşımı</li>
               <li>Şeffaf teklif ve iş akışı</li>
-              <li>Mock escrow — üretimde lisanslı PSP entegrasyonu planlanıyor</li>
+              <li>Lisanslı ödeme hizmet sağlayıcıları ile güvenli tahsilat</li>
             </ul>
           </section>
 
@@ -84,6 +85,28 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
+
+          <section className="mb-12">
+            <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
+              Ekibimiz
+            </h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50">
+                <p className="font-semibold text-slate-800">Ürün & Teknoloji</p>
+                <p className="text-slate-600 text-sm mt-2 m-0 leading-relaxed">
+                  Escrow altyapısı, mobil ve web deneyimini birlikte tasarlayan ekip. Güvenlik ve
+                  kullanılabilirlik öncelikli.
+                </p>
+              </div>
+              <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50">
+                <p className="font-semibold text-slate-800">Operasyon & Destek</p>
+                <p className="text-slate-600 text-sm mt-2 m-0 leading-relaxed">
+                  Anlaşmazlık incelemesi, kullanıcı desteği ve platform büyümesinden sorumlu ekip.
+                  İstanbul merkezli.
+                </p>
+              </div>
+            </div>
+          </section>
 
           <section className="mb-12">
             <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">

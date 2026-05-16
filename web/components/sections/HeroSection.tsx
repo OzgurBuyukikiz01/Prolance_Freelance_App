@@ -4,8 +4,10 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
+  applyStatFloors,
   formatCount,
   formatEscrowBand,
+  formatEscrowHero,
   formatRating,
   type LandingStats,
 } from '@/lib/landing-stats';
@@ -24,7 +26,8 @@ const fadeUp = {
   }),
 };
 
-export default function HeroSection({ stats }: { stats: LandingStats }) {
+export default function HeroSection({ stats: rawStats }: { stats: LandingStats }) {
+  const stats = applyStatFloors(rawStats);
   const heroStats = [
     { value: formatCount(stats.userCount), label: 'Kullanıcı' },
     { value: formatEscrowBand(stats.escrowVolumeTry), label: 'Güvenli Ödeme' },
@@ -69,7 +72,7 @@ export default function HeroSection({ stats }: { stats: LandingStats }) {
             variants={fadeUp}
             initial="hidden"
             animate="visible"
-            className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight text-slate-900"
+            className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.08] tracking-tight text-slate-900"
           >
             Freelance&apos;ı{' '}
             <span className="bg-gradient-to-r from-brand to-indigo-500 bg-clip-text text-transparent">
@@ -182,7 +185,9 @@ export default function HeroSection({ stats }: { stats: LandingStats }) {
                   <p className="text-[10px] font-semibold text-brand uppercase tracking-wide">
                     Escrow aktif
                   </p>
-                  <p className="text-sm font-bold text-slate-900 mt-0.5">₺12.500 güvende</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">
+                    {formatEscrowHero(stats.escrowVolumeTry)}
+                  </p>
                   <p className="text-xs text-slate-500">Mobil uygulama · Web portal</p>
                 </motion.div>
               </div>

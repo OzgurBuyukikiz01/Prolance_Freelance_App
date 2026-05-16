@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 /** Default hero (Unsplash, stable path). Override via `heroImageSrc`. */
 export const DEFAULT_AUTH_HERO =
-  'https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80';
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=2160&q=80';
 
 export interface Testimonial {
   avatarSrc: string;
@@ -147,20 +148,29 @@ export function SignInPage({
         </div>
 
         <div className="mx-auto w-full max-w-md">
-          <div className="mb-8 flex rounded-2xl border border-border/80 bg-muted/40 p-1">
+          <div className="relative mb-8 flex rounded-2xl border border-border/80 bg-muted/40 p-1">
             {(['login', 'signup'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => onModeChange?.(t)}
                 className={cn(
-                  'flex-1 rounded-xl py-2.5 text-center text-sm font-semibold transition-all',
-                  mode === t ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  'relative z-10 flex-1 rounded-xl py-2.5 text-center text-sm font-semibold transition-colors',
+                  mode === t ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 {t === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
               </button>
             ))}
+            <motion.div
+              layoutId="auth-tab-pill"
+              className="absolute inset-y-1 rounded-xl bg-background shadow-sm"
+              style={{
+                width: 'calc(50% - 4px)',
+                left: mode === 'login' ? 4 : 'calc(50%)',
+              }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            />
           </div>
 
           <div className="flex flex-col gap-6">
@@ -185,7 +195,7 @@ export function SignInPage({
             >
               {!isLogin && (
                 <div className="auth-animate-el auth-delay-275">
-                  <Label htmlFor="full_name" className="mb-2 block text-sm font-medium text-muted-foreground">
+                  <Label htmlFor="full_name" className="mb-2 block text-[13px] font-semibold text-slate-700">
                     Ad Soyad
                   </Label>
                   <GlassInputWrapper>
@@ -204,7 +214,7 @@ export function SignInPage({
               )}
 
               <div className="auth-animate-el auth-delay-300">
-                <Label htmlFor="email" className="mb-2 block text-sm font-medium text-muted-foreground">
+                <Label htmlFor="email" className="mb-2 block text-[13px] font-semibold text-slate-700">
                   E-posta
                 </Label>
                 <GlassInputWrapper>
@@ -222,7 +232,7 @@ export function SignInPage({
               </div>
 
               <div className="auth-animate-el auth-delay-400">
-                <Label htmlFor="password" className="mb-2 block text-sm font-medium text-muted-foreground">
+                <Label htmlFor="password" className="mb-2 block text-[13px] font-semibold text-slate-700">
                   Şifre
                 </Label>
                 <GlassInputWrapper>
@@ -255,7 +265,7 @@ export function SignInPage({
 
               {!isLogin && (
                 <div className="auth-animate-el auth-delay-425">
-                  <Label htmlFor="role" className="mb-2 block text-sm font-medium text-muted-foreground">
+                  <Label htmlFor="role" className="mb-2 block text-[13px] font-semibold text-slate-700">
                     Hesap Türü
                   </Label>
                   <GlassInputWrapper>
@@ -292,8 +302,9 @@ export function SignInPage({
               <button
                 type="submit"
                 disabled={pending || !formAction}
-                className="auth-animate-el auth-delay-550 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
+                className="auth-animate-el auth-delay-550 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
               >
+                {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
                 {pending ? (isLogin ? 'Giriş yapılıyor…' : 'Kayıt olunuyor…') : isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
               </button>
             </form>
@@ -307,10 +318,12 @@ export function SignInPage({
                 type="button"
                 disabled={googleDisabled}
                 onClick={() => !googleDisabled && onGoogleSignIn?.()}
-                className="auth-animate-el auth-delay-700 flex w-full items-center justify-center gap-3 rounded-2xl border border-border py-4 transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60"
+                className="auth-animate-el auth-delay-700 flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 py-4 text-slate-500 transition-colors disabled:cursor-not-allowed"
               >
                 <GoogleIcon />
-                Google ile giriş {googleDisabled ? '— Yakında' : ''}
+                <span className="text-sm font-medium">
+                  Google ile giriş {googleDisabled ? '(yakında)' : ''}
+                </span>
               </button>
 
               <p className="auth-animate-el auth-delay-800 text-center text-sm text-muted-foreground">

@@ -34,6 +34,21 @@ export default async function PortalNotificationsPage({ searchParams }: PageProp
 
   const unreadCount = (notifications ?? []).filter((n) => !n.read_at).length;
 
+  const typeIcon = (type: string | null) => {
+    switch (type) {
+      case 'job':
+        return '💼';
+      case 'payment':
+        return '💳';
+      case 'message':
+        return '💬';
+      case 'system':
+        return '⚙️';
+      default:
+        return '🔔';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -72,11 +87,14 @@ export default async function PortalNotificationsPage({ searchParams }: PageProp
             return (
               <li key={n.id}>
                 <MagicCard
-                  className={isRead ? 'opacity-80' : ''}
+                  className={isRead ? 'opacity-80' : 'ring-1 ring-brand/20'}
                   innerClassName="p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <span className="text-lg shrink-0" aria-hidden>
+                      {typeIcon(n.type)}
+                    </span>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900">{n.title}</p>
                       <p className="text-sm text-slate-600 mt-1">{n.body}</p>
                       <p className="text-xs text-slate-400 mt-2">

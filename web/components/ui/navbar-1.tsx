@@ -7,6 +7,9 @@ const LINKS = [
   { label: 'Özellikler', href: '#features' },
   { label: 'Nasıl Çalışır', href: '#how' },
   { label: 'Fiyatlandırma', href: '#pricing' },
+  { label: 'Hakkımızda', href: '/about' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'İletişim', href: '/contact' },
 ];
 
 function ProlanceLogo() {

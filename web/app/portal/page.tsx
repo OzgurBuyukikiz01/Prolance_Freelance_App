@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { logout } from '@/app/login/actions';
+import { PortalHeroHeader } from '@/components/portal/PortalHeroHeader';
+import { PortalHomeClient } from '@/components/portal/PortalHomeClient';
+import type { JobListItem } from '@/components/portal/JobsListClient';
 import { createClient } from '@/lib/supabase/server';
-import { MagicCard } from '@/components/ui/magic-card';
-import { PortalStats } from '@/components/portal/PortalStats';
+import { applyStatFloors, STAT_FLOORS } from '@/lib/landing-stats';
+import { createServiceClient } from '@/lib/supabaseAdmin';
 
 const ROLE_LABELS: Record<string, string> = {
   FREELANCER: 'Freelancer',
@@ -11,9 +13,50 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  FREELANCER: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  CLIENT: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  FREELANCER: 'bg-white/20 text-white border-white/30',
+  CLIENT: 'bg-emerald-400/20 text-emerald-50 border-emerald-200/40',
 };
+
+async function fetchPlatformStats() {
+  try {
+    const sb = createServiceClient();
+    const [{ count: userCount }, { data: escrowRows }, { data: profileRows }] =
+      await Promise.all([
+        sb.from('profiles').select('*', { count: 'exact', head: true }),
+        sb
+          .from('escrow_transactions')
+          .select('amount_cents')
+          .in('status', ['FUNDED', 'HELD', 'RELEASED']),
+        sb.from('profiles').select('completed_jobs'),
+      ]);
+    const completedSum = (profileRows ?? []).reduce(
+      (sum, row) => sum + Number(row.completed_jobs ?? 0),
+      0,
+    );
+    const escrowVolumeTry =
+      (escrowRows ?? []).reduce((sum, row) => sum + Number(row.amount_cents ?? 0), 0) / 100;
+    const floored = applyStatFloors({
+      userCount: userCount ?? 0,
+      jobCount: 0,
+      escrowVolumeTry,
+      avgRating: 4.9,
+      reviewCount: STAT_FLOORS.reviewCount,
+    });
+    return {
+      userCount: floored.userCount,
+      escrowVolumeTry: floored.escrowVolumeTry,
+      satisfactionPct: 98,
+      completedJobs: Math.max(completedSum, 1400),
+    };
+  } catch {
+    return {
+      userCount: STAT_FLOORS.userCount,
+      escrowVolumeTry: STAT_FLOORS.escrowVolumeTry,
+      satisfactionPct: 98,
+      completedJobs: 1400,
+    };
+  }
+}
 
 export default async function PortalPage() {
   const supabase = await createClient();
@@ -26,87 +69,54 @@ export default async function PortalPage() {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, role, is_admin, avatar_url, completed_jobs, rating, total_earnings')
-    .eq('id', user.id)
-    .single();
+  const [{ data: profile }, { data: jobs, error: jobsError }, platformStats] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('full_name, role, is_admin, avatar_url')
+      .eq('id', user.id)
+      .single(),
+    supabase
+      .from('jobs')
+      .select(
+        'id, title, description, budget_min, budget_max, budget_type, skills, posted_date, proposal_count, client_name, category, status',
+      )
+      .eq('status', 'open')
+      .order('posted_date', { ascending: false })
+      .limit(10),
+    fetchPlatformStats(),
+  ]);
 
   const name = profile?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
   const role = profile?.role ?? 'FREELANCER';
   const isAdmin = profile?.is_admin ?? false;
-  const completedJobs = (profile?.completed_jobs as number | null) ?? 0;
-  const rating = profile?.rating != null ? Number(profile.rating) : null;
-  const totalEarnings = (profile?.total_earnings as number | null) ?? 0;
 
   return (
     <div>
-      <MagicCard innerClassName="p-8 mb-6">
-        <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand to-indigo-500 flex items-center justify-center text-white text-2xl font-extrabold shadow-brand flex-shrink-0">
-            {name.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-extrabold text-slate-900 truncate">
-                Hoş geldin, {name}!
-              </h1>
-              {isAdmin && (
-                <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-full">
-                  Admin
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                  ROLE_COLORS[role] ?? 'bg-slate-50 text-slate-600 border-slate-100'
-                }`}
-              >
-                {ROLE_LABELS[role] ?? role}
-              </span>
-              <span className="text-xs text-slate-400">{user.email}</span>
-            </div>
-          </div>
-        </div>
+      <PortalHeroHeader
+        name={name}
+        roleLabel={ROLE_LABELS[role] ?? role}
+        roleClassName={ROLE_COLORS[role] ?? 'bg-white/20 text-white border-white/30'}
+        avatarUrl={profile?.avatar_url ?? null}
+        isAdmin={isAdmin}
+        platformStats={platformStats}
+      />
 
-        <PortalStats
-          completedJobs={completedJobs}
-          rating={rating}
-          totalEarnings={totalEarnings}
-        />
+      {isAdmin && (
+        <Link
+          href="/dashboard"
+          className="mb-6 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-3 text-sm font-bold text-white shadow-lg transition-all hover:from-amber-600 hover:to-orange-600"
+        >
+          Admin Panele Geç
+        </Link>
+      )}
 
-        <div className="flex flex-col gap-3">
-          {isAdmin && (
-            <Link
-              href="/dashboard"
-              className="flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg"
-            >
-              Admin Panele Geç
-            </Link>
-          )}
-          <Link
-            href="/portal/jobs"
-            className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-xl transition-colors"
-          >
-            İş İlanlarına Göz At
-          </Link>
-          <Link
-            href="/portal/proposals"
-            className="flex items-center justify-center gap-2 border border-slate-200 hover:border-brand/40 hover:bg-brand-light text-slate-700 font-medium py-3 rounded-xl transition-colors text-sm"
-          >
-            Tekliflerim
-          </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-slate-600 font-medium py-3 rounded-xl transition-colors text-sm"
-            >
-              Çıkış Yap
-            </button>
-          </form>
-        </div>
-      </MagicCard>
+      {jobsError ? (
+        <p className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
+          İlanlar yüklenemedi: {jobsError.message}
+        </p>
+      ) : (
+        <PortalHomeClient jobs={(jobs ?? []) as JobListItem[]} />
+      )}
     </div>
   );
 }

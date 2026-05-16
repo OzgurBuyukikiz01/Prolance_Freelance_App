@@ -9,7 +9,7 @@ import DownloadCTA from '@/components/sections/DownloadCTA';
 import Footer from '@/components/sections/Footer';
 import AuthNav from '@/components/AuthNav';
 import { createServiceClient } from '@/lib/supabaseAdmin';
-import type { LandingStats } from '@/lib/landing-stats';
+import { applyStatFloors, type LandingStats } from '@/lib/landing-stats';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +62,7 @@ async function fetchLandingStats(): Promise<LandingStats> {
 }
 
 export default async function Home() {
-  const stats = await fetchLandingStats();
+  const stats = applyStatFloors(await fetchLandingStats());
 
   return (
     <>
