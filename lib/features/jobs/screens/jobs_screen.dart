@@ -12,6 +12,7 @@ import '../../../core/models/job_model.dart';
 import '../../../core/widgets/job_browse_filter_sheet.dart';
 import '../../../core/navigation/main_nav_controller.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/user_avatar.dart';
 import 'job_detail_screen.dart';
 
@@ -37,12 +38,14 @@ class _JobsScreenState extends State<JobsScreen> {
 
   MainNavController? _nav;
   AppState? _app;
+  JobsProvider? _jobsProvider;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _nav ??= context.read<MainNavController>()..addListener(_onRepoOrNavChanged);
     _app ??= context.read<AppState>()..addListener(_onRepoOrNavChanged);
+    _jobsProvider ??= context.read<JobsProvider>()..addListener(_onRepoOrNavChanged);
     _refreshFromSource();
   }
 
@@ -54,17 +57,19 @@ class _JobsScreenState extends State<JobsScreen> {
   void dispose() {
     _nav?.removeListener(_onRepoOrNavChanged);
     _app?.removeListener(_onRepoOrNavChanged);
+    _jobsProvider?.removeListener(_onRepoOrNavChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   void _refreshFromSource() {
     final appState = _app ?? context.read<AppState>();
-    final source = appState.jobs.where((j) {
+    final jobsProvider = _jobsProvider ?? context.read<JobsProvider>();
+    final source = jobsProvider.jobs.where((j) {
       if (j.status == 'pending_review') return false;
       if (j.isUserPosted &&
           j.clientName == appState.currentUser.name &&
-          appState.shouldHideApprovedJobFromOwnerHome(j.id)) {
+          jobsProvider.shouldHideApprovedJobFromOwnerHome(j.id)) {
         return false;
       }
       return true;

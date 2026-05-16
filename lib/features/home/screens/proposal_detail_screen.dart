@@ -10,7 +10,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
 import '../../../core/models/submitted_proposal_model.dart';
 import '../../../core/repositories/proposal_repository.dart';
-import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/utils/project_duration_ymd.dart';
 
 class ProposalDetailScreen extends StatelessWidget {
@@ -18,8 +18,8 @@ class ProposalDetailScreen extends StatelessWidget {
 
   final SubmittedProposal proposal;
 
-  JobModel? _resolveJob(AppState app) {
-    for (final j in app.jobs) {
+  JobModel? _resolveJob(JobsProvider jobs) {
+    for (final j in jobs.jobs) {
       if (j.id == proposal.jobId) return j;
     }
     return null;
@@ -43,7 +43,6 @@ class ProposalDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
     final repo = context.watch<ProposalRepository>();
     var current = proposal;
     for (final x in repo.myProposals) {
@@ -52,7 +51,7 @@ class ProposalDetailScreen extends StatelessWidget {
         break;
       }
     }
-    final job = _resolveJob(app);
+    final job = _resolveJob(context.watch<JobsProvider>());
     final submitted =
         DateFormat.yMMMd().add_jm().format(current.submittedAt);
 

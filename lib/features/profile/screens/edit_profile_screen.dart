@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/location_catalog_service.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -121,7 +122,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     final current = context.read<AppState>().currentUser;
     final hourly = double.tryParse(_hourlyRateController.text.trim()) ?? 0;
     final updated = current.copyWith(
@@ -133,8 +134,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       website: _websiteController.text.trim(),
       skills: _skills,
     );
+    if (!mounted) return;
     context.read<AppState>().updateUser(updated);
-    Navigator.pop(context);
+    // Persist to Supabase profiles table (fire-and-forget, non-blocking)
+    AuthService.instance.upsertProfileFromUserModel(updated).catchError((_) {});
+    if (mounted) Navigator.pop(context);
   }
 
   @override

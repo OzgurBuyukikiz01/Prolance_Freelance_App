@@ -1,5 +1,7 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -54,7 +56,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             isFreelancer: _selectedRole == UserRole.freelancer,
           );
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      if (!context.read<AppState>().isLoggedIn) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not create account. Ensure Supabase is running (supabase start).',
+            ),
+          ),
+        );
+        return;
+      }
+      context.go('/home');
     }
   }
 
@@ -142,31 +154,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 24),
                 // Header
-                FadeInUp(
-                  duration: const Duration(milliseconds: 500),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Create Account',
-                        style: GoogleFonts.poppins(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onSurface,
-                          letterSpacing: -0.5,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'P',
+                          style: GoogleFonts.poppins(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Join thousands of freelancers',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: scheme.onSurfaceVariant,
-                        ),
+                    )
+                        .animate()
+                        .scale(
+                          begin: const Offset(0.5, 0.5),
+                          duration: 500.ms,
+                          curve: Curves.elasticOut,
+                        )
+                        .fadeIn(),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Hesap Oluştur ✨',
+                      style: GoogleFonts.poppins(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: scheme.onSurface,
+                        letterSpacing: -0.5,
+                        height: 1.1,
                       ),
-                    ],
-                  ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 100.ms, duration: 500.ms)
+                        .slideX(begin: -0.1, end: 0),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Binlerce freelancera katılın',
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 150.ms, duration: 500.ms),
+                  ],
                 ),
                 const SizedBox(height: 32),
                 // Full Name
@@ -549,7 +596,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/login');
+                          context.push('/login');
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,

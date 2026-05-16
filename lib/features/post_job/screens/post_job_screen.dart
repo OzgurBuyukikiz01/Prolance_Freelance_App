@@ -11,6 +11,7 @@ import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
 import '../../../core/services/skills_catalog_service.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/utils/project_duration_ymd.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -229,6 +230,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     if (!_validateStep3()) return;
 
     final appState = context.read<AppState>();
+    final jobsProvider = context.read<JobsProvider>();
     late double minVal;
     late double maxVal;
     if (_isFixedPrice) {
@@ -239,7 +241,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       maxVal = double.tryParse(_maxHourlyController.text.trim()) ?? 0;
     }
 
-    appState.addJob(
+    jobsProvider.addJob(
       JobModel(
         id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
         title: _titleController.text.trim(),
@@ -260,6 +262,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
         isUserPosted: true,
         listingKind: JobListingKinds.jobOffer,
       ),
+      currentUserName: appState.currentUser.name,
+      currentUserAvatar: appState.currentUser.avatarUrl,
+      onNotify: appState.addFeedNotification,
+      t: appState.t,
     );
 
     _showSuccessDialog(hiringJob: true);
@@ -269,10 +275,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
     if (!_validateSeekStep3()) return;
 
     final appState = context.read<AppState>();
+    final jobsProvider = context.read<JobsProvider>();
     final minH = double.tryParse(_minHourlyController.text.trim()) ?? 0;
     final maxH = double.tryParse(_maxHourlyController.text.trim()) ?? 0;
 
-    appState.addJob(
+    jobsProvider.addJob(
       JobModel(
         id: 'seek_${DateTime.now().millisecondsSinceEpoch}',
         title: _titleController.text.trim(),
@@ -293,6 +300,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
         isUserPosted: true,
         listingKind: JobListingKinds.freelancerSeeking,
       ),
+      currentUserName: appState.currentUser.name,
+      currentUserAvatar: appState.currentUser.avatarUrl,
+      onNotify: appState.addFeedNotification,
+      t: appState.t,
     );
 
     _showSuccessDialog(hiringJob: false);

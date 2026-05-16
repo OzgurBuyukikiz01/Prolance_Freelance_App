@@ -1,10 +1,13 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../core/config/supabase_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auth_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -28,8 +31,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _onSendResetLink() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        if (SupabaseConfig.isEnabled) {
+          await AuthService.instance
+              .resetPasswordForEmail(_emailController.text.trim());
+        } else {
+          await Future.delayed(const Duration(seconds: 1));
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -63,7 +77,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: IconButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
               icon: const Icon(Iconsax.arrow_left),
               style: IconButton.styleFrom(
                 backgroundColor: scheme.surfaceContainerHighest,
@@ -224,7 +238,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: IconButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => context.pop(),
               icon: const Icon(Iconsax.arrow_left),
               style: IconButton.styleFrom(
                 backgroundColor: scheme.surfaceContainerHighest,
@@ -291,7 +305,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => context.go('/login'),
                   borderRadius:
                       BorderRadius.circular(AppConstants.radiusMd),
                   child: Center(

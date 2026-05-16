@@ -15,7 +15,11 @@ import '../../../core/models/user_model.dart';
 import '../../../core/navigation/main_nav_controller.dart';
 import '../../../core/navigation/proposal_route.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/user_avatar.dart';
+import '../../payment/screens/escrow_screen.dart';
+import '../../reviews/screens/submit_review_screen.dart';
+import '../widgets/job_detail_bottom_sheet.dart';
 
 class JobDetailScreen extends StatefulWidget {
   const JobDetailScreen({super.key, required this.job});
@@ -85,7 +89,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 onPressed: () {
                   final next = !_isSaved;
                   setState(() => _isSaved = next);
-                  context.read<AppState>().toggleFavorite(job.id, next);
+                  context.read<JobsProvider>().toggleFavorite(job.id, next);
                 },
               ),
             ],
@@ -168,6 +172,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     delay: const Duration(milliseconds: 350),
                     child: _buildProposalCta(context, job, isOwnJob),
                   ),
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 400),
+                    child: _buildEscrowEntry(context, job),
+                  ),
+                  if (job.status == 'completed')
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 450),
+                      child: _buildReviewCta(context, job, currentUser),
+                    ),
                   const SizedBox(height: AppConstants.paddingXl),
                 ],
               ),
@@ -175,6 +188,79 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildReviewCta(
+      BuildContext context, JobModel job, UserModel currentUser) {
+    // Freelancer reviews the client; client reviews the freelancer.
+    // For demo purposes: the current user reviews the job's client
+    // (if they are not the client themselves).
+    final isClient = job.clientName == currentUser.name;
+    final revieweeName = isClient ? 'Freelancer' : job.clientName;
+    final revieweeId = isClient ? '' : job.clientName;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: FilledButton.icon(
+        onPressed: revieweeId.isEmpty
+            ? null
+            : () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SubmitReviewScreen(
+                      job: job,
+                      revieweeId: revieweeId,
+                      revieweeName: revieweeName,
+                      revieweeAvatar: job.clientAvatar,
+                    ),
+                  ),
+                );
+              },
+        icon: const Icon(Iconsax.star, size: 18),
+        label: const Text('Değerlendirme Yaz'),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.warning,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEscrowEntry(BuildContext context, JobModel job) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => showJobDetailBottomSheet(context, job),
+          icon: const Icon(Iconsax.eye),
+          label: const Text('Detayları Gör'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => EscrowScreen(job: job),
+              ),
+            );
+          },
+          icon: const Icon(Iconsax.wallet_money),
+          label: const Text('Escrow & payments (mock)'),
+        ),
+      ],
     );
   }
 

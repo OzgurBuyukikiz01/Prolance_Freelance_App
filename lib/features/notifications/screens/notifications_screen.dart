@@ -9,7 +9,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/feed_notification_item.dart';
+import '../../../core/repositories/notification_repository.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/widgets/prolance_empty_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -36,6 +38,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   void _markAllAsRead() {
     context.read<AppState>().markAllFeedNotificationsRead();
+    context.read<NotificationRepository>().markAllRead();
   }
 
   IconData _getIconForType(FeedNotificationType type) {
@@ -253,32 +256,5 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  Widget _buildEmptyState() {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Iconsax.notification,
-            size: 64,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
-          ),
-          const SizedBox(height: AppConstants.paddingLg),
-          Text(
-            'No notifications yet',
-            style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
-          ),
-          const SizedBox(height: AppConstants.paddingSm),
-          Text(
-            'When you get notifications, they\'ll appear here',
-            style: AppTextStyles.bodyMediumSecondary.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildEmptyState() => ProlanceEmptyState.notifications();
 }

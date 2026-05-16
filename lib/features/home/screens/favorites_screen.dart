@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/job_card.dart';
+import '../../../core/widgets/prolance_empty_state.dart';
 import '../../jobs/screens/job_detail_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
@@ -10,15 +12,17 @@ class FavoritesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final favorites = appState.favoriteJobs;
+    final jobsProvider = context.watch<JobsProvider>();
+    final favorites = jobsProvider.favoriteJobs;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Favorites'),
       ),
       body: favorites.isEmpty
-          ? const Center(child: Text('No favorite jobs yet.'))
+          ? ProlanceEmptyState.favorites(
+              onBrowse: () => context.go('/jobs'),
+            )
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: favorites.length,
@@ -33,7 +37,7 @@ class FavoritesScreen extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
                     );
                   },
-                  onSaveToggle: (saved) => appState.toggleFavorite(job.id, saved),
+                  onSaveToggle: (saved) => jobsProvider.toggleFavorite(job.id, saved),
                 );
               },
             ),

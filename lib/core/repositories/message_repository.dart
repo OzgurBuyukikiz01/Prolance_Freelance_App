@@ -1,8 +1,10 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/message_model.dart';
 
-/// Messaging abstraction — swap [LocalMessageRepository] with Supabase later.
+/// Messaging abstraction — backed by [LocalMessageRepository] (offline/demo)
+/// or [SupabaseMessageRepository] (production).
 abstract class MessageRepository extends ChangeNotifier {
   List<Conversation> get conversations;
 
@@ -21,6 +23,37 @@ abstract class MessageRepository extends ChangeNotifier {
   });
 
   void recordOutboundPreview(String conversationId, String previewText);
+
+  // -------------------------------------------------------------------------
+  // Async / Supabase-backed methods (no-ops in local impl)
+  // -------------------------------------------------------------------------
+
+  /// Async version of [ensureConversationForJob] that upserts the DB row and
+  /// returns the real conversation UUID (or the local placeholder when offline).
+  Future<String> ensureConversationForJobAsync({
+    required String jobId,
+    required String employerName,
+    required String employerAvatar,
+    String? employerUserId,
+    bool employerOnline = false,
+  }) async {
+    return ensureConversationForJob(
+      jobId: jobId,
+      employerName: employerName,
+      employerAvatar: employerAvatar,
+      employerOnline: employerOnline,
+    );
+  }
+
+  /// Send a text message, persisting to Supabase if available.
+  Future<void> sendMessageAsync(String conversationId, String body);
+
+  /// Upload [file] to Supabase Storage, then insert an attachment message.
+  Future<void> uploadAttachment(String conversationId, PlatformFile file);
+
+  /// Live stream of messages for [conversationId].
+  /// Local impl returns a single-snapshot stream from dummy data.
+  Stream<List<Message>> messagesStream(String conversationId);
 }
 
 class LocalMessageRepository extends MessageRepository {
@@ -88,5 +121,24 @@ class LocalMessageRepository extends MessageRepository {
     );
     _items.insert(0, updated);
     notifyListeners();
+  }
+
+  @override
+  Future<void> sendMessageAsync(String conversationId, String body) async {
+    recordOutboundPreview(conversationId, body);
+  }
+
+  @override
+  Future<void> uploadAttachment(
+      String conversationId, PlatformFile file) async {
+    recordOutboundPreview(conversationId, file.name);
+  }
+
+  @override
+  Stream<List<Message>> messagesStream(String conversationId) {
+    final msgs = conversationId.startsWith('job_')
+        ? <Message>[]
+        : Message.dummyList();
+    return Stream.value(msgs);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../constants/app_colors.dart';
@@ -43,6 +44,165 @@ class AppTheme {
     );
   }
 
+  /// Shared overrides applied to both light and dark themes.
+  static ThemeData _applySharedOverrides(ThemeData base, ColorScheme scheme) {
+    final isDark = scheme.brightness == Brightness.dark;
+    return base.copyWith(
+      scaffoldBackgroundColor: scheme.surfaceContainerLowest,
+      splashFactory: InkSparkle.splashFactory,
+      iconTheme: IconThemeData(color: scheme.onSurface),
+      primaryIconTheme: IconThemeData(color: scheme.onSurface),
+      textTheme: _mergeBrandTypography(
+        base.textTheme,
+        scheme.onSurface,
+        scheme.onSurfaceVariant,
+      ),
+      // Card — consistent rounded corners + subtle shadow
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: scheme.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.35),
+            width: 1,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+      ),
+      // Chips — pill shape, tighter padding
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+        ),
+        labelPadding:
+            const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      // Input decoration — filled, rounded, no underline
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: scheme.surfaceContainerHighest,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          borderSide: BorderSide(
+              color: scheme.outlineVariant, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          borderSide:
+              const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 14),
+        hintStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+      // Elevated button — gradient wrapper used in app; keep shape
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          minimumSize: const Size(double.infinity, 52),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          ),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      // Outlined button
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: scheme.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          ),
+          minimumSize: const Size(double.infinity, 52),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      // Bottom sheet
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        dragHandleColor: scheme.outlineVariant,
+        showDragHandle: true,
+        dragHandleSize: const Size(40, 4),
+      ),
+      // Snackbar
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        ),
+        contentTextStyle: GoogleFonts.poppins(fontSize: 13),
+      ),
+      // Dialog
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusXl),
+        ),
+        elevation: 8,
+      ),
+      // Page transitions — subtle fade+slide for modern feel
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
+      // AppBar
+      appBarTheme: AppBarTheme(
+        backgroundColor: scheme.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 20,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: 4,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant.withValues(alpha: 0.35),
+        thickness: 1,
+      ),
+    );
+  }
+
   static ThemeData lightTheme({ColorScheme? dynamicScheme}) {
     final scheme = dynamicScheme ?? _fallbackLightScheme();
     final base = FlexThemeData.light(
@@ -52,7 +212,7 @@ class AppTheme {
       surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
       blendLevel: 14,
       appBarStyle: FlexAppBarStyle.surface,
-      subThemesData: FlexSubThemesData(
+      subThemesData: const FlexSubThemesData(
         defaultRadius: AppConstants.radiusMd,
         elevatedButtonRadius: AppConstants.radiusMd,
         outlinedButtonRadius: AppConstants.radiusMd,
@@ -60,28 +220,13 @@ class AppTheme {
         chipRadius: AppConstants.radiusSm,
         useMaterial3Typography: true,
         elevatedButtonElevation: 0,
-        navigationBarElevation: 2,
+        navigationBarElevation: 0,
         inputDecoratorSchemeColor: SchemeColor.primary,
         elevatedButtonSchemeColor: SchemeColor.primary,
         outlinedButtonOutlineSchemeColor: SchemeColor.primary,
       ),
     );
-
-    return base.copyWith(
-      scaffoldBackgroundColor: scheme.surfaceContainerLowest,
-      textTheme: _mergeBrandTypography(
-        base.textTheme,
-        scheme.onSurface,
-        scheme.onSurfaceVariant,
-      ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        elevation: 4,
-      ),
-      dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant.withValues(alpha: 0.35),
-        thickness: 1,
-      ),
-    );
+    return _applySharedOverrides(base, scheme);
   }
 
   static ThemeData darkTheme({ColorScheme? dynamicScheme}) {
@@ -94,7 +239,7 @@ class AppTheme {
       surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
       blendLevel: 14,
       appBarStyle: FlexAppBarStyle.surface,
-      subThemesData: FlexSubThemesData(
+      subThemesData: const FlexSubThemesData(
         defaultRadius: AppConstants.radiusMd,
         elevatedButtonRadius: AppConstants.radiusMd,
         outlinedButtonRadius: AppConstants.radiusMd,
@@ -102,30 +247,13 @@ class AppTheme {
         chipRadius: AppConstants.radiusSm,
         useMaterial3Typography: true,
         elevatedButtonElevation: 0,
-        navigationBarElevation: 2,
+        navigationBarElevation: 0,
         inputDecoratorSchemeColor: SchemeColor.primary,
         elevatedButtonSchemeColor: SchemeColor.primary,
         outlinedButtonOutlineSchemeColor: SchemeColor.primary,
       ),
     );
-
-    return base.copyWith(
-      scaffoldBackgroundColor: scheme.surfaceContainerLowest,
-      iconTheme: IconThemeData(color: scheme.onSurface),
-      primaryIconTheme: IconThemeData(color: scheme.onSurface),
-      textTheme: _mergeBrandTypography(
-        base.textTheme,
-        scheme.onSurface,
-        scheme.onSurfaceVariant,
-      ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        elevation: 4,
-      ),
-      dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant.withValues(alpha: 0.35),
-        thickness: 1,
-      ),
-    );
+    return _applySharedOverrides(base, scheme);
   }
 
   static TextTheme _mergeBrandTypography(

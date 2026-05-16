@@ -131,7 +131,7 @@ class Conversation {
   }
 }
 
-enum ChatMessageType { text, file }
+enum ChatMessageType { text, file, image }
 
 class Message {
   final String id;

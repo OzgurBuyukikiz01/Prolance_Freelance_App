@@ -8,6 +8,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/message_model.dart';
 import '../../../core/repositories/message_repository.dart';
+import '../../../core/widgets/prolance_empty_state.dart';
 import 'chat_screen.dart';
 
 class MessagesScreen extends StatefulWidget {
@@ -104,6 +105,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
               ),
             ),
           ),
+          if (filtered.isEmpty)
+            Expanded(child: ProlanceEmptyState.messages()),
+          if (filtered.isNotEmpty)
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

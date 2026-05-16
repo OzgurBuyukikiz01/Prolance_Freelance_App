@@ -9,8 +9,9 @@ import '../../../core/models/job_model.dart';
 import '../../../core/models/submitted_proposal_model.dart';
 import '../../../core/repositories/message_repository.dart';
 import '../../../core/repositories/proposal_repository.dart';
-import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/utils/project_duration_ymd.dart';
+import '../../../core/widgets/prolance_empty_state.dart';
 import '../../messages/screens/chat_screen.dart';
 import 'proposal_detail_screen.dart';
 
@@ -23,7 +24,7 @@ class MyProposalsScreen extends StatelessWidget {
   }
 
   static void _openEmployerChat(BuildContext context, SubmittedProposal p) {
-    final jobs = context.read<AppState>().jobs;
+    final jobs = context.read<JobsProvider>().jobs;
     JobModel? job;
     for (final j in jobs) {
       if (j.id == p.jobId) {
@@ -75,37 +76,7 @@ class MyProposalsScreen extends StatelessWidget {
         title: const Text('My proposals'),
       ),
       body: proposals.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Iconsax.briefcase,
-                      size: 56,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No proposals yet',
-                      style: AppTextStyles.heading5.copyWith(
-                        color: scheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Submit a proposal on any open job — it will appear here.',
-                      style: AppTextStyles.bodyMediumSecondary.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            )
+          ? ProlanceEmptyState.proposals()
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: proposals.length,

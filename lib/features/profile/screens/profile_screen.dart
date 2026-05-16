@@ -11,8 +11,11 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/review_model.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/repositories/review_repository.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/utils/external_url_launch.dart';
 import '../../../core/widgets/skill_chip.dart';
 import '../../../core/widgets/stat_card.dart';
@@ -43,37 +46,22 @@ String _displayWebsite(String raw) {
 class _ProfileScreenState extends State<ProfileScreen> {
   final List<PlatformFile> _portfolioFiles = [];
 
-  // Dummy review data
-  final List<Map<String, dynamic>> _reviews = [
-    {
-      'avatar': 'https://i.pravatar.cc/150?img=12',
-      'name': 'John Mitchell',
-      'rating': 5.0,
-      'comment': 'Sarah delivered excellent work on time. Highly recommended!',
-      'date': '2 weeks ago',
-    },
-    {
-      'avatar': 'https://i.pravatar.cc/150?img=33',
-      'name': 'Emma Davis',
-      'rating': 5.0,
-      'comment': 'Professional and communicative. Will hire again.',
-      'date': '1 month ago',
-    },
-    {
-      'avatar': 'https://i.pravatar.cc/150?img=45',
-      'name': 'Michael Chen',
-      'rating': 4.5,
-      'comment': 'Great Flutter developer. Clean code and fast delivery.',
-      'date': '2 months ago',
-    },
-  ];
+  Future<List<ReviewModel>>? _reviewsFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = context.read<AppState>().currentUser;
+    _reviewsFuture ??=
+        context.read<ReviewRepository>().loadReviewsForProfile(user.id);
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final user = state.currentUser;
-    final activeJobs = state.activeMyJobs;
-    final hasHistory = user.completedJobs > 0 || user.totalEarnings > 0 || user.rating > 0;
+    final activeJobs =
+        context.watch<JobsProvider>().activeJobsForUser(user.name);
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -174,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 350),
-              child: _buildReviews(hasHistory),
+              child: _buildReviews(),
             ),
             const SizedBox(height: AppConstants.paddingXl),
           ],
@@ -678,12 +666,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildReviews(bool hasHistory) {
+  Widget _buildReviews() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingLg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppConstants.radiusLg),
         boxShadow: [
           BoxShadow(
@@ -701,35 +690,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: AppConstants.paddingMd),
-          if (!hasHistory)
-            Text(
-              'No reviews yet. Complete jobs to receive reviews.',
-              style: GoogleFonts.poppins(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
-            )
-          else
-            ...List.generate(_reviews.length, (index) {
-              final review = _reviews[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < _reviews.length - 1 ? AppConstants.paddingMd : 0,
-                ),
-                child: _buildReviewCard(review),
+          FutureBuilder<List<ReviewModel>>(
+            future: _reviewsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+              final reviews = snapshot.data ?? [];
+              if (reviews.isEmpty) {
+                return Text(
+                  'No reviews yet. Complete jobs to receive reviews.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                );
+              }
+              return Column(
+                children: List.generate(reviews.length, (index) {
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index < reviews.length - 1
+                          ? AppConstants.paddingMd
+                          : 0,
+                    ),
+                    child: _buildReviewCard(reviews[index]),
+                  );
+                }),
               );
-            }),
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildReviewCard(Map<String, dynamic> review) {
+  Widget _buildReviewCard(ReviewModel review) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingMd),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppConstants.radiusMd),
       ),
       child: Column(
@@ -738,22 +748,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: review['avatar'] as String,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: AppColors.grey200,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: AppColors.grey300,
-                    child: Icon(Icons.person, color: AppColors.grey600),
-                  ),
-                ),
+                child: review.reviewerAvatar.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: review.reviewerAvatar,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: AppColors.grey200,
+                          child: const Center(
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppColors.grey300,
+                          child: Icon(Icons.person, color: AppColors.grey600),
+                        ),
+                      )
+                    : Container(
+                        width: 40,
+                        height: 40,
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        child: Icon(Icons.person, color: AppColors.primary),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -761,15 +779,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review['name'] as String,
+                      review.reviewerName.isNotEmpty
+                          ? review.reviewerName
+                          : 'Anonymous',
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: scheme.onSurface,
                       ),
                     ),
                     RatingBarIndicator(
-                      rating: review['rating'] as double,
+                      rating: review.rating.toDouble(),
                       itemBuilder: (context, index) => const Icon(
                         Iconsax.star1,
                         color: AppColors.warning,
@@ -783,25 +803,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               Text(
-                review['date'] as String,
+                _timeAgo(review.createdAt),
                 style: GoogleFonts.poppins(
                   fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            review['comment'] as String,
+            review.comment,
             style: GoogleFonts.poppins(
               fontSize: 13,
               height: 1.6,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: scheme.onSurfaceVariant,
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 30) {
+      final months = (diff.inDays / 30).floor();
+      return '$months month${months > 1 ? 's' : ''} ago';
+    }
+    if (diff.inDays > 0) return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    return 'Just now';
   }
 }

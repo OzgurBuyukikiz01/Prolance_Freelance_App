@@ -1,5 +1,6 @@
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/repositories/message_repository.dart';
 import '../../../core/navigation/main_nav_controller.dart';
+import '../../../core/widgets/notification_toast.dart';
 import '../../jobs/screens/jobs_screen.dart';
 import '../../messages/screens/messages_screen.dart';
 import '../../post_job/screens/post_job_screen.dart';
@@ -24,7 +26,8 @@ class MainNavigationScreen extends StatelessWidget {
 
     return Consumer<MainNavController>(
       builder: (context, nav, _) {
-        return Scaffold(
+        return NotificationToastHost(
+          child: Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: IndexedStack(
             index: nav.tabIndex,
@@ -40,132 +43,207 @@ class MainNavigationScreen extends StatelessWidget {
               const ProfileScreen(),
             ],
           ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .shadow
-                      .withValues(alpha: 0.14),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
+          bottomNavigationBar: _FloatingBottomNav(
+            currentIndex: nav.tabIndex,
+            unreadCount: unreadTotal,
+            onPostTap: () async {
+              final posted = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PostJobScreen(),
                 ),
-              ],
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _NavItem(
-                      icon: Iconsax.home_2,
-                      label: 'Home',
-                      isSelected: nav.tabIndex == 0,
-                      onTap: () => nav.selectTab(0),
-                    ),
-                    _NavItem(
-                      icon: Iconsax.briefcase,
-                      label: 'Jobs',
-                      isSelected: nav.tabIndex == 1,
-                      onTap: () => nav.selectTab(1),
-                    ),
-                    _PostButton(
-                      onTap: () async {
-                        final posted = await Navigator.push<bool>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const PostJobScreen(),
-                          ),
-                        );
-                        if (posted == true && context.mounted) {
-                          nav.selectTab(0);
-                        }
-                      },
-                    ),
-                    _NavItem(
-                      icon: Iconsax.message,
-                      label: 'Messages',
-                      isSelected: nav.tabIndex == 2,
-                      onTap: () => nav.selectTab(2),
-                      badgeCount: unreadTotal,
-                    ),
-                    _NavItem(
-                      icon: Iconsax.user,
-                      label: 'Profile',
-                      isSelected: nav.tabIndex == 3,
-                      onTap: () => nav.selectTab(3),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+              );
+              if (posted == true && context.mounted) {
+                nav.selectTab(0);
+              }
+            },
+            onTabTap: nav.selectTab,
           ),
+        ),
         );
       },
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.badgeCount = 0,
+// ---------------------------------------------------------------------------
+// Redesigned bottom nav with animated pill indicator
+// ---------------------------------------------------------------------------
+class _FloatingBottomNav extends StatelessWidget {
+  const _FloatingBottomNav({
+    required this.currentIndex,
+    required this.unreadCount,
+    required this.onPostTap,
+    required this.onTabTap,
   });
 
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final int badgeCount;
+  final int currentIndex;
+  final int unreadCount;
+  final VoidCallback onPostTap;
+  final void Function(int) onTabTap;
+
+  static const _items = [
+    (icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Ana Sayfa'),
+    (icon: Iconsax.briefcase, activeIcon: Iconsax.briefcase5, label: 'İlanlar'),
+    (icon: Iconsax.message, activeIcon: Iconsax.message5, label: 'Mesajlar'),
+    (icon: Iconsax.user, activeIcon: Iconsax.profile_circle, label: 'Profil'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    Widget iconWidget = Icon(
-      icon,
-      size: 24,
-      color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
-    );
+    final isDark = scheme.brightness == Brightness.dark;
 
-    if (badgeCount > 0) {
-      iconWidget = badges.Badge(
-        badgeContent: Text(
-          badgeCount > 99 ? '99+' : badgeCount.toString(),
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: AppColors.white,
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: isDark ? 0.4 : 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, -6),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.5),
+            width: 0.5,
           ),
         ),
-        badgeStyle: _badgeStyle,
-        badgeAnimation: _badgeAnimation,
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              // Left 2 tabs
+              ..._items.sublist(0, 2).asMap().entries.map((e) {
+                return Expanded(
+                  child: _NavTab(
+                    icon: e.value.icon,
+                    activeIcon: e.value.activeIcon,
+                    label: e.value.label,
+                    isSelected: currentIndex == e.key,
+                    onTap: () => onTabTap(e.key),
+                  ),
+                );
+              }),
+
+              // Center FAB
+              _PostFab(onTap: onPostTap),
+
+              // Right 2 tabs (indexes 2 & 3)
+              ..._items.sublist(2).asMap().entries.map((e) {
+                final tabIndex = e.key + 2;
+                final isMessages = tabIndex == 2;
+                return Expanded(
+                  child: _NavTab(
+                    icon: e.value.icon,
+                    activeIcon: e.value.activeIcon,
+                    label: e.value.label,
+                    isSelected: currentIndex == tabIndex,
+                    onTap: () => onTabTap(tabIndex),
+                    badge: isMessages && unreadCount > 0
+                        ? unreadCount
+                        : null,
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+class _NavTab extends StatelessWidget {
+  const _NavTab({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.badge,
+  });
+
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final int? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    Widget iconWidget = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      transitionBuilder: (child, anim) => ScaleTransition(
+        scale: anim,
+        child: child,
+      ),
+      child: Icon(
+        isSelected ? activeIcon : icon,
+        key: ValueKey(isSelected),
+        size: 22,
+        color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
+      ),
+    );
+
+    if (badge != null) {
+      iconWidget = badges.Badge(
+        badgeContent: Text(
+          badge! > 99 ? '99+' : badge.toString(),
+          style: GoogleFonts.poppins(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        badgeStyle: const badges.BadgeStyle(
+          badgeColor: AppColors.error,
+          padding: EdgeInsets.all(4),
+        ),
+        badgeAnimation: const badges.BadgeAnimation.scale(
+          animationDuration: Duration(milliseconds: 200),
+        ),
         child: iconWidget,
       );
     }
 
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      splashColor: AppColors.primary.withValues(alpha: 0.08),
+      highlightColor: AppColors.primary.withValues(alpha: 0.04),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            iconWidget,
-            const SizedBox(height: 4),
-            Text(
-              label,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: iconWidget,
+            ),
+            const SizedBox(height: 2),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
               ),
+              child: Text(label),
             ),
           ],
         ),
@@ -174,66 +252,98 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-final _badgeStyle = badges.BadgeStyle(
-  badgeColor: AppColors.error,
-  padding: const EdgeInsets.all(4),
-);
-
-final _badgeAnimation = badges.BadgeAnimation.scale(
-  animationDuration: const Duration(milliseconds: 200),
-  colorChangeAnimationDuration: Duration.zero,
-);
-
-class _PostButton extends StatelessWidget {
-  const _PostButton({required this.onTap});
-
+// ---------------------------------------------------------------------------
+class _PostFab extends StatefulWidget {
+  const _PostFab({required this.onTap});
   final VoidCallback onTap;
 
   @override
+  State<_PostFab> createState() => _PostFabState();
+}
+
+class _PostFabState extends State<_PostFab>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+      lowerBound: 0.0,
+      upperBound: 0.06,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Transform.translate(
-            offset: const Offset(0, -16),
+            offset: const Offset(0, -14),
             child: GestureDetector(
-              onTap: onTap,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.4),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Iconsax.add_circle,
-                  size: 28,
-                  color: AppColors.white,
+              onTapDown: (_) => _ctrl.forward(),
+              onTapUp: (_) {
+                _ctrl.reverse();
+                widget.onTap();
+              },
+              onTapCancel: () => _ctrl.reverse(),
+              child: AnimatedBuilder(
+                animation: _ctrl,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 1.0 - _ctrl.value,
+                    child: child,
+                  );
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                        spreadRadius: -2,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Iconsax.add_circle,
+                    size: 26,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
+          )
+              .animate()
+              .scale(
+                begin: const Offset(0.6, 0.6),
+                duration: 500.ms,
+                curve: Curves.elasticOut,
+                delay: 200.ms,
+              )
+              .fadeIn(delay: 150.ms),
+          const SizedBox(height: 2),
           Text(
-            'Post',
+            'Yayınla',
             style: GoogleFonts.poppins(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
-              color: scheme.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],

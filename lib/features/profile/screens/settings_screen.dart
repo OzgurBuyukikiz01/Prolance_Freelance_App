@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/theme_preference.dart';
 
+import '../../support/screens/support_ticket_screen.dart';
 import 'edit_profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -62,7 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context.read<AppState>().logout();
                 if (!mounted) return;
                 Navigator.pop(dialogContext);
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                context.go('/login');
               },
               child: Text(
                 'Logout',
@@ -246,8 +248,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 _buildDivider(context),
                 _buildSettingsTile(
-                  icon: Iconsax.warning_2,
-                  title: app.t('Report a Problem', 'Problem Bildir'),
+                  icon: Iconsax.message_text,
+                  title: app.t('Support Ticket', 'Destek Talebi'),
                   onTap: _openReportProblem,
                 ),
                 _buildDivider(context),
@@ -457,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _openReportProblem() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const _ReportProblemPage()),
+      MaterialPageRoute(builder: (_) => const SupportTicketScreen()),
     );
   }
 

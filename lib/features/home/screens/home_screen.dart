@@ -1,6 +1,8 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +11,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/job_browse_filters.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/repositories/notification_repository.dart';
 import '../../../core/services/skills_catalog_service.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/category_chip.dart';
 import '../../../core/widgets/job_browse_filter_sheet.dart';
 import '../../../core/widgets/job_card.dart';
@@ -124,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  List<_HomeSearchSuggestion> _composeSuggestions(AppState appState) {
+  List<_HomeSearchSuggestion> _composeSuggestions(List<JobModel> allJobs) {
     final raw = _searchController.text.trim();
     if (!_searchFocus.hasFocus || !_catalogSkillsReady || raw.isEmpty) {
       return [];
@@ -141,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    for (final j in appState.jobs) {
+    for (final j in allJobs) {
       if (out.length >= 14) break;
       final title = j.title.trim();
       if (title.toLowerCase().contains(q)) {
@@ -164,11 +168,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final appState = context.watch<AppState>();
-    final allJobs = appState.jobs.where((j) {
+    final jobsProvider = context.watch<JobsProvider>();
+    final allJobs = jobsProvider.jobs.where((j) {
       if (j.status == 'pending_review') return false;
       if (j.isUserPosted &&
           j.clientName == appState.currentUser.name &&
-          appState.shouldHideApprovedJobFromOwnerHome(j.id)) {
+          jobsProvider.shouldHideApprovedJobFromOwnerHome(j.id)) {
         return false;
       }
       return true;
@@ -184,88 +189,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        titleSpacing: 20,
-        title: Text(
-          'Prolance',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'My proposals',
-            onPressed: () =>
-                Navigator.pushNamed(context, '/my-proposals'),
-            icon: Icon(
-              Iconsax.briefcase,
-              color: scheme.onSurface,
-              size: 22,
-            ),
-          ),
-          IconButton(
-            tooltip: 'Favorites',
-            onPressed: () => Navigator.pushNamed(context, '/favorites'),
-            icon: Icon(Iconsax.heart, color: scheme.onSurface, size: 22),
-          ),
-          badges.Badge(
-            badgeContent: const SizedBox(
-              width: 6,
-              height: 6,
-            ),
-            badgeStyle: badges.BadgeStyle(
-              badgeColor: AppColors.error,
-              padding: const EdgeInsets.all(4),
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pushNamed(context, '/notifications'),
-              icon: Icon(
-                Iconsax.notification,
-                color: scheme.onSurface,
-                size: 24,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       body: Stack(
         clipBehavior: Clip.none,
         children: [
           ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.zero,
         children: [
-          const SizedBox(height: 8),
-          FadeInDown(
-            duration: const Duration(milliseconds: 500),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello, ${appState.currentUser.name.split(' ').first} 👋',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Find your next project',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+          // ─── Gradient Header ──────────────────────────────────────────
+          _HomeHeader(
+            userName: appState.currentUser.name,
+            unreadNotifications:
+                context.watch<NotificationRepository>().unreadCount,
+            onProposals: () => context.push('/my-proposals'),
+            onFavorites: () => context.push('/favorites'),
+            onNotifications: () => context.push('/notifications'),
           ),
-          const SizedBox(height: 24),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+
+          const SizedBox(height: 20),
           FadeInDown(
             duration: const Duration(milliseconds: 500),
             delay: const Duration(milliseconds: 100),
@@ -303,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Builder(
                   builder: (ctx) {
-                    final sug = _composeSuggestions(appState);
+                    final sug = _composeSuggestions(allJobs);
                     if (sug.isEmpty) return const SizedBox.shrink();
                     return Padding(
                       padding: const EdgeInsets.only(top: 6),
@@ -472,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                       onSaveToggle: (saved) {
-                        appState.toggleFavorite(recommendedJobs[index].id, saved);
+                        jobsProvider.toggleFavorite(recommendedJobs[index].id, saved);
                       },
                     ),
                   ),
@@ -509,13 +454,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                   onSaveToggle: (saved) {
-                    appState.toggleFavorite(recentJobs[index].id, saved);
+                    jobsProvider.toggleFavorite(recentJobs[index].id, saved);
                   },
                 ),
               ),
             );
           }),
           const SizedBox(height: 32),
+        ], // Column children
+            ), // Column
+          ), // Padding
         ],
           ),
           if (appState.showProposalSentCelebration)
@@ -607,6 +555,173 @@ class _HomeSearchSuggestion {
   final bool isSkill;
 }
 
+// ---------------------------------------------------------------------------
+// Gradient header with greeting + quick actions
+// ---------------------------------------------------------------------------
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({
+    required this.userName,
+    required this.onProposals,
+    required this.onFavorites,
+    required this.onNotifications,
+    this.unreadNotifications = 0,
+  });
+
+  final String userName;
+  final VoidCallback onProposals;
+  final VoidCallback onFavorites;
+  final VoidCallback onNotifications;
+  final int unreadNotifications;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstName = userName.split(' ').first;
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = scheme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF1E1A3A), const Color(0xFF12101E)]
+              : [
+                  AppColors.primary,
+                  const Color(0xFF4F46E5),
+                  const Color(0xFF7C3AED),
+                ],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Merhaba, $firstName 👋',
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
+                          ),
+                        ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
+                        Text(
+                          'Yeni projenizi bulun',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.75),
+                          ),
+                        ).animate().fadeIn(delay: 100.ms, duration: 500.ms),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onProposals,
+                    icon: const Icon(Iconsax.briefcase,
+                        color: Colors.white, size: 22),
+                    tooltip: 'Tekliflerim',
+                  ),
+                  IconButton(
+                    onPressed: onFavorites,
+                    icon: const Icon(Iconsax.heart,
+                        color: Colors.white, size: 22),
+                    tooltip: 'Favoriler',
+                  ),
+                  badges.Badge(
+                    showBadge: unreadNotifications > 0,
+                    badgeContent: unreadNotifications > 9
+                        ? const Text('9+',
+                            style: TextStyle(
+                                color: Colors.white, fontSize: 9))
+                        : Text(
+                            '$unreadNotifications',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 9),
+                          ),
+                    badgeStyle: const badges.BadgeStyle(
+                      badgeColor: Color(0xFFFF5252),
+                      padding: EdgeInsets.all(4),
+                    ),
+                    child: IconButton(
+                      onPressed: onNotifications,
+                      icon: const Icon(Iconsax.notification,
+                          color: Colors.white, size: 22),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Stats strip
+            _StatsStrip()
+                .animate()
+                .fadeIn(delay: 200.ms, duration: 500.ms)
+                .slideY(begin: 0.3, end: 0),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+class _StatsStrip extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final stats = [
+      (label: '5.200+', sub: 'Freelancer'),
+      (label: '\$2.4M+', sub: 'Ödeme'),
+      (label: '98%', sub: 'Memnuniyet'),
+      (label: '12K+', sub: 'Tamamlanan'),
+    ];
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: stats.map((s) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                s.label,
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                s.sub,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
