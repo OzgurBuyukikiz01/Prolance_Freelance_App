@@ -19,7 +19,7 @@ class FavoritesScreen extends StatelessWidget {
       ),
       body: favorites.isEmpty
           ? ProlanceEmptyState.favorites(
-              onBrowse: () => context.go('/jobs'),
+              onBrowse: () => context.go('/home'),
             )
           : ListView.separated(
               padding: const EdgeInsets.all(16),

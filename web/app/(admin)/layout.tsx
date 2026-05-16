@@ -13,6 +13,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/admin/login');
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    await supabase.auth.signOut();
+    redirect(
+      `/admin/login?error=${encodeURIComponent('Bu panele erişim yetkiniz yok.')}`,
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
       <Sidebar />

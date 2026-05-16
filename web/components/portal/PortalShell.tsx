@@ -7,22 +7,38 @@ import {
   Bell,
   Briefcase,
   Calendar,
+  HeadphonesIcon,
   Home,
   MessageCircle,
+  PlusCircle,
   User,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { href: '/portal', label: 'Ana Sayfa', icon: Home, exact: true },
   { href: '/portal/jobs', label: 'İş İlanları', icon: Briefcase, exact: false },
   { href: '/portal/calendar', label: 'Takvim', icon: Calendar, exact: false },
   { href: '/portal/messages', label: 'Mesajlar', icon: MessageCircle, exact: false },
+  { href: '/portal/support', label: 'Destek', icon: HeadphonesIcon, exact: false },
   { href: '/portal/profile', label: 'Profil', icon: User, exact: false },
-  { href: '/portal/notifications', label: 'Bildirimler', icon: Bell, exact: false, badgeKey: 'notifications' as const },
+  {
+    href: '/portal/notifications',
+    label: 'Bildirimler',
+    icon: Bell,
+    exact: false,
+    badgeKey: 'notifications' as const,
+  },
 ] as const;
+
+const CLIENT_NAV_ITEM = {
+  href: '/portal/jobs/new',
+  label: 'Yeni İlan',
+  icon: PlusCircle,
+  exact: true,
+} as const;
 
 function isActive(pathname: string, href: string, exact: boolean) {
   if (exact) return pathname === href;
@@ -34,16 +50,26 @@ type PortalShellProps = {
   userName: string;
   avatarUrl?: string | null;
   unreadNotificationCount?: number;
+  userRole?: string | null;
 };
+
+function buildNavItems(userRole?: string | null) {
+  if (userRole === 'CLIENT') {
+    return [BASE_NAV_ITEMS[0], BASE_NAV_ITEMS[1], CLIENT_NAV_ITEM, ...BASE_NAV_ITEMS.slice(2)];
+  }
+  return [...BASE_NAV_ITEMS];
+}
 
 export function PortalShell({
   children,
   userName,
   avatarUrl,
   unreadNotificationCount = 0,
+  userRole,
 }: PortalShellProps) {
   const pathname = usePathname();
   const initial = userName.charAt(0).toUpperCase();
+  const navItems = buildNavItems(userRole);
 
   return (
     <motion.div className="min-h-screen bg-hero-gradient">
@@ -70,7 +96,7 @@ export function PortalShell({
             <span className="font-bold text-slate-900">Prolance</span>
           </Link>
           <nav className="flex flex-col gap-1 flex-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active = isActive(pathname, item.href, item.exact);
               const Icon = item.icon;
               const showBadge =
@@ -153,7 +179,7 @@ export function PortalShell({
 
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200">
         <div className="flex items-stretch justify-around h-16 max-w-lg mx-auto px-1 pb-[env(safe-area-inset-bottom)]">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = isActive(pathname, item.href, item.exact);
             const Icon = item.icon;
             const showBadge =

@@ -150,3 +150,56 @@ export async function rejectProposal(formData: FormData) {
   revalidatePath(`/portal/jobs/${jobId}`);
   redirect(`/portal/jobs/${jobId}`);
 }
+
+export async function openEscrowDispute(formData: FormData) {
+  const escrowId = formData.get('escrow_id') as string;
+  const jobId = formData.get('job_id') as string;
+  const reason = (formData.get('reason') as string)?.trim() ?? '';
+
+  if (!escrowId || !jobId) {
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Escrow kaydı bulunamadı.')}`);
+  }
+  if (reason.length < 10) {
+    redirect(
+      `/portal/jobs/${jobId}?error=${encodeURIComponent('Anlaşmazlık nedeni en az 10 karakter olmalı.')}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: escrow } = await supabase
+    .from('escrow_transactions')
+    .select('employer_id, freelancer_id, status')
+    .eq('id', escrowId)
+    .single();
+
+  if (
+    !escrow ||
+    (escrow.employer_id !== user.id &&
+      escrow.freelancer_id !== user.id)
+  ) {
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Yetkisiz işlem.')}`);
+  }
+
+  const { error: invokeError } = await supabase.functions.invoke('escrow', {
+    body: { op: 'dispute', escrowId, reason },
+  });
+
+  if (invokeError) {
+    const { error: updateError } = await supabase
+      .from('escrow_transactions')
+      .update({ status: 'DISPUTED', dispute_reason: reason })
+      .eq('id', escrowId);
+
+    if (updateError) {
+      redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(updateError.message)}`);
+    }
+  }
+
+  revalidatePath(`/portal/jobs/${jobId}`);
+  redirect(`/portal/jobs/${jobId}?dispute=1`);
+}

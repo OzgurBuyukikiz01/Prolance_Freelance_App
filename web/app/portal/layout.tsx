@@ -14,7 +14,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, avatar_url')
+    .select('full_name, avatar_url, role')
     .eq('id', user.id)
     .single();
 
@@ -31,6 +31,7 @@ export default async function PortalLayout({ children }: { children: React.React
       userName={userName}
       avatarUrl={profile?.avatar_url || null}
       unreadNotificationCount={unreadNotificationCount ?? 0}
+      userRole={profile?.role ?? null}
     >
       {children}
     </PortalShell>

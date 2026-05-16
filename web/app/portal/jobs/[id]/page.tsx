@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { EscrowDisputeButton } from '@/components/portal/EscrowDisputeButton';
 import { ProposalForm } from '@/components/portal/ProposalForm';
 import { MagicCard } from '@/components/ui/magic-card';
 import { acceptProposal, rejectProposal } from '@/app/portal/jobs/[id]/actions';
 import { createClient } from '@/lib/supabase/server';
+import { getEscrowStatusMeta } from '@/lib/portal/escrow';
 import {
   PROPOSAL_STATUS_LABELS,
   formatBudget,
@@ -13,7 +15,14 @@ import {
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; submitted?: string; accepted?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    submitted?: string;
+    accepted?: string;
+    dispute?: string;
+    reviewed?: string;
+    posted?: string;
+  }>;
 };
 
 export default async function PortalJobDetailPage({ params, searchParams }: PageProps) {
@@ -94,6 +103,38 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
   const showCalendarLink =
     (isOwner && (acceptedCount ?? 0) > 0) || existingProposal?.status === 'accepted';
 
+  const { data: escrowRow } = await supabase
+    .from('escrow_transactions')
+    .select('id, status, amount_cents, currency, dispute_reason, updated_at')
+    .eq('job_id', id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const escrowMeta = escrowRow ? getEscrowStatusMeta(escrowRow.status) : null;
+  const escrowAmount =
+    escrowRow != null
+      ? `₺${(Number(escrowRow.amount_cents) / 100).toLocaleString('tr-TR', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })}`
+      : null;
+
+  const canLeaveReview =
+    job.status === 'completed' &&
+    (isOwner || existingProposal?.status === 'accepted');
+
+  let existingReviewId: string | null = null;
+  if (canLeaveReview) {
+    const { data: reviewRow } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('job_id', id)
+      .eq('reviewer_id', user.id)
+      .maybeSingle();
+    existingReviewId = reviewRow?.id ?? null;
+  }
+
   const skills = parseSkills(job.skills);
 
   return (
@@ -123,9 +164,16 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
         </div>
       )}
       {query.accepted === '1' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Teklif kabul edildi ve escrow kaydı oluşturuldu.
-        </div>
+        <SuccessBanner message="Teklif kabul edildi ve escrow kaydı oluşturuldu." />
+      )}
+      {query.dispute === '1' && (
+        <SuccessBanner message="Anlaşmazlık talebiniz alındı." />
+      )}
+      {query.reviewed === '1' && (
+        <SuccessBanner message="Değerlendirmeniz kaydedildi. Teşekkürler!" />
+      )}
+      {query.posted === '1' && (
+        <SuccessBanner message="İlanınız incelemeye gönderildi." />
       )}
 
       <MagicCard innerClassName="p-6">
@@ -155,6 +203,42 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
         )}
         <p className="text-xs text-slate-400 mt-4">{job.proposal_count} teklif · {job.duration}</p>
       </MagicCard>
+
+      {escrowRow && escrowMeta && (
+        <MagicCard innerClassName="p-6">
+          <h2 className="text-lg font-bold text-slate-900 mb-2">Escrow</h2>
+          <EscrowSummary
+            amount={escrowAmount ?? ''}
+            label={escrowMeta.label}
+            className={escrowMeta.className}
+          />
+          {escrowRow.dispute_reason ? (
+            <p className="text-sm text-slate-600 mt-3 whitespace-pre-wrap">
+              <span className="font-medium text-slate-700">Anlaşmazlık notu: </span>
+              {escrowRow.dispute_reason}
+            </p>
+          ) : null}
+          {escrowMeta.canDispute ? (
+            <EscrowDisputeButton escrowId={escrowRow.id} jobId={id} />
+          ) : null}
+        </MagicCard>
+      )}
+
+      {canLeaveReview && (
+        <MagicCard innerClassName="p-6">
+          <h2 className="text-lg font-bold text-slate-900 mb-2">Değerlendirme</h2>
+          {existingReviewId ? (
+            <p className="text-sm text-slate-600">Bu iş için değerlendirme yaptınız.</p>
+          ) : (
+            <Link
+              href={`/portal/reviews/new?jobId=${id}`}
+              className="inline-flex text-sm font-semibold px-4 py-2 rounded-xl bg-brand hover:bg-brand-dark text-white"
+            >
+              Değerlendirme yaz
+            </Link>
+          )}
+        </MagicCard>
+      )}
 
       {isOwner && (
         <MagicCard innerClassName="p-6">
@@ -241,6 +325,33 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
           )}
         </MagicCard>
       )}
+    </div>
+  );
+}
+
+function SuccessBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+      {message}
+    </div>
+  );
+}
+
+function EscrowSummary({
+  amount,
+  label,
+  className,
+}: {
+  amount: string;
+  label: string;
+  className: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <p className="text-sm font-semibold text-slate-900">{amount}</p>
+      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${className}`}>
+        {label}
+      </span>
     </div>
   );
 }

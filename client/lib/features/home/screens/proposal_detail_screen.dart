@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -237,6 +238,24 @@ class ProposalDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _ProgressTimeline(status: current.status),
+          if (current.status == SubmittedProposalStatus.accepted) ...[
+            const SizedBox(height: AppConstants.paddingMd),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  final title = Uri.encodeComponent(
+                    job?.title ?? current.jobTitle,
+                  );
+                  context.push(
+                    '/schedule?jobId=${current.jobId}&title=$title',
+                  );
+                },
+                icon: const Icon(Iconsax.calendar),
+                label: const Text('Proje takvimi'),
+              ),
+            ),
+          ],
           const SizedBox(height: AppConstants.paddingXl),
           if (active)
             SizedBox(

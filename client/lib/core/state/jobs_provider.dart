@@ -20,7 +20,6 @@ import '../models/job_model.dart';
 
 import '../repositories/notification_repository.dart';
 
-import '../repositories/job_remote_repository.dart';
 
 import '../repositories/supabase_job_repository.dart';
 
@@ -193,16 +192,6 @@ class JobsProvider extends ChangeNotifier {
     }
 
 
-
-    final remoteJobs = await JobRemoteRepository.tryFetchAll();
-
-    if (remoteJobs != null && remoteJobs.isNotEmpty) {
-
-      _jobs = remoteJobs;
-
-      await _persistJobs();
-
-    }
 
   }
 
@@ -423,8 +412,6 @@ class JobsProvider extends ChangeNotifier {
     } else {
 
       _jobs.insert(0, merged);
-
-      await JobRemoteRepository.tryCreate(merged);
 
       if (merged.isUserPosted && merged.status == 'pending_review') {
 

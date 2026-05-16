@@ -50,6 +50,21 @@ export async function middleware(request: NextRequest) {
       url.pathname = ADMIN_LOGIN;
       return NextResponse.redirect(url);
     }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      const url = request.nextUrl.clone();
+      url.pathname = ADMIN_LOGIN;
+      url.searchParams.set('error', 'Bu panele erişim yetkiniz yok.');
+      await supabase.auth.signOut();
+      return NextResponse.redirect(url);
+    }
+
     return supabaseResponse;
   }
 

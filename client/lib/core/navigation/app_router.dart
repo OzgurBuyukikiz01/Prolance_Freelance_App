@@ -13,6 +13,7 @@ import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/messages/screens/video_call_screen.dart';
 import '../../features/post_job/screens/post_job_screen.dart';
+import '../../features/schedule/schedule_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import 'routed_screens.dart';
@@ -124,6 +125,23 @@ class AppRouter {
             jobId: state.pathParameters['jobId']!,
             query: state.uri.queryParameters,
           ),
+        ),
+        GoRoute(
+          path: '/schedule',
+          builder: (context, state) {
+            final jobId = state.uri.queryParameters['jobId'];
+            if (jobId == null || jobId.isEmpty) {
+              return const Scaffold(
+                body: Center(child: Text('Job not found')),
+              );
+            }
+            final rawTitle = state.uri.queryParameters['title'];
+            final jobTitle =
+                rawTitle != null && rawTitle.isNotEmpty
+                    ? Uri.decodeComponent(rawTitle)
+                    : null;
+            return RoutedScheduleScreen(jobId: jobId, jobTitle: jobTitle);
+          },
         ),
         GoRoute(
           path: '/edit-profile',

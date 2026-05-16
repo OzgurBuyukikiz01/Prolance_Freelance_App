@@ -106,6 +106,30 @@ class SupabaseJobRepository {
     return _rowToJob(Map<String, dynamic>.from(row as Map), saved.toSet());
   }
 
+  /// Jobs the current user saved via `job_saves`.
+  static Future<List<JobModel>> getSaved() async {
+    final c = _c;
+    if (c == null) return [];
+    final uid = c.auth.currentUser?.id;
+    if (uid == null) return [];
+    final savedIds = (await _savedJobIds(uid)).toSet();
+    if (savedIds.isEmpty) return [];
+
+    final rows = await c
+        .from('jobs')
+        .select()
+        .inFilter('id', savedIds.toList())
+        .order('posted_date', ascending: false);
+
+    return (rows as List<dynamic>)
+        .map((e) => _rowToJob(e as Map<String, dynamic>, savedIds))
+        .toList();
+  }
+
+  static Future<void> saveJob(String jobId) => setSaved(jobId, true);
+
+  static Future<void> unsaveJob(String jobId) => setSaved(jobId, false);
+
   static Future<void> setSaved(String jobId, bool saved) async {
     final c = _c;
     final uid = c?.auth.currentUser?.id;

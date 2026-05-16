@@ -116,6 +116,39 @@ make deploy-supabase
 
 Dashboard: https://supabase.com/dashboard/project/cgxzpdhcaxiopdylwstr
 
+### Push notifications (`send-push`)
+
+New rows in `public.notifications` can trigger the `send-push` Edge Function via `supabase/migrations/20250516000014_push_trigger.sql` (pg_net HTTP POST).
+
+Configure **one** of these on the hosted Postgres database (Dashboard → SQL, or migration). **Do not commit secrets to git.**
+
+**Option A — `app.settings` (used by the trigger function)**
+
+```sql
+alter database postgres set app.settings.supabase_url = 'https://cgxzpdhcaxiopdylwstr.supabase.co';
+alter database postgres set app.settings.service_role_key = '<SERVICE_ROLE_JWT>';
+-- optional alias read by the trigger:
+alter database postgres set app.settings.api_external_url = 'https://cgxzpdhcaxiopdylwstr.supabase.co';
+```
+
+Replace `<SERVICE_ROLE_JWT>` with the project **service role** key from Supabase Dashboard → Project Settings → API. Rotate if exposed.
+
+**Option B — Database Webhook (no DB settings)**
+
+1. Dashboard → Database → Webhooks → Create hook on `public.notifications` **INSERT**.
+2. URL: `https://cgxzpdhcaxiopdylwstr.supabase.co/functions/v1/send-push`
+3. HTTP headers: `Authorization: Bearer <SERVICE_ROLE_JWT>`, `Content-Type: application/json`
+4. Payload: include `record` fields the function expects (see `supabase/functions/send-push`).
+
+Edge Function secrets (Dashboard → Edge Functions → `send-push` → Secrets): set any keys documented in `docs/env.example`. Without `service_role` / URL configuration, inserts still succeed but push delivery may no-op.
+
+Apply new SQL migrations after pull:
+
+```bash
+supabase db push
+# or run files under supabase/migrations/ in order via Dashboard SQL editor
+```
+
 ## Mobile stores
 
 From `client/`:
