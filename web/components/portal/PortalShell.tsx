@@ -6,18 +6,22 @@ import { motion } from 'framer-motion';
 import {
   Bell,
   Briefcase,
+  Calendar,
   Home,
   MessageCircle,
   User,
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/portal', label: 'Ana Sayfa', icon: Home, exact: true },
   { href: '/portal/jobs', label: 'İş İlanları', icon: Briefcase, exact: false },
+  { href: '/portal/calendar', label: 'Takvim', icon: Calendar, exact: false },
   { href: '/portal/messages', label: 'Mesajlar', icon: MessageCircle, exact: false },
   { href: '/portal/profile', label: 'Profil', icon: User, exact: false },
-  { href: '/portal/notifications', label: 'Bildirimler', icon: Bell, exact: false },
+  { href: '/portal/notifications', label: 'Bildirimler', icon: Bell, exact: false, badgeKey: 'notifications' as const },
 ] as const;
 
 function isActive(pathname: string, href: string, exact: boolean) {
@@ -28,10 +32,18 @@ function isActive(pathname: string, href: string, exact: boolean) {
 type PortalShellProps = {
   children: React.ReactNode;
   userName: string;
+  avatarUrl?: string | null;
+  unreadNotificationCount?: number;
 };
 
-export function PortalShell({ children, userName }: PortalShellProps) {
+export function PortalShell({
+  children,
+  userName,
+  avatarUrl,
+  unreadNotificationCount = 0,
+}: PortalShellProps) {
   const pathname = usePathname();
+  const initial = userName.charAt(0).toUpperCase();
 
   return (
     <motion.div className="min-h-screen bg-hero-gradient">
@@ -61,6 +73,10 @@ export function PortalShell({ children, userName }: PortalShellProps) {
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href, item.exact);
               const Icon = item.icon;
+              const showBadge =
+                'badgeKey' in item &&
+                item.badgeKey === 'notifications' &&
+                unreadNotificationCount > 0;
               return (
                 <Link
                   key={item.href}
@@ -72,7 +88,17 @@ export function PortalShell({ children, userName }: PortalShellProps) {
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                   )}
                 >
-                  <Icon className="w-5 h-5 shrink-0" />
+                  <span className="relative shrink-0">
+                    <Icon className="w-5 h-5" />
+                    {showBadge && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1.5 -right-2 h-4 min-w-4 px-1 text-[10px] border-0"
+                      >
+                        {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                      </Badge>
+                    )}
+                  </span>
                   {item.label}
                 </Link>
               );
@@ -96,7 +122,27 @@ export function PortalShell({ children, userName }: PortalShellProps) {
               </span>
               Prolance
             </Link>
-            <span className="text-xs text-slate-500 truncate max-w-[140px]">{userName}</span>
+            <motion.div className="flex items-center gap-2">
+              <Link href="/portal/notifications" className="relative p-2 text-slate-500">
+                <Bell className="w-5 h-5" />
+                {unreadNotificationCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 text-[10px] border-0"
+                  >
+                    {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                  </Badge>
+                )}
+              </Link>
+              <Link href="/portal/profile" className="flex items-center gap-2">
+                <Avatar size="sm">
+                  {avatarUrl ? <AvatarImage src={avatarUrl} alt={userName} /> : null}
+                  <AvatarFallback className="bg-brand text-[10px] font-bold text-white">
+                    {initial}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            </motion.div>
           </header>
 
           <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8 max-w-3xl lg:max-w-4xl w-full mx-auto">
@@ -110,6 +156,10 @@ export function PortalShell({ children, userName }: PortalShellProps) {
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href, item.exact);
             const Icon = item.icon;
+            const showBadge =
+              'badgeKey' in item &&
+              item.badgeKey === 'notifications' &&
+              unreadNotificationCount > 0;
             return (
               <Link
                 key={item.href}
@@ -119,7 +169,12 @@ export function PortalShell({ children, userName }: PortalShellProps) {
                   active ? 'text-brand' : 'text-slate-400',
                 )}
               >
-                <Icon className={cn('w-5 h-5', active && 'stroke-[2.5]')} />
+                <span className="relative">
+                  <Icon className={cn('w-5 h-5', active && 'stroke-[2.5]')} />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+                  )}
+                </span>
                 <span className="text-[10px] font-medium truncate w-full text-center">
                   {item.label.split(' ')[0]}
                 </span>

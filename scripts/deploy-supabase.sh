@@ -18,6 +18,9 @@ supabase link --project-ref "$PROJECT_REF"
 supabase db push
 supabase functions deploy agora-token
 supabase functions deploy send-push
+if [[ -d supabase/functions/escrow ]]; then
+  supabase functions deploy escrow
+fi
 
 echo ""
 echo "Deploy complete."

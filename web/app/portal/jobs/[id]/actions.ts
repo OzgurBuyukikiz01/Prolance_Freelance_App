@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { buildMilestoneRows } from '@/lib/portal/schedule-milestones';
 
 export async function submitProposal(formData: FormData) {
   const jobId = formData.get('job_id') as string;
@@ -67,6 +68,16 @@ export async function acceptProposal(formData: FormData) {
     redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Yetkisiz işlem.')}`);
   }
 
+  const { data: proposal, error: proposalError } = await supabase
+    .from('proposals')
+    .select('delivery_days')
+    .eq('id', proposalId)
+    .single();
+
+  if (proposalError || !proposal) {
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(proposalError?.message ?? 'Teklif bulunamadı.')}`);
+  }
+
   const { error: acceptError } = await supabase
     .from('proposals')
     .update({ status: 'accepted' })
@@ -91,7 +102,17 @@ export async function acceptProposal(formData: FormData) {
     status: 'HELD',
   });
 
+  const milestones = buildMilestoneRows(
+    jobId,
+    proposalId,
+    proposal.delivery_days,
+    freelancerId,
+    user.id,
+  );
+  await supabase.from('job_schedule_items').insert(milestones);
+
   revalidatePath(`/portal/jobs/${jobId}`);
+  revalidatePath('/portal/calendar');
   revalidatePath('/portal/proposals');
   redirect(`/portal/jobs/${jobId}?accepted=1`);
 }

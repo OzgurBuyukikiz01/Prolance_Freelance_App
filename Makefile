@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help dev dev-web dev-web-app build-client build-web build-vercel deploy-web deploy-supabase setup-env ci
+.PHONY: help dev dev-web dev-web-app build-client build-web build-vercel deploy-web deploy-supabase deploy-check deploy-release setup-env ci doctor
 
 SUPABASE_URL := https://cgxzpdhcaxiopdylwstr.supabase.co
 SUPABASE_ANON_KEY := eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNneHpwZGhjYXhpb3BkeWx3c3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDIzNzksImV4cCI6MjA5NDUxODM3OX0.lNOk6lL3CmMFh8gXoA6hrnW1QcWxpaz2sTTKVOY83fg
@@ -34,6 +34,12 @@ build-vercel: ## Build Flutter web + Next.js for Vercel
 deploy-web: ## Deploy web to Vercel production
 	cd web && vercel --prod
 
+deploy-check: ## Preflight: GitHub + Vercel (Youmiko) + Supabase (Ozgurozan) accounts
+	bash scripts/deploy-release.sh --check-only
+
+deploy-release: ## Full release: git push + Supabase + Vercel (scripts/deploy.local.env)
+	bash scripts/deploy-release.sh --full
+
 deploy-supabase: ## Deploy migrations and Edge Functions to Supabase
 	bash scripts/deploy-supabase.sh cgxzpdhcaxiopdylwstr
 
@@ -43,6 +49,15 @@ seed-cloud: ## Hosted demo data (run supabase/seed-cloud.sql in SQL Editor if em
 setup-env: ## Copy .env.example → .env.local for web
 	cp web/.env.example web/.env.local
 
-ci: ## Run Flutter analyze/tests + web lint
+doctor: ## Full health check: Flutter + web lint/build/test + Supabase deno
 	cd client && flutter pub get && flutter analyze && flutter test
-	cd web && npm ci && npm run lint
+	cd web && npm ci && npm run lint && npm run build && npm run test
+	@for f in supabase/functions/*/index.ts; do deno check $$f; done
+	@deno test --allow-env supabase/functions/escrow/index_test.ts
+	@bash scripts/check-migration-smoke.sh
+
+ci: ## CI parity: Flutter + web lint/build/test + Supabase deno check
+	cd client && flutter pub get && flutter analyze && flutter test
+	cd web && npm ci && npm run lint && npm run build && npm run test
+	@for f in supabase/functions/*/index.ts; do deno check $$f; done
+	@deno test --allow-env supabase/functions/escrow/index_test.ts

@@ -85,13 +85,32 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
           .maybeSingle()
       : { data: null };
 
+  const { count: acceptedCount } = await supabase
+    .from('proposals')
+    .select('*', { count: 'exact', head: true })
+    .eq('job_id', id)
+    .eq('status', 'accepted');
+
+  const showCalendarLink =
+    (isOwner && (acceptedCount ?? 0) > 0) || existingProposal?.status === 'accepted';
+
   const skills = parseSkills(job.skills);
 
   return (
     <div className="space-y-6">
-      <Link href="/portal/jobs" className="text-sm font-medium text-brand hover:text-brand-dark">
-        ← İlanlara dön
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Link href="/portal/jobs" className="text-sm font-medium text-brand hover:text-brand-dark">
+          ← İlanlara dön
+        </Link>
+        {showCalendarLink && (
+          <Link
+            href="/portal/calendar"
+            className="text-sm font-semibold text-brand hover:text-brand-dark"
+          >
+            Takvime git →
+          </Link>
+        )}
+      </div>
 
       {query.error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

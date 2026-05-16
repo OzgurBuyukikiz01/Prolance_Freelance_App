@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { unknownOpResponse, validateOp } from './validate.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -28,21 +29,20 @@ serve(async (req) => {
     const escrowId = body.escrowId as string;
     const reason = (body.reason as string) ?? '';
 
+    if (!validateOp(op)) {
+      return unknownOpResponse(cors);
+    }
+
     if (op === 'release') {
       await supabase
         .from('escrow_transactions')
         .update({ status: 'RELEASED' })
         .eq('id', escrowId);
-    } else if (op === 'dispute') {
+    } else {
       await supabase
         .from('escrow_transactions')
         .update({ status: 'DISPUTED', dispute_reason: reason })
         .eq('id', escrowId);
-    } else {
-      return new Response(JSON.stringify({ error: 'unknown op' }), {
-        status: 400,
-        headers: { ...cors, 'Content-Type': 'application/json' },
-      });
     }
 
     return new Response(JSON.stringify({ ok: true }), {

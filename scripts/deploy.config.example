@@ -1,0 +1,31 @@
+# Copy to deploy.local.env and adjust if your logins differ.
+#   cp scripts/deploy.config.example scripts/deploy.local.env
+#
+# Accounts (this repo is often split across three logins):
+#   GitHub  → OzgurOzana (or collaborator on OzgurBuyukikiz01/Prolance_Freelance_App)
+#   Vercel  → Youmiko team / user
+#   Supabase → Ozgurozan project
+
+# --- GitHub ---
+GITHUB_REMOTE_URL=https://github.com/OzgurBuyukikiz01/Prolance_Freelance_App.git
+GITHUB_BRANCH=main
+# Comma-separated substrings in `git remote get-url origin` (owner slug)
+GITHUB_OWNER_EXPECTED=OzgurBuyukikiz01,OzgurOzana,Mikailulsy
+
+# --- Vercel (project web) ---
+VERCEL_PROJECT_ID=prj_kswDITzlPhTdTVp5yD0HmgUMRBg1
+VERCEL_ORG_ID=team_zLnyqg9BX8tLP4Fmi05yNc2i
+VERCEL_PROJECT_NAME=web
+# Comma-separated substrings from `vercel whoami` (e.g. youmiko team login)
+VERCEL_ACCOUNT_EXPECTED=youmiko,mikailulsy
+PRODUCTION_URL=https://web-silk-psi-73ktdeeavc.vercel.app
+
+# --- Supabase (Ozgurozan) ---
+SUPABASE_PROJECT_REF=cgxzpdhcaxiopdylwstr
+SUPABASE_URL=https://cgxzpdhcaxiopdylwstr.supabase.co
+# Optional: substring in `supabase projects list` or dashboard login hint
+SUPABASE_ACCOUNT_HINT=ozgurozan
+
+# --- Build (optional full stack with Flutter /app) ---
+# Set to 1 to run scripts/build-vercel.sh before Vercel deploy
+INCLUDE_FLUTTER_APP=0

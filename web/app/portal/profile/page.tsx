@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { ProfileForm } from '@/components/portal/ProfileForm';
 import { MagicCard } from '@/components/ui/magic-card';
+import { ModalPricing } from '@/components/ui/modal-pricing';
 import { createClient } from '@/lib/supabase/server';
 
 type PageProps = {
@@ -32,9 +33,12 @@ export default async function PortalProfilePage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-extrabold text-slate-900">Profil</h1>
-        <p className="text-sm text-slate-500 mt-1">Bilgilerinizi güncelleyin</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900">Profil</h1>
+          <p className="text-sm text-slate-500 mt-1">Bilgilerinizi güncelleyin</p>
+        </div>
+        <ModalPricing triggerClassName="shrink-0" />
       </div>
 
       {query.error && (

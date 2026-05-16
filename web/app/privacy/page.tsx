@@ -1,11 +1,15 @@
 import Link from 'next/link';
+import LegalFooterNav from '@/components/marketing/LegalFooterNav';
+import LegalSections, { type LegalSection } from '@/components/marketing/LegalSections';
+import MarketingPageShell from '@/components/marketing/MarketingPageShell';
+import MarketingSiteChrome from '@/components/marketing/MarketingSiteChrome';
 
 export const metadata = {
   title: 'Gizlilik Politikası | Prolance',
   description: 'Prolance olarak kişisel verilerinizi nasıl işlediğimizi öğrenin.',
 };
 
-const sections = [
+const sections: LegalSection[] = [
   {
     id: 'collected',
     title: '1. Toplanan Veriler',
@@ -62,6 +66,7 @@ const sections = [
       '• Zorunlu çerezler: Kimlik doğrulama ve güvenlik (oturumu kapatmadan kaldırılamaz)',
       '• Analitik çerezler: Anonim trafik istatistikleri (opsiyonel; tarayıcınızdan devre dışı bırakabilirsiniz)',
       '• Pazarlama çerezleri: Kullanılmamaktadır',
+      'Detaylı bilgi için Çerez Politikası sayfamıza bakınız.',
     ],
   },
   {
@@ -78,39 +83,32 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 py-20 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-indigo-400 font-semibold text-sm tracking-widest uppercase mb-3">
-            Hukuki Bilgi
-          </p>
-          <h1 className="text-4xl font-extrabold text-white mb-4">
-            Gizlilik Politikası
-          </h1>
-          <p className="text-slate-300 text-lg">
-            Son güncelleme:{' '}
-            <span className="text-indigo-300 font-medium">16 Mayıs 2026</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-14">
-        <div className="prose prose-slate max-w-none">
+    <MarketingSiteChrome>
+    <MarketingPageShell
+      eyebrow="Hukuki Bilgi"
+      title="Gizlilik Politikası"
+      subtitle={
+        <>
+          Son güncelleme:{' '}
+          <span className="text-indigo-300 font-medium">16 Mayıs 2026</span>
+        </>
+      }
+      footerNav={<LegalFooterNav current="privacy" />}
+    >
+      <LegalSections
+        sections={sections}
+        intro={
           <p className="text-slate-500 mb-10 text-base leading-relaxed">
-            Prolance olarak kişisel gizliliğinize büyük önem veriyoruz. Bu
-            politika, hangi verileri topladığımızı, nasıl kullandığımızı ve
-            haklarınızı açıklamaktadır.
+            Prolance olarak kişisel gizliliğinize büyük önem veriyoruz. Bu politika,
+            hangi verileri topladığımızı, nasıl kullandığımızı ve haklarınızı
+            açıklamaktadır.
           </p>
-
-          {/* Security highlight */}
+        }
+        highlight={
           <div className="mb-10 p-5 bg-green-50 border border-green-100 rounded-2xl flex gap-4">
             <span className="text-2xl">🔒</span>
             <div>
-              <p className="font-semibold text-green-800 mb-1">
-                Verileriniz güvende
-              </p>
+              <p className="font-semibold text-green-800 mb-1">Verileriniz güvende</p>
               <p className="text-green-700 text-sm leading-relaxed">
                 Tüm iletişimler TLS 1.3 üzerinden şifrelenir. Veritabanı verileri
                 AES-256 ile korunur. Erişim kontrolü Supabase Row Level Security
@@ -118,66 +116,38 @@ export default function PrivacyPage() {
               </p>
             </div>
           </div>
-
-          <nav className="mb-12 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-            <p className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">
-              İçindekiler
-            </p>
-            <ul className="space-y-2">
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <a
-                    href={`#${s.id}`}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors"
-                  >
-                    {s.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {sections.map((s) => (
-            <section key={s.id} id={s.id} className="mb-12 scroll-mt-8">
-              <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
-                {s.title}
-              </h2>
-              <div className="space-y-4">
-                {s.body.map((para, i) => (
-                  <p key={i} className="text-slate-600 leading-relaxed text-[15px]">
-                    {para}
-                  </p>
-                ))}
-              </div>
-            </section>
-          ))}
-
-          <div className="mt-16 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
-            <p className="text-indigo-700 font-medium mb-2">
-              Gizlilik ile ilgili sorularınız mı var?
-            </p>
-            <p className="text-slate-600 text-sm">
-              Bize{' '}
-              <a
-                href="mailto:privacy@prolance.app"
-                className="text-indigo-600 underline hover:text-indigo-800"
+        }
+        footer={
+          <>
+            <p className="text-slate-600 text-sm mb-6 -mt-4">
+              Çerez kullanımı hakkında ayrıntılı bilgi için{' '}
+              <Link
+                href="/cookies"
+                className="text-indigo-600 underline hover:text-indigo-800 font-medium"
               >
-                privacy@prolance.app
-              </a>{' '}
-              adresinden ulaşabilirsiniz.
+                Çerez Politikası
+              </Link>{' '}
+              sayfamızı ziyaret edin.
             </p>
-          </div>
-        </div>
-
-        <div className="mt-12 flex items-center justify-between text-sm text-slate-400 border-t border-slate-100 pt-8">
-          <Link href="/" className="hover:text-indigo-600 transition-colors">
-            ← Ana Sayfaya Dön
-          </Link>
-          <Link href="/terms" className="hover:text-indigo-600 transition-colors">
-            Kullanım Koşulları →
-          </Link>
-        </div>
-      </div>
-    </main>
+            <div className="mt-16 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
+              <p className="text-indigo-700 font-medium mb-2">
+                Gizlilik ile ilgili sorularınız mı var?
+              </p>
+              <p className="text-slate-600 text-sm">
+                Bize{' '}
+                <a
+                  href="mailto:privacy@prolance.app"
+                  className="text-indigo-600 underline hover:text-indigo-800"
+                >
+                  privacy@prolance.app
+                </a>{' '}
+                adresinden ulaşabilirsiniz.
+              </p>
+            </div>
+          </>
+        }
+      />
+    </MarketingPageShell>
+    </MarketingSiteChrome>
   );
 }

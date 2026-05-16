@@ -55,3 +55,4 @@ packages/
 # Env
 .env
 .env.local
+scripts/deploy.local.env

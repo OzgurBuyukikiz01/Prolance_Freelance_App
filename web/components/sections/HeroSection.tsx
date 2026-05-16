@@ -3,6 +3,12 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import {
+  formatCount,
+  formatEscrowBand,
+  formatRating,
+  type LandingStats,
+} from '@/lib/landing-stats';
 
 const Hero3D = dynamic(() => import('../Hero3D'), { ssr: false });
 
@@ -18,7 +24,12 @@ const fadeUp = {
   }),
 };
 
-export default function HeroSection() {
+export default function HeroSection({ stats }: { stats: LandingStats }) {
+  const heroStats = [
+    { value: formatCount(stats.userCount), label: 'Kullanıcı' },
+    { value: formatEscrowBand(stats.escrowVolumeTry), label: 'Güvenli Ödeme' },
+    { value: formatRating(stats.avgRating, stats.reviewCount), label: 'Mağaza Puanı' },
+  ];
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-hero-gradient pt-24">
       <motion.div
@@ -118,11 +129,7 @@ export default function HeroSection() {
             animate="visible"
             className="flex items-center gap-6 mt-2"
           >
-            {[
-              { value: '10K+', label: 'Kullanıcı' },
-              { value: '₺50M+', label: 'Güvenli Ödeme' },
-              { value: '4.9★', label: 'Mağaza Puanı' },
-            ].map((stat) => (
+            {heroStats.map((stat) => (
               <motion.div key={stat.label} className="flex flex-col">
                 <span className="text-xl font-extrabold text-slate-900">{stat.value}</span>
                 <span className="text-xs text-slate-500">{stat.label}</span>

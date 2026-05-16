@@ -1,11 +1,14 @@
-import Link from 'next/link';
+import LegalFooterNav from '@/components/marketing/LegalFooterNav';
+import LegalSections, { type LegalSection } from '@/components/marketing/LegalSections';
+import MarketingPageShell from '@/components/marketing/MarketingPageShell';
+import MarketingSiteChrome from '@/components/marketing/MarketingSiteChrome';
 
 export const metadata = {
   title: 'Kullanım Koşulları | Prolance',
   description: 'Prolance platformunu kullanmadan önce lütfen Kullanım Koşullarımızı okuyun.',
 };
 
-const sections = [
+const sections: LegalSection[] = [
   {
     id: 'general',
     title: '1. Genel Hükümler',
@@ -52,7 +55,7 @@ const sections = [
     body: [
       'Platforma yüklediğiniz tüm içerik (portföy, proje çıktıları, mesajlar) üzerindeki haklar size aittir. Prolance, bu içerikleri yalnızca hizmet sunumu kapsamında kullanır.',
       'Teslim edilen iş çıktısının telif haklarının devri, işveren ile freelancer arasında imzalanan sözleşmeye tabidir. Prolance bu devrin tarafı değildir.',
-      'Prolance markası, logosu ve tasarımları Prolance\'ın mülkiyetindedir; izinsiz kullanılamaz.',
+      "Prolance markası, logosu ve tasarımları Prolance'ın mülkiyetindedir; izinsiz kullanılamaz.",
     ],
   },
   {
@@ -61,7 +64,7 @@ const sections = [
     body: [
       'Prolance, kullanıcılar arasındaki işlemlerden, teslim edilen çıktıların kalitesinden veya üçüncü taraf hizmet sağlayıcılardan kaynaklanan zararlardan sorumlu değildir.',
       'Platformun kesintisiz veya hatasız çalışacağı garanti edilmez. Bakım, güvenlik yamaları veya mücbir sebepler nedeniyle hizmet geçici olarak kesilebilir.',
-      'Yasal azami sınırlar dahilinde, Prolance\'ın herhangi bir kullanıcıya karşı toplam yükümlülüğü, son 12 ayda kullanıcının ödediği platform ücretiyle sınırlıdır.',
+      "Yasal azami sınırlar dahilinde, Prolance'ın herhangi bir kullanıcıya karşı toplam yükümlülüğü, son 12 ayda kullanıcının ödediği platform ücretiyle sınırlıdır.",
     ],
   },
   {
@@ -77,69 +80,30 @@ const sections = [
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 py-20 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-indigo-400 font-semibold text-sm tracking-widest uppercase mb-3">
-            Hukuki Bilgi
-          </p>
-          <h1 className="text-4xl font-extrabold text-white mb-4">
-            Kullanım Koşulları
-          </h1>
-          <p className="text-slate-300 text-lg">
-            Son güncelleme:{' '}
-            <span className="text-indigo-300 font-medium">16 Mayıs 2026</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-14">
-        <div className="prose prose-slate max-w-none">
+    <MarketingSiteChrome>
+    <MarketingPageShell
+      eyebrow="Hukuki Bilgi"
+      title="Kullanım Koşulları"
+      subtitle={
+        <>
+          Son güncelleme:{' '}
+          <span className="text-indigo-300 font-medium">16 Mayıs 2026</span>
+        </>
+      }
+      footerNav={<LegalFooterNav current="terms" />}
+    >
+      <LegalSections
+        sections={sections}
+        intro={
           <p className="text-slate-500 mb-10 text-base leading-relaxed">
             Prolance platformunu kullanmadan önce lütfen aşağıdaki kullanım
             koşullarını dikkatlice okuyunuz. Platforma erişerek veya hesap
             oluşturarak bu koşulları kabul etmiş sayılırsınız.
           </p>
-
-          <nav className="mb-12 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-            <p className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">
-              İçindekiler
-            </p>
-            <ul className="space-y-2">
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <a
-                    href={`#${s.id}`}
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors"
-                  >
-                    {s.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {sections.map((s) => (
-            <section key={s.id} id={s.id} className="mb-12 scroll-mt-8">
-              <h2 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
-                {s.title}
-              </h2>
-              <div className="space-y-4">
-                {s.body.map((para, i) => (
-                  <p key={i} className="text-slate-600 leading-relaxed text-[15px]">
-                    {para}
-                  </p>
-                ))}
-              </div>
-            </section>
-          ))}
-
+        }
+        footer={
           <div className="mt-16 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
-            <p className="text-indigo-700 font-medium mb-2">
-              Sorularınız mı var?
-            </p>
+            <p className="text-indigo-700 font-medium mb-2">Sorularınız mı var?</p>
             <p className="text-slate-600 text-sm">
               Bize{' '}
               <a
@@ -151,17 +115,9 @@ export default function TermsPage() {
               adresinden ulaşabilirsiniz.
             </p>
           </div>
-        </div>
-
-        <div className="mt-12 flex items-center justify-between text-sm text-slate-400 border-t border-slate-100 pt-8">
-          <Link href="/" className="hover:text-indigo-600 transition-colors">
-            ← Ana Sayfaya Dön
-          </Link>
-          <Link href="/privacy" className="hover:text-indigo-600 transition-colors">
-            Gizlilik Politikası →
-          </Link>
-        </div>
-      </div>
-    </main>
+        }
+      />
+    </MarketingPageShell>
+    </MarketingSiteChrome>
   );
 }

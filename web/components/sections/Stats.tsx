@@ -1,26 +1,21 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import {
+  formatCount,
+  formatEscrowBand,
+  formatRating,
+  type LandingStats,
+} from '@/lib/landing-stats';
 
-export type StatsData = {
-  userCount: number;
-  jobCount: number;
-};
+export type StatsData = LandingStats;
 
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M+`;
-  if (n >= 10_000) return `${Math.floor(n / 1000)}K+`;
-  if (n >= 1_000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K+`;
-  if (n > 0) return `${n}+`;
-  return '—';
-}
-
-export default function Stats({ userCount, jobCount }: StatsData) {
-  const stats = [
-    { value: formatCount(userCount), label: 'Aktif Kullanıcı' },
-    { value: formatCount(jobCount), label: 'Açık İlan' },
-    { value: '₺50M+', label: 'Güvenli Escrow' },
-    { value: '4.9★', label: 'Mağaza Puanı' },
+export default function Stats({ stats }: { stats: LandingStats }) {
+  const items = [
+    { value: formatCount(stats.userCount), label: 'Aktif Kullanıcı' },
+    { value: formatCount(stats.jobCount), label: 'Açık İlan' },
+    { value: formatEscrowBand(stats.escrowVolumeTry), label: 'Güvenli Escrow' },
+    { value: formatRating(stats.avgRating, stats.reviewCount), label: 'Mağaza Puanı' },
   ];
 
   return (
@@ -32,8 +27,8 @@ export default function Stats({ userCount, jobCount }: StatsData) {
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto px-6"
       >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
-          {stats.map((s, i) => (
+        <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+          {items.map((s, i) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, y: 20 }}
@@ -62,7 +57,7 @@ export default function Stats({ userCount, jobCount }: StatsData) {
               </motion.div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </motion.div>
     </section>
   );
