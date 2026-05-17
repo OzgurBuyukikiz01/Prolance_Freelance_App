@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 const STATUS_COLORS: Record<string, string> = {
-  OPEN: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  OPEN: 'bg-primary-500/15 text-primary-400 border-primary-500/30',
   IN_PROGRESS: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
   RESOLVED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   CLOSED: 'bg-slate-700 text-slate-400 border-slate-600',
@@ -56,7 +56,7 @@ export default async function TicketsPage({
             href={s ? `/tickets?status=${s}` : '/tickets'}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               params.status === s || (!params.status && s === '')
-                ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                ? 'bg-primary-500/15 text-primary-400 border-primary-500/30'
                 : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
             }`}
           >
@@ -70,7 +70,7 @@ export default async function TicketsPage({
             href={p ? `/tickets?priority=${p}` : '/tickets'}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
               params.priority === p || (!params.priority && p === '')
-                ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                ? 'bg-primary-500/15 text-primary-400 border-primary-500/30'
                 : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
             }`}
           >
@@ -136,7 +136,7 @@ export default async function TicketsPage({
                   <td className="px-4 py-3">
                     <Link
                       href={`/tickets/${t.id}`}
-                      className="text-amber-400 hover:text-amber-300 text-xs font-semibold transition-colors"
+                      className="text-primary-400 hover:text-primary-300 text-xs font-semibold transition-colors"
                     >
                       İncele →
                     </Link>

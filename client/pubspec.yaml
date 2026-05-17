@@ -57,6 +57,7 @@ dependencies:
   flutter_local_notifications: ^17.2.4
   device_frame: ^1.1.0
   pdfx: ^2.6.0
+  rive: ^0.13.12
 
 dev_dependencies:
   flutter_test:
@@ -73,5 +74,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/lottie/
+    - assets/rive/
     - assets/data/category_skills.json
     - assets/data/world_locations.json

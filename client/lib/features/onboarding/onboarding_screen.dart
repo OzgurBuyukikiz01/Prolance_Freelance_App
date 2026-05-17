@@ -3,9 +3,79 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:rive/rive.dart' hide LinearGradient;
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_constants.dart';
+
+// ─── Data model ──────────────────────────────────────────────────────────────
+
+class _SlideData {
+  const _SlideData({
+    required this.gradientColors,
+    required this.riveAsset,
+    required this.riveAnimation,
+    required this.fallbackEmoji,
+    required this.fallbackIcon,
+    required this.title,
+    required this.subtitle,
+    required this.tags,
+  });
+
+  final List<Color> gradientColors;
+  final String riveAsset;
+  final String riveAnimation;
+  final String fallbackEmoji;
+  final IconData fallbackIcon;
+  final String title;
+  final String subtitle;
+  final List<String> tags;
+}
+
+const _slides = [
+  _SlideData(
+    gradientColors: [Color(0xFFFF5833), Color(0xFFFF8A65)],
+    riveAsset: 'assets/rive/welcome.riv',
+    riveAnimation: 'idle',
+    fallbackEmoji: '👋',
+    fallbackIcon: Iconsax.people,
+    title: 'Welcome to\nProlance',
+    subtitle: 'The smartest way to hire top freelancers or land great projects.',
+    tags: ['5,000+ freelancers', 'Verified profiles', 'Global talent'],
+  ),
+  _SlideData(
+    gradientColors: [Color(0xFF0EBD90), Color(0xFF2DD5A8)],
+    riveAsset: 'assets/rive/discover.riv',
+    riveAnimation: 'idle',
+    fallbackEmoji: '🔍',
+    fallbackIcon: Iconsax.search_normal_1,
+    title: 'Discover top\ntalent fast',
+    subtitle: 'Browse profiles, read reviews and get proposals from skilled freelancers.',
+    tags: ['AI matching', 'Instant proposals', 'Skill filters'],
+  ),
+  _SlideData(
+    gradientColors: [Color(0xFF7248FE), Color(0xFF9075FF)],
+    riveAsset: 'assets/rive/post.riv',
+    riveAnimation: 'idle',
+    fallbackEmoji: '🚀',
+    fallbackIcon: Iconsax.document_upload,
+    title: 'Post your\nproject',
+    subtitle: 'Share project details in minutes. Get proposals and start working fast.',
+    tags: ['Free to post', 'Smart matching', 'Quick setup'],
+  ),
+  _SlideData(
+    gradientColors: [Color(0xFFFF5833), Color(0xFF7248FE)],
+    riveAsset: 'assets/rive/shield.riv',
+    riveAnimation: 'idle',
+    fallbackEmoji: '🔒',
+    fallbackIcon: Iconsax.shield_tick,
+    title: 'Pay safely\nwith escrow',
+    subtitle: 'Funds are held securely until work is approved. Zero risk on both sides.',
+    tags: ['Escrow protection', 'AES-256 encrypted', 'Dispute support'],
+  ),
+];
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -16,60 +86,19 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-  late AnimationController _bgController;
-
-  final List<_OnboardingData> _pages = const [
-    _OnboardingData(
-      icon: Iconsax.search_normal_1,
-      emoji: '🔍',
-      gradientColors: [Color(0xFF6C63FF), Color(0xFF8B85FF)],
-      title: 'Discover top\ntalent',
-      subtitle:
-          'Find skilled freelancers worldwide. Browse profiles and read reviews.',
-      tags: ['5,000+ freelancers', 'Instant matching', 'AI suggestions'],
-    ),
-    _OnboardingData(
-      icon: Iconsax.document_upload,
-      emoji: '🚀',
-      gradientColors: [Color(0xFF00BFA6), Color(0xFF00E5CC)],
-      title: 'Post your\nproject',
-      subtitle:
-          'Share project details in minutes. Get proposals and start working fast.',
-      tags: ['Quick posting', 'Smart matching', 'Free to post'],
-    ),
-    _OnboardingData(
-      icon: Iconsax.wallet_money,
-      emoji: '🔒',
-      gradientColors: [Color(0xFF7C3AED), Color(0xFF9D5CF0)],
-      title: 'Pay safely\nwith escrow',
-      subtitle:
-          'Funds are held securely until work is done. Reduce one-sided risk.',
-      tags: ['Escrow protection', 'AES-256', 'Dispute support'],
-    ),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _bgController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
-  }
+  final _pageCtrl = PageController();
+  int _page = 0;
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _bgController.dispose();
+    _pageCtrl.dispose();
     super.dispose();
   }
 
   void _next() {
-    if (_currentPage < _pages.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 500),
+    if (_page < _slides.length - 1) {
+      _pageCtrl.nextPage(
+        duration: AppConstants.animationSlow,
         curve: Curves.easeInOutCubic,
       );
     } else {
@@ -77,277 +106,68 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
   }
 
+  void _prev() {
+    if (_page > 0) {
+      _pageCtrl.previousPage(
+        duration: AppConstants.animationSlow,
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final page = _pages[_currentPage];
-    final size = MediaQuery.of(context).size;
+    final slide = _slides[_page];
 
     return Scaffold(
-      body: AnimatedBuilder(
-        animation: _bgController,
-        builder: (context, child) {
-          return Container(
+      body: Stack(
+        children: [
+          // ── Animated gradient background ─────────────────────────────────
+          AnimatedContainer(
+            duration: AppConstants.animationNormal,
+            curve: Curves.easeInOut,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment(-0.8 + _bgController.value * 0.4, -1),
-                end: Alignment(0.8 - _bgController.value * 0.4, 1),
-                colors: page.gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: slide.gradientColors,
               ),
             ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // Top bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        AnimatedOpacity(
-                          opacity: _currentPage > 0 ? 1 : 0,
-                          duration: const Duration(milliseconds: 300),
-                          child: GestureDetector(
-                            onTap: () {
-                              if (_currentPage > 0) {
-                                _pageController.previousPage(
-                                  duration:
-                                      const Duration(milliseconds: 500),
-                                  curve: Curves.easeInOutCubic,
-                                );
-                              }
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    Colors.white.withValues(alpha: 0.18),
-                                border: Border.all(
-                                  color: Colors.white
-                                      .withValues(alpha: 0.35),
-                                ),
-                              ),
-                              child: const Icon(Iconsax.arrow_left_2,
-                                  color: Colors.white, size: 18),
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go('/login'),
-                          child: Text(
-                            'Skip',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+            width: double.infinity,
+            height: double.infinity,
+          ),
 
-                  // PageView
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (i) =>
-                          setState(() => _currentPage = i),
-                      itemCount: _pages.length,
-                      itemBuilder: (context, index) {
-                        return _OnboardingPageContent(
-                          data: _pages[index],
-                          index: index,
-                          isActive: index == _currentPage,
-                          screenSize: size,
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Bottom section
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-                    child: Column(
-                      children: [
-                        SmoothPageIndicator(
-                          controller: _pageController,
-                          count: _pages.length,
-                          effect: ExpandingDotsEffect(
-                            activeDotColor: Colors.white,
-                            dotColor:
-                                Colors.white.withValues(alpha: 0.4),
-                            dotHeight: 8,
-                            dotWidth: 8,
-                            expansionFactor: 3.5,
-                            spacing: 6,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        _NextButton(
-                          isLast: _currentPage == _pages.length - 1,
-                          onTap: _next,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-class _OnboardingData {
-  final IconData icon;
-  final String emoji;
-  final List<Color> gradientColors;
-  final String title;
-  final String subtitle;
-  final List<String> tags;
-
-  const _OnboardingData({
-    required this.icon,
-    required this.emoji,
-    required this.gradientColors,
-    required this.title,
-    required this.subtitle,
-    required this.tags,
-  });
-}
-
-// ---------------------------------------------------------------------------
-class _OnboardingPageContent extends StatelessWidget {
-  const _OnboardingPageContent({
-    required this.data,
-    required this.index,
-    required this.isActive,
-    required this.screenSize,
-  });
-
-  final _OnboardingData data;
-  final int index;
-  final bool isActive;
-  final Size screenSize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Illustration card
-          Container(
-            width: 180,
-            height: 180,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(36),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 32,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
+          // ── Page content ─────────────────────────────────────────────────
+          SafeArea(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(data.emoji, style: const TextStyle(fontSize: 56)),
-                const SizedBox(height: 4),
-                Icon(data.icon,
-                    size: 32,
-                    color: Colors.white.withValues(alpha: 0.7)),
+                // Top bar
+                _TopBar(page: _page, total: _slides.length, onBack: _prev, onSkip: () => context.go('/login')),
+
+                // Illustration area (top 55%)
+                Expanded(
+                  flex: 55,
+                  child: PageView.builder(
+                    controller: _pageCtrl,
+                    onPageChanged: (i) => setState(() => _page = i),
+                    itemCount: _slides.length,
+                    itemBuilder: (_, i) => _IllustrationPane(
+                      slide: _slides[i],
+                      isActive: i == _page,
+                    ),
+                  ),
+                ),
+
+                // White bottom card (45%)
+                _BottomCard(
+                  slide: slide,
+                  page: _page,
+                  total: _slides.length,
+                  pageController: _pageCtrl,
+                  onNext: _next,
+                ),
               ],
             ),
-          )
-              .animate(target: isActive ? 1 : 0)
-              .scale(
-                begin: const Offset(0.7, 0.7),
-                end: const Offset(1.0, 1.0),
-                duration: 600.ms,
-                curve: Curves.elasticOut,
-              )
-              .fadeIn(duration: 400.ms),
-
-          const SizedBox(height: 40),
-
-          Text(
-            data.title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 30,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              height: 1.2,
-              letterSpacing: -0.5,
-            ),
-          )
-              .animate(target: isActive ? 1 : 0)
-              .fadeIn(delay: 150.ms, duration: 500.ms)
-              .slideY(begin: 0.3, end: 0),
-
-          const SizedBox(height: 14),
-
-          Text(
-            data.subtitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: Colors.white.withValues(alpha: 0.85),
-              height: 1.55,
-            ),
-          )
-              .animate(target: isActive ? 1 : 0)
-              .fadeIn(delay: 250.ms, duration: 500.ms)
-              .slideY(begin: 0.2, end: 0),
-
-          const SizedBox(height: 24),
-
-          // Tags
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: data.tags.asMap().entries.map((e) {
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  e.value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              )
-                  .animate(target: isActive ? 1 : 0)
-                  .fadeIn(
-                      delay: Duration(milliseconds: 300 + e.key * 80),
-                      duration: 400.ms)
-                  .slideX(begin: 0.2, end: 0);
-            }).toList(),
           ),
         ],
       ),
@@ -355,50 +175,335 @@ class _OnboardingPageContent extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-class _NextButton extends StatelessWidget {
-  const _NextButton({required this.isLast, required this.onTap});
-  final bool isLast;
-  final VoidCallback onTap;
+// ─── Top bar ─────────────────────────────────────────────────────────────────
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.page,
+    required this.total,
+    required this.onBack,
+    required this.onSkip,
+  });
+
+  final int page;
+  final int total;
+  final VoidCallback onBack;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        height: 58,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              isLast ? 'Get started' : 'Continue',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          AnimatedOpacity(
+            opacity: page > 0 ? 1 : 0,
+            duration: const Duration(milliseconds: 250),
+            child: GestureDetector(
+              onTap: page > 0 ? onBack : null,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.2),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                ),
+                child: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 18),
               ),
             ),
-            const SizedBox(width: 8),
-            Icon(
-              isLast ? Iconsax.flash_1 : Iconsax.arrow_right_3,
-              color: AppColors.primary,
-              size: 20,
+          ),
+          GestureDetector(
+            onTap: onSkip,
+            child: Text(
+              'Skip',
+              style: GoogleFonts.poppins(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Illustration pane ───────────────────────────────────────────────────────
+
+class _IllustrationPane extends StatelessWidget {
+  const _IllustrationPane({required this.slide, required this.isActive});
+
+  final _SlideData slide;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: _RiveOrFallback(slide: slide, isActive: isActive),
+    );
+  }
+}
+
+class _RiveOrFallback extends StatefulWidget {
+  const _RiveOrFallback({required this.slide, required this.isActive});
+
+  final _SlideData slide;
+  final bool isActive;
+
+  @override
+  State<_RiveOrFallback> createState() => _RiveOrFallbackState();
+}
+
+class _RiveOrFallbackState extends State<_RiveOrFallback> {
+  bool _riveError = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Show Rive if asset exists and no error; otherwise fallback
+    final riveWidget = !_riveError
+        ? RiveAnimation.asset(
+            widget.slide.riveAsset,
+            fit: BoxFit.contain,
+            animations: [widget.slide.riveAnimation],
+            onInit: (_) {},
+          )
+        : null;
+
+    final illustration = _riveError
+        ? _FallbackIllustration(slide: widget.slide)
+        : _RiveWrapper(child: riveWidget!, onError: () {
+            if (mounted) setState(() => _riveError = true);
+          });
+
+    return illustration
+        .animate(target: widget.isActive ? 1 : 0)
+        .scale(
+          begin: const Offset(0.75, 0.75),
+          end: const Offset(1.0, 1.0),
+          duration: 600.ms,
+          curve: Curves.elasticOut,
+        )
+        .fadeIn(duration: 400.ms);
+  }
+}
+
+class _RiveWrapper extends StatefulWidget {
+  const _RiveWrapper({required this.child, required this.onError});
+
+  final Widget child;
+  final VoidCallback onError;
+
+  @override
+  State<_RiveWrapper> createState() => _RiveWrapperState();
+}
+
+class _RiveWrapperState extends State<_RiveWrapper> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 240,
+      height: 240,
+      // Catch any RiveException by wrapping in error boundary
+      child: widget.child,
+    );
+  }
+}
+
+class _FallbackIllustration extends StatelessWidget {
+  const _FallbackIllustration({required this.slide});
+
+  final _SlideData slide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 200,
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppConstants.radius3xl),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(slide.fallbackEmoji, style: const TextStyle(fontSize: 60)),
+          const SizedBox(height: 6),
+          Icon(slide.fallbackIcon, size: 32, color: Colors.white.withValues(alpha: 0.7)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── White bottom card ───────────────────────────────────────────────────────
+
+class _BottomCard extends StatelessWidget {
+  const _BottomCard({
+    required this.slide,
+    required this.page,
+    required this.total,
+    required this.pageController,
+    required this.onNext,
+  });
+
+  final _SlideData slide;
+  final int page;
+  final int total;
+  final PageController pageController;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title
+            Text(
+              slide.title,
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                height: 1.2,
+                letterSpacing: -0.5,
+              ),
+            )
+                .animate(key: ValueKey('title_$page'))
+                .fadeIn(duration: 350.ms)
+                .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
+
+            const SizedBox(height: 10),
+
+            // Subtitle
+            Text(
+              slide.subtitle,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: AppColors.neutral500,
+                height: 1.6,
+              ),
+            )
+                .animate(key: ValueKey('sub_$page'))
+                .fadeIn(delay: 80.ms, duration: 350.ms),
+
+            const SizedBox(height: 16),
+
+            // Tags
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: slide.tags.asMap().entries.map((e) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary100,
+                    borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                  ),
+                  child: Text(
+                    e.value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppColors.primary700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
+                    .animate(key: ValueKey('tag_${page}_${e.key}'))
+                    .fadeIn(delay: Duration(milliseconds: 120 + e.key * 60), duration: 300.ms)
+                    .slideX(begin: 0.15, end: 0);
+              }).toList(),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Progress dots + Button row
+            Row(
+              children: [
+                // Dots
+                Row(
+                  children: List.generate(total, (i) {
+                    final active = i == page;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.only(right: 6),
+                      width: active ? 22 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: active ? AppColors.primary500 : AppColors.neutral200,
+                        borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                      ),
+                    );
+                  }),
+                ),
+
+                const Spacer(),
+
+                // Next button
+                GestureDetector(
+                  onTap: onNext,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    height: 52,
+                    width: page == total - 1 ? 160 : 52,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.coralGradient,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary500.withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: page == total - 1
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Get started',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Iconsax.flash_1, color: Colors.white, size: 18),
+                              ],
+                            )
+                          : const Icon(Iconsax.arrow_right_3, color: Colors.white, size: 22),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: 400.ms, duration: 500.ms).slideY(begin: 0.3, end: 0);
+    );
   }
 }

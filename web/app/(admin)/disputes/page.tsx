@@ -84,7 +84,7 @@ export default async function DisputesPage() {
                   <td className="px-4 py-3">
                     <Link
                       href={`/disputes/${d.id}`}
-                      className="text-amber-400 hover:text-amber-300 text-xs font-semibold transition-colors"
+                      className="text-primary-400 hover:text-primary-300 text-xs font-semibold transition-colors"
                     >
                       Karar Ver →
                     </Link>

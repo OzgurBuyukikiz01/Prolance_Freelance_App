@@ -53,7 +53,7 @@ export default async function DisputeDetailPage({
     return (
       <div className="p-8">
         <p className="text-red-400">Kayıt bulunamadı.</p>
-        <Link href="/disputes" className="text-amber-400 text-sm mt-2 block">
+        <Link href="/disputes" className="text-primary-400 text-sm mt-2 block">
           ← Anlaşmazlıklara Dön
         </Link>
       </div>
@@ -183,7 +183,7 @@ export default async function DisputeDetailPage({
                     href={d.storage_path}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-amber-400 text-xs hover:underline shrink-0"
+                    className="text-primary-400 text-xs hover:underline shrink-0"
                   >
                     Görüntüle →
                   </a>

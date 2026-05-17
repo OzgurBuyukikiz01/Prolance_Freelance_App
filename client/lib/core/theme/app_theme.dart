@@ -12,17 +12,21 @@ import '../constants/app_text_styles.dart';
 class AppTheme {
   AppTheme._();
 
-  /// Fallback schemes anchored on brand purple/teal when dynamic colors are unavailable.
+  /// Fallback schemes anchored on Electric Coral when dynamic colors are unavailable.
   static ColorScheme _fallbackLightScheme() => ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         secondary: AppColors.secondary,
+        tertiary: AppColors.accent,
         brightness: Brightness.light,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
       );
 
   static ColorScheme _fallbackDarkScheme() => ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         secondary: AppColors.secondary,
+        tertiary: AppColors.accent,
         brightness: Brightness.dark,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
       );
 
   /// Pulls dark foregrounds and surfaces toward white so text/icons never read as "black"
@@ -101,7 +105,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.radiusMd),
           borderSide:
-              const BorderSide(color: AppColors.primary, width: 2),
+              const BorderSide(color: AppColors.primary500, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.radiusMd),
@@ -210,7 +214,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 4,
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primary500,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),

@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabaseAdmin';
 export const dynamic = 'force-dynamic';
 
 const ACTION_COLORS: Record<string, string> = {
-  ticket_update: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  ticket_update: 'bg-primary-500/15 text-primary-400 border-primary-500/30',
   escrow_resolution: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
   user_banned: 'bg-red-500/15 text-red-400 border-red-500/30',
   user_unbanned: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',

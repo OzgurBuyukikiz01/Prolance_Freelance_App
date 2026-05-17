@@ -674,7 +674,6 @@ class _StatsStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = [
-      (label: '5.200+', sub: 'Freelancer'),
       (label: '\$2.4M+', sub: 'Paid out'),
       (label: '98%', sub: 'Satisfaction'),
       (label: '12K+', sub: 'Completed'),

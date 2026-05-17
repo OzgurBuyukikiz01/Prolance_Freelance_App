@@ -12,11 +12,11 @@ export default function Hero3D() {
     >
       <ambientLight intensity={0.8} />
       <directionalLight position={[4, 4, 4]} intensity={1.4} />
-      <pointLight position={[-4, -2, 2]} intensity={0.6} color="#6C63FF" />
+      <pointLight position={[-4, -2, 2]} intensity={0.6} color="#7248FE" />
       <Float speed={1.8} rotationIntensity={1.0} floatIntensity={1.6}>
         <Sphere args={[1.15, 80, 80]}>
           <MeshDistortMaterial
-            color="#6C63FF"
+            color="#7248FE"
             attach="material"
             distort={0.32}
             speed={2.0}
@@ -31,7 +31,7 @@ export default function Hero3D() {
       <Float speed={2.4} rotationIntensity={0.8} floatIntensity={2.0}>
         <Sphere args={[0.28, 32, 32]} position={[1.9, 1.0, -0.5]}>
           <MeshDistortMaterial
-            color="#4840C4"
+            color="#7248FE"
             attach="material"
             distort={0.5}
             speed={3}

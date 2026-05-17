@@ -21,7 +21,7 @@ type SignupChartProps = {
 
 export function SignupChart({ data }: SignupChartProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6">
+    <div className="glass-card p-6">
       <div className="mb-4">
         <h2 className="text-sm font-semibold text-slate-200">Son 7 gün kayıtlar</h2>
         <p className="text-xs text-slate-500 mt-0.5">Yeni kullanıcı profilleri</p>
@@ -31,8 +31,8 @@ export function SignupChart({ data }: SignupChartProps) {
           <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="signupFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6C63FF" stopOpacity={0.45} />
-                <stop offset="95%" stopColor="#6C63FF" stopOpacity={0} />
+                <stop offset="5%" stopColor="#7248FE" stopOpacity={0.45} />
+                <stop offset="95%" stopColor="#7248FE" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
@@ -61,7 +61,7 @@ export function SignupChart({ data }: SignupChartProps) {
             <Area
               type="monotone"
               dataKey="signups"
-              stroke="#6C63FF"
+              stroke="#7248FE"
               strokeWidth={2}
               fill="url(#signupFill)"
             />

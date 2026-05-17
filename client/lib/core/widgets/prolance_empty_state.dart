@@ -2,30 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:lottie/lottie.dart';
 
 /// A consistent empty state widget used across all list screens.
 ///
-/// Shows a large icon, a title, a subtitle, and an optional action button.
+/// Supports Lottie animations via [lottiePath]. Falls back to icon when null.
 class ProlanceEmptyState extends StatelessWidget {
   const ProlanceEmptyState({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     required this.subtitle,
     this.actionLabel,
     this.onAction,
-  });
+    this.lottiePath,
+  }) : assert(icon != null || lottiePath != null,
+            'Provide either icon or lottiePath');
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? lottiePath;
 
   // ── Convenience constructors ──────────────────────────────────────────────
 
   factory ProlanceEmptyState.favorites({VoidCallback? onBrowse}) =>
       ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_favorites.json',
         icon: Iconsax.heart,
         title: 'No saved listings yet',
         subtitle: 'Save listings you like\nand find them here anytime.',
@@ -34,21 +39,55 @@ class ProlanceEmptyState extends StatelessWidget {
       );
 
   factory ProlanceEmptyState.messages() => const ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_messages.json',
         icon: Iconsax.message,
         title: 'No messages yet',
         subtitle: 'Send a proposal or message\na client to start chatting.',
       );
 
   factory ProlanceEmptyState.proposals() => const ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_proposals.json',
         icon: Iconsax.document_text,
         title: 'No proposals sent yet',
         subtitle: 'Submit proposals on matching projects\nand track them here.',
       );
 
   factory ProlanceEmptyState.notifications() => const ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_notifications.json',
         icon: Iconsax.notification,
         title: 'No notifications',
         subtitle: 'New alerts will appear here.',
+      );
+
+  factory ProlanceEmptyState.jobs({VoidCallback? onPost}) =>
+      ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_jobs.json',
+        icon: Iconsax.briefcase,
+        title: 'No jobs found',
+        subtitle: 'Try adjusting your filters\nor check back later.',
+        actionLabel: onPost != null ? 'Post a job' : null,
+        onAction: onPost,
+      );
+
+  factory ProlanceEmptyState.search() => const ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_search.json',
+        icon: Iconsax.search_normal,
+        title: 'No results found',
+        subtitle: 'Try different keywords\nor browse categories.',
+      );
+
+  factory ProlanceEmptyState.earnings() => const ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_earnings.json',
+        icon: Iconsax.wallet,
+        title: 'No earnings yet',
+        subtitle: 'Complete a project\nto see your earnings here.',
+      );
+
+  factory ProlanceEmptyState.reviews() => const ProlanceEmptyState(
+        lottiePath: 'assets/lottie/empty_reviews.json',
+        icon: Iconsax.star,
+        title: 'No reviews yet',
+        subtitle: 'Reviews from clients\nwill appear here.',
       );
 
   @override
@@ -61,19 +100,7 @@ class ProlanceEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer.withValues(alpha: 0.4),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: scheme.primary,
-              ),
-            )
+            _buildIllustration(scheme)
                 .animate()
                 .scale(
                   begin: const Offset(0.7, 0.7),
@@ -123,6 +150,32 @@ class ProlanceEmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildIllustration(ColorScheme scheme) {
+    if (lottiePath != null) {
+      return Lottie.asset(
+        lottiePath!,
+        width: 160,
+        height: 160,
+        repeat: true,
+        animate: true,
+        errorBuilder: (_, __, ___) => _iconFallback(scheme),
+      );
+    }
+    return _iconFallback(scheme);
+  }
+
+  Widget _iconFallback(ColorScheme scheme) {
+    return Container(
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.4),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 40, color: scheme.primary),
     );
   }
 }

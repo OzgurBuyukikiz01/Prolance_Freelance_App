@@ -1,0 +1,49 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flutter-android",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run", "-d", "emulator-5554",
+        "--dart-define=USE_SUPABASE=true",
+        "--dart-define=SUPABASE_URL=https://cgxzpdhcaxiopdylwstr.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNneHpwZGhjYXhpb3BkeWx3c3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDIzNzksImV4cCI6MjA5NDUxODM3OX0.lNOk6lL3CmMFh8gXoA6hrnW1QcWxpaz2sTTKVOY83fg"
+      ],
+      "port": 5002,
+      "cwd": "client"
+    },
+    {
+      "name": "flutter-ios",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run", "-d", "iPhone 16 Pro",
+        "--dart-define=USE_SUPABASE=true",
+        "--dart-define=SUPABASE_URL=https://cgxzpdhcaxiopdylwstr.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNneHpwZGhjYXhpb3BkeWx3c3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDIzNzksImV4cCI6MjA5NDUxODM3OX0.lNOk6lL3CmMFh8gXoA6hrnW1QcWxpaz2sTTKVOY83fg"
+      ],
+      "port": 5003,
+      "cwd": "client"
+    },
+    {
+      "name": "flutter-web",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run", "-d", "web-server",
+        "--web-port=5002",
+        "--dart-define=USE_SUPABASE=true",
+        "--dart-define=SUPABASE_URL=https://cgxzpdhcaxiopdylwstr.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNneHpwZGhjYXhpb3BkeWx3c3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5NDIzNzksImV4cCI6MjA5NDUxODM3OX0.lNOk6lL3CmMFh8gXoA6hrnW1QcWxpaz2sTTKVOY83fg"
+      ],
+      "port": 5002,
+      "cwd": "client"
+    },
+    {
+      "name": "prolance-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
+      "port": 3001,
+      "cwd": "web"
+    }
+  ]
+}

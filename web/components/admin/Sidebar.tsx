@@ -26,35 +26,38 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col min-h-screen">
+    <aside className="w-64 flex-shrink-0 flex flex-col min-h-screen border-r border-white/10 bg-white/[0.04] backdrop-blur-xl">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-slate-800 flex items-center gap-2.5">
-        <span className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-slate-900 font-black text-sm">
+      <div className="px-5 py-5 border-b border-white/10 flex items-center gap-3">
+        <span
+          className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white"
+          style={{ background: 'linear-gradient(135deg, #7248FE, #9075FF)' }}
+        >
           P
         </span>
         <div>
           <div className="text-white font-extrabold text-sm leading-none">Prolance</div>
-          <div className="text-amber-400 text-[10px] font-semibold tracking-widest uppercase">
-            Admin
+          <div className="text-primary-400 text-[10px] font-semibold tracking-widest uppercase mt-0.5">
+            Admin Panel
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 active
-                  ? 'bg-amber-500/15 text-amber-400'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-primary-500/15 text-primary-400 border-l-2 border-primary-500 pl-[10px]'
+                  : 'text-white/50 hover:text-white hover:bg-white/5 border-l-2 border-transparent'
               }`}
             >
-              <Icon size={16} />
+              <Icon size={16} className={active ? 'text-primary-400' : ''} />
               {label}
             </Link>
           );
@@ -62,11 +65,11 @@ export default function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div className="px-3 py-4 border-t border-slate-800">
+      <div className="px-3 py-4 border-t border-white/10">
         <form action={adminLogout}>
           <button
             type="submit"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 border-l-2 border-transparent"
           >
             <LogOut size={16} />
             Çıkış Yap

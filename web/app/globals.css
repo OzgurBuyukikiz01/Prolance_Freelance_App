@@ -7,6 +7,105 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-white text-slate-900 antialiased;
+    @apply antialiased;
+    font-family: 'Poppins', system-ui, sans-serif;
+    background-color: var(--bg-base, #ffffff);
+    color: var(--text-primary, #1E1812);
+  }
+}
+
+/* ============ CSS Custom Properties ============ */
+:root {
+  /* Admin dark base */
+  --bg-base: #0A0F1E;
+  --bg-surface: #0F1628;
+  --bg-elevated: #14203A;
+
+  /* Glass tokens */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-strong: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-strong: rgba(255, 255, 255, 0.18);
+  --glass-blur: 20px;
+  --glass-blur-sm: 12px;
+
+  /* Brand */
+  --color-primary: #FF5833;
+  --color-secondary: #0EBD90;
+  --color-accent: #7248FE;
+}
+
+/* ============ Glass Utilities ============ */
+@layer components {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+  }
+
+  .glass-card-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border-strong);
+    border-radius: 1rem;
+  }
+
+  .glass-card-subtle {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(var(--glass-blur-sm));
+    -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1rem;
+  }
+
+  /* Gradient text utilities */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, #FF5833, #7248FE);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-coral {
+    background: linear-gradient(135deg, #FF5833, #FF8A65);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-mint {
+    background: linear-gradient(135deg, #0EBD90, #2DD5A8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-violet {
+    background: linear-gradient(135deg, #7248FE, #9075FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glow effects */
+  .glow-coral  { box-shadow: 0 0 24px rgba(255, 88,  51,  0.35); }
+  .glow-violet { box-shadow: 0 0 24px rgba(114, 72,  254, 0.35); }
+  .glow-mint   { box-shadow: 0 0 24px rgba(14,  189, 144, 0.35); }
+
+  /* Ambient gradient blob (admin layout background) */
+  .blob-coral  {
+    background: radial-gradient(circle, rgba(255, 88, 51, 0.10) 0%, transparent 70%);
+    filter: blur(64px);
+  }
+  .blob-violet {
+    background: radial-gradient(circle, rgba(114, 72, 254, 0.08) 0%, transparent 70%);
+    filter: blur(64px);
+  }
+  .blob-mint {
+    background: radial-gradient(circle, rgba(14, 189, 144, 0.08) 0%, transparent 70%);
+    filter: blur(64px);
   }
 }

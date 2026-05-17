@@ -94,7 +94,7 @@ export function DisputeResolvePanel({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Neden bu kararı verdiniz? Konuşma ve teslimatları değerlendirerek açıklayın. Her iki taraf bu metni alacaktır."
-          className="w-full rounded-xl bg-slate-800 border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 text-white text-sm placeholder:text-slate-600 px-4 py-3 resize-none outline-none transition"
+          className="w-full rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 text-white text-sm placeholder:text-white/25 px-4 py-3 resize-none outline-none transition"
         />
         <p className={`text-xs mt-1 text-right ${noteValid ? 'text-emerald-500' : 'text-slate-600'}`}>
           {note.trim().length} / 20+ karakter
@@ -164,7 +164,8 @@ export function DisputeResolvePanel({
             <button
               type="submit"
               disabled={pending}
-              className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-sm disabled:opacity-60"
+              className="px-5 py-2 rounded-lg text-white font-bold text-sm disabled:opacity-40 hover:opacity-90 transition-all"
+              style={{ background: 'linear-gradient(135deg, #7248FE, #9075FF)' }}
             >
               {pending ? 'Kaydediliyor…' : 'Evet, Onayla'}
             </button>

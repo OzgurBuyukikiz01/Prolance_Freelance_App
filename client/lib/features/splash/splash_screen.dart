@@ -20,9 +20,9 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _bgController;
   late final AnimationController _pulseController;
 
-  static const Color _p1 = Color(0xFF6C63FF);
-  static const Color _p2 = Color(0xFF4F46E5);
-  static const Color _p3 = Color(0xFF7C3AED);
+  static const Color _p1 = Color(0xFF7248FE);
+  static const Color _p2 = Color(0xFF5E2FE8);
+  static const Color _p3 = Color(0xFF4B1EC7);
 
   @override
   void initState() {

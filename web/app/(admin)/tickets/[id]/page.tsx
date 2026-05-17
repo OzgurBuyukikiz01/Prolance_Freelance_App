@@ -22,7 +22,7 @@ export default async function TicketDetailPage({
     return (
       <div className="p-8">
         <p className="text-red-400">Ticket bulunamadı.</p>
-        <Link href="/tickets" className="text-amber-400 text-sm mt-2 block">
+        <Link href="/tickets" className="text-primary-400 text-sm mt-2 block">
           ← Ticketlara Dön
         </Link>
       </div>
@@ -49,7 +49,7 @@ export default async function TicketDetailPage({
               <span>{new Date(ticket.created_at).toLocaleString('tr-TR')}</span>
             </div>
           </div>
-          <span className="shrink-0 text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full">
+          <span className="shrink-0 text-xs font-bold bg-primary-500/15 text-primary-400 border border-primary-500/30 px-2.5 py-1 rounded-full">
             {ticket.priority}
           </span>
         </div>

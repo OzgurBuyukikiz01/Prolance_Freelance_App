@@ -36,7 +36,7 @@ export default async function UserDetailPage({
     return (
       <div className="p-8">
         <p className="text-red-400">Kullanıcı bulunamadı.</p>
-        <Link href="/users" className="text-amber-400 text-sm mt-2 block">← Kullanıcılara Dön</Link>
+        <Link href="/users" className="text-primary-400 text-sm mt-2 block">← Kullanıcılara Dön</Link>
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default async function UserDetailPage({
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="text-xl font-extrabold text-white">{profile.full_name || '—'}</h1>
               {profile.is_admin && (
-                <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-primary-500/15 text-primary-400 border border-primary-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
                   Admin
                 </span>
               )}
@@ -121,7 +121,7 @@ export default async function UserDetailPage({
           <div className="flex flex-col gap-2">
             {(tickets ?? []).map((t: Record<string, unknown>) => (
               <div key={t.id as string} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
-                <Link href={`/tickets/${t.id}`} className="text-amber-400 text-sm hover:underline truncate max-w-sm">
+                <Link href={`/tickets/${t.id}`} className="text-primary-400 text-sm hover:underline truncate max-w-sm">
                   {t.subject as string}
                 </Link>
                 <span className="text-slate-500 text-xs ml-4 shrink-0">{t.status as string}</span>

@@ -45,7 +45,7 @@ export default async function UsersPage({
           href="/users"
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
             !params.banned && !params.role
-              ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+              ? 'bg-primary-500/15 text-primary-400 border-primary-500/30'
               : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
           }`}
         >
@@ -88,7 +88,7 @@ export default async function UsersPage({
             type="search"
             defaultValue={params.q}
             placeholder="İsim veya e-posta ara..."
-            className="bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-4 py-1.5 w-56 focus:outline-none focus:ring-2 focus:ring-amber-500/40 placeholder:text-slate-500"
+            className="bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-4 py-1.5 w-56 focus:outline-none focus:ring-2 focus:ring-primary-500/40 placeholder:text-slate-500"
           />
         </form>
       </div>
@@ -126,7 +126,7 @@ export default async function UsersPage({
                       <div className="text-white font-medium text-xs leading-none mb-0.5">
                         {(u.full_name as string) || '—'}
                         {Boolean(u.is_admin) && (
-                          <span className="ml-1.5 text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-bold">
+                          <span className="ml-1.5 text-[10px] bg-primary-500/15 text-primary-400 border border-primary-500/30 px-1.5 py-0.5 rounded-full font-bold">
                             Admin
                           </span>
                         )}
@@ -154,7 +154,7 @@ export default async function UsersPage({
                 <td className="px-4 py-3">
                   <Link
                     href={`/users/${u.id}`}
-                    className="text-amber-400 hover:text-amber-300 text-xs font-semibold transition-colors"
+                    className="text-primary-400 hover:text-primary-300 text-xs font-semibold transition-colors"
                   >
                     Detay →
                   </Link>

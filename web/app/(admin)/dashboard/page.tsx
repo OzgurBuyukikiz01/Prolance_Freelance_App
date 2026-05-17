@@ -96,90 +96,96 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl bg-slate-950 min-h-full">
+    <div className="p-8 max-w-7xl min-h-full">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-white">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Platform genel durumu</p>
+        <h1 className="text-3xl font-extrabold text-gradient-brand">Dashboard</h1>
+        <p className="text-white/40 text-sm mt-1.5">Platform genel durumu</p>
       </div>
 
       {err && (
-        <div className="mb-6 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm px-4 py-3 rounded-xl">
+        <div className="mb-6 bg-primary-500/10 border border-primary-500/30 text-primary-300 text-sm px-4 py-3 rounded-xl">
           Metrikler yüklenemedi: {err}. .env.local dosyasını kontrol edin.
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      {/* Primary stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
         <DashboardStatCard
           title="Toplam İlan"
           value={metrics.totalJobs}
           sub={`${metrics.openJobs} aktif`}
           href="/jobs"
+          accent="text-white"
         />
         <DashboardStatCard
           title="Bekleyen İlan"
           value={metrics.pendingJobs}
           sub="Moderasyon bekliyor"
           href="/jobs"
-          accent={metrics.pendingJobs > 0 ? 'text-amber-400' : 'text-white'}
+          accent={metrics.pendingJobs > 0 ? 'text-primary-400' : 'text-white'}
         />
         <DashboardStatCard
           title="Açık Ticketlar"
           value={metrics.openTickets}
           sub="Yanıt bekliyor"
           href="/tickets"
-          accent="text-[#6C63FF]"
+          accent="text-accent-400"
         />
         <DashboardStatCard
           title="Toplam Kullanıcı"
           value={metrics.totalUsers}
           sub={`${metrics.bannedUsers} banlı`}
           href="/users"
-          accent="text-indigo-300"
+          accent="text-secondary-400"
         />
       </div>
 
-      <div className="mb-10">
-        <SignupChart data={signupChart} />
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+      {/* Secondary stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <DashboardStatCard
           title="Escrow Anlaşmazlık"
           value={metrics.disputed}
           sub="DISPUTED durumunda"
           href="/disputes"
-          accent={metrics.disputed > 0 ? 'text-red-400' : 'text-slate-400'}
+          accent={metrics.disputed > 0 ? 'text-red-400' : 'text-white/40'}
         />
         <DashboardStatCard
           title="Banlı Kullanıcı"
           value={metrics.bannedUsers}
           href="/users"
-          accent={metrics.bannedUsers > 0 ? 'text-red-400' : 'text-slate-400'}
+          accent={metrics.bannedUsers > 0 ? 'text-red-400' : 'text-white/40'}
         />
         <DashboardStatCard
           title="Audit Log Girişi"
           value={metrics.recentAudit}
           href="/audit"
-          accent="text-[#6C63FF]"
+          accent="text-accent-400"
         />
       </div>
 
+      {/* Signup chart */}
+      <div className="mb-8">
+        <SignupChart data={signupChart} />
+      </div>
+
+      {/* Quick access */}
       <div>
-        <h2 className="text-slate-300 text-sm font-semibold mb-4 uppercase tracking-wider">
+        <h2 className="text-white/40 text-xs font-semibold mb-3 uppercase tracking-widest">
           Hızlı Erişim
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { href: '/jobs', label: 'İlan Moderasyonu' },
-            { href: '/tickets', label: 'Ticketları Yönet' },
+            { href: '/jobs',     label: 'İlan Moderasyonu' },
+            { href: '/tickets',  label: 'Ticketları Yönet' },
             { href: '/disputes', label: 'Anlaşmazlıklar' },
-            { href: '/users', label: 'Kullanıcılar' },
-            { href: '/audit', label: 'Audit Log' },
+            { href: '/users',    label: 'Kullanıcılar' },
+            { href: '/audit',    label: 'Audit Log' },
           ].map((q) => (
             <Link
               key={q.href}
               href={q.href}
-              className="bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-[#6C63FF]/40 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 hover:text-white transition-colors text-center"
+              className="glass-card px-4 py-3 text-sm font-medium text-white/50 hover:text-white hover:bg-white/[0.07] transition-all duration-200 text-center rounded-xl"
             >
               {q.label}
             </Link>
