@@ -188,7 +188,6 @@ class AuthService {
       anonKey: SupabaseConfig.anonKey,
       authOptions: const FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
-        authCallbackUrlHostname: 'login-callback',
       ),
     );
     debugPrint('Supabase: initialized at ${SupabaseConfig.url}');

@@ -34,7 +34,7 @@ class RoutedJobDetailScreen extends StatelessWidget {
 
 /// Chat route with optional query params; falls back to [MessageRepository].
 class RoutedChatScreen extends StatelessWidget {
-  const RoutedChatScreen({super.key, required this.conversationId, this.query});
+  const RoutedChatScreen({super.key, required this.conversationId, this.query = const {}});
 
   final String conversationId;
   final Map<String, String> query;
