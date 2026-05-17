@@ -46,7 +46,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
   const { data: proposal } = await supabase
     .from('proposals')
     .select(
-      'id, job_id, freelancer_id, bid, delivery_days, funded_amount_cents, freelancer_payout_cents, lifecycle_phase, payout_finalized, delivery_dispute_deadline, dispute_note, created_at',
+      'id, job_id, freelancer_id, bid, delivery_days, funded_amount_cents, freelancer_payout_cents, lifecycle_phase, payout_finalized, delivery_dispute_deadline, dispute_note, admin_resolution_note, created_at',
     )
     .eq('id', id)
     .single();
@@ -450,7 +450,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
             <span className="text-2xl">⚠️</span>
             <h2 className="font-bold text-slate-900">İtiraz Açıldı</h2>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 mb-3">
             Bu sözleşmeye itiraz edildi.{' '}
             {proposal.dispute_note ? (
               <span>Not: {proposal.dispute_note}</span>
@@ -458,6 +458,12 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
               'Escrow tutarı işverene iade edildi.'
             )}
           </p>
+          {proposal.admin_resolution_note && (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs font-semibold text-amber-700 mb-1">⚖️ Admin Kararı</p>
+              <p className="text-sm text-amber-900">{proposal.admin_resolution_note}</p>
+            </div>
+          )}
         </MagicCard>
       )}
 
