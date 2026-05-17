@@ -29,6 +29,9 @@ class JobModel {
   /// [JobListingKinds.jobOffer] or [JobListingKinds.freelancerSeeking].
   final String listingKind;
 
+  /// Supabase `jobs.client_id` (job owner). Null for seeded / offline jobs.
+  final String? clientId;
+
   const JobModel({
     required this.id,
     required this.title,
@@ -49,6 +52,7 @@ class JobModel {
     this.rejectionReason,
     this.isUserPosted = false,
     this.listingKind = JobListingKinds.jobOffer,
+    this.clientId,
   });
 
   JobModel copyWith({
@@ -71,6 +75,7 @@ class JobModel {
     String? rejectionReason,
     bool? isUserPosted,
     String? listingKind,
+    String? clientId,
   }) {
     return JobModel(
       id: id ?? this.id,
@@ -92,6 +97,7 @@ class JobModel {
       rejectionReason: rejectionReason ?? this.rejectionReason,
       isUserPosted: isUserPosted ?? this.isUserPosted,
       listingKind: listingKind ?? this.listingKind,
+      clientId: clientId ?? this.clientId,
     );
   }
 
@@ -117,6 +123,7 @@ class JobModel {
       rejectionReason: json['rejectionReason'] as String?,
       isUserPosted: json['isUserPosted'] as bool? ?? false,
       listingKind: kind ?? JobListingKinds.jobOffer,
+      clientId: json['clientId'] as String?,
     );
   }
 
@@ -140,6 +147,7 @@ class JobModel {
         if (rejectionReason != null) 'rejectionReason': rejectionReason,
         'isUserPosted': isUserPosted,
         'listingKind': listingKind,
+        if (clientId != null) 'clientId': clientId,
       };
 
   static List<JobModel> dummyList() {

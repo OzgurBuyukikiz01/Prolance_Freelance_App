@@ -80,7 +80,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Değerlendirme Yaz',
+          'Write a review',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: scheme.onSurface,
@@ -124,7 +124,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                 ),
             const SizedBox(height: 24),
             Text(
-              'Değerlendirmeniz Gönderildi!',
+              'Review submitted!',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 20,
@@ -134,7 +134,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
             ).animate().fadeIn(delay: 200.ms),
             const SizedBox(height: 8),
             Text(
-              '${widget.revieweeName} adlı kullanıcıya\ndeğerlendirmeniz iletildi.',
+              'Your feedback was sent to ${widget.revieweeName}.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -147,7 +147,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Iconsax.tick_circle, size: 18),
               label: Text(
-                'Tamam',
+                'OK',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
             ).animate().fadeIn(delay: 400.ms),
@@ -224,7 +224,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
           // Rating
           Text(
-            'Puanınız',
+            'Your rating',
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -266,7 +266,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
           // Comment
           Text(
-            'Yorumunuz',
+            'Your comment',
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -280,7 +280,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
             style: GoogleFonts.poppins(fontSize: 14, color: scheme.onSurface),
             decoration: InputDecoration(
               hintText:
-                  'Bu kişiyle çalışma deneyiminizi paylaşın...',
+                  'Share your experience working with this person...',
               hintStyle: GoogleFonts.poppins(
                 fontSize: 14,
                 color: scheme.onSurfaceVariant,
@@ -307,7 +307,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   )
                 : const Icon(Iconsax.send_1, size: 18),
             label: Text(
-              _isLoading ? 'Gönderiliyor...' : 'Değerlendirmeyi Gönder',
+              _isLoading ? 'Sending...' : 'Submit review',
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
@@ -328,15 +328,15 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   String _ratingLabel(int r) {
     switch (r) {
       case 1:
-        return 'Çok Kötü';
+        return 'Poor';
       case 2:
-        return 'Kötü';
+        return 'Fair';
       case 3:
-        return 'Orta';
+        return 'Good';
       case 4:
-        return 'İyi';
+        return 'Very good';
       default:
-        return 'Mükemmel';
+        return 'Excellent';
     }
   }
 }

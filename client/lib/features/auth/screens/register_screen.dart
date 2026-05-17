@@ -53,24 +53,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         return;
       }
-      await context.read<AppState>().registerUser(
+      final registerResult = await context.read<AppState>().registerUser(
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
             isFreelancer: _selectedRole == UserRole.freelancer,
           );
       if (!mounted) return;
-      if (!context.read<AppState>().isLoggedIn) {
-        ProlanceMessenger.error(
-          context,
-          context.read<AppState>().t(
-            'Could not create account. Ensure Supabase is running (supabase start).',
-            'Hesap oluşturulamadı. Supabase\'in çalıştığından emin olun (supabase start).',
-          ),
-        );
-        return;
+      final appState = context.read<AppState>();
+      switch (registerResult.outcome) {
+        case RegisterOutcome.loggedIn:
+          context.go('/home');
+          return;
+        case RegisterOutcome.needsEmailConfirmation:
+          ProlanceMessenger.info(
+            context,
+            appState.t(
+              'Account created. Check your email to verify, then sign in.',
+              'Hesap oluşturuldu. Doğrulama için e-postanızı kontrol edin, ardından giriş yapın.',
+            ),
+          );
+          context.go('/login');
+          return;
+        case RegisterOutcome.failed:
+          ProlanceMessenger.error(
+            context,
+            registerResult.message ??
+                appState.t(
+                  'Could not create account. Check your connection and Supabase settings.',
+                  'Hesap oluşturulamadı. Bağlantınızı ve Supabase ayarlarınızı kontrol edin.',
+                ),
+          );
       }
-      context.go('/home');
     }
   }
 
@@ -195,7 +209,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         .fadeIn(),
                     const SizedBox(height: 24),
                     Text(
-                      'Hesap Oluştur ✨',
+                      'Create account ✨',
                       style: GoogleFonts.poppins(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
@@ -209,7 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         .slideX(begin: -0.1, end: 0),
                     const SizedBox(height: 8),
                     Text(
-                      'Binlerce freelancera katılın',
+                      'Join thousands of freelancers',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         color: scheme.onSurfaceVariant,

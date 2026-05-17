@@ -70,7 +70,12 @@ class _EscrowScreenState extends State<EscrowScreen> {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
-    final isEmployer = widget.job.clientName == app.currentUser.name;
+    final jobOwnerId = widget.job.clientId;
+    final isJobOwner = jobOwnerId != null &&
+        jobOwnerId.isNotEmpty &&
+        jobOwnerId == app.currentUser.id;
+    // Platform admin can run mock escrow on any listing (employer_id stays admin).
+    final isEmployer = isJobOwner || app.currentUser.isAdmin;
     final children = <Widget>[
       Text(
         widget.job.title,

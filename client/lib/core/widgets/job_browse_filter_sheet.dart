@@ -7,7 +7,6 @@ import '../constants/app_constants.dart';
 import '../constants/app_text_styles.dart';
 import '../models/job_browse_filters.dart';
 import '../services/skills_catalog_service.dart';
-import 'overlays/prolance_bottom_sheet.dart';
 
 // DropdownButtonFormField.value: migrate when stable Form APIs land (matches post_job).
 // ignore_for_file: deprecated_member_use
@@ -16,21 +15,26 @@ Future<JobBrowseFilters?> showJobBrowseFiltersSheet(
   BuildContext context, {
   required JobBrowseFilters initial,
 }) async {
-  return showProlanceBottomSheet<JobBrowseFilters>(
+  return showModalBottomSheet<JobBrowseFilters>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: false,
-    showTitleBar: false,
-    child: DraggableScrollableSheet(
-      initialChildSize: 0.92,
-      minChildSize: 0.5,
-      maxChildSize: 0.96,
-      expand: false,
-      builder: (_, scrollController) => _JobBrowseFilterSheetBody(
-        scrollController: scrollController,
-        initial: initial,
-      ),
-    ),
+    backgroundColor: Colors.transparent,
+    builder: (_) {
+      final height = MediaQuery.sizeOf(context).height * 0.92;
+      return Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppConstants.radiusLg),
+          ),
+        ),
+        child: _JobBrowseFilterSheetBody(
+          scrollController: ScrollController(),
+          initial: initial,
+        ),
+      );
+    },
   );
 }
 

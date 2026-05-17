@@ -8,7 +8,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/theme_preference.dart';
-import '../../../core/widgets/overlays/prolance_bottom_sheet.dart';
 import '../../../core/widgets/overlays/prolance_dialog.dart';
 import '../../../core/widgets/overlays/prolance_messenger.dart';
 
@@ -22,14 +21,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _selectedLanguage = 'en';
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _selectedLanguage = context.read<AppState>().languageCode;
-  }
-
   Future<void> _showLogoutDialog() async {
     final appState = context.read<AppState>();
     final confirmed = await showProlanceDestructiveDialog(
@@ -114,13 +105,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Iconsax.global,
                   title: app.t('Language', 'Dil'),
                   trailing: Text(
-                    _selectedLanguage == 'tr' ? 'Turkce' : 'English',
+                    'English',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
-                  onTap: _openLanguagePicker,
+                  onTap: null,
                 ),
                 _buildDivider(context),
                 Padding(
@@ -357,39 +348,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: scheme.outlineVariant.withValues(alpha: 0.35),
       ),
     );
-  }
-
-  Future<void> _openLanguagePicker() async {
-    final appState = context.read<AppState>();
-    final selected = await showProlanceBottomSheet<String>(
-      context: context,
-      title: appState.t('Language', 'Dil'),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ProlanceSheetListTile(
-              icon: Iconsax.global,
-              title: 'English',
-              onTap: () => Navigator.pop(context, 'en'),
-            ),
-            ProlanceSheetListTile(
-              icon: Iconsax.global,
-              title: appState.t('Turkish', 'Türkçe'),
-              onTap: () => Navigator.pop(context, 'tr'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (!mounted) return;
-    if (selected != null) {
-      setState(() => _selectedLanguage = selected);
-      final appState = context.read<AppState>();
-      await appState.setLanguage(selected);
-    }
   }
 
   void _openChangePassword() {
@@ -674,7 +632,7 @@ class _VerificationPageState extends State<_VerificationPage> {
           children: [
             TextField(
               controller: tc,
-              decoration: const InputDecoration(labelText: 'TC Kimlik No (11 hane)'),
+              decoration: const InputDecoration(labelText: 'National ID (11 digits)'),
               keyboardType: TextInputType.number,
             ),
             TextField(

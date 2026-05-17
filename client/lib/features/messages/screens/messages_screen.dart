@@ -138,10 +138,18 @@ class _MessagesScreenState extends State<MessagesScreen> {
                   child: _ConversationTile(
                     conversation: conversation,
                     onTap: () {
+                      final peer = conversation.otherUserId?.trim();
+                      final peerQ = (peer != null &&
+                              RegExp(
+                                r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+                              ).hasMatch(peer))
+                          ? '&peer=${Uri.encodeComponent(peer)}'
+                          : '';
                       context.push(
                         '/chat/${conversation.id}'
                         '?name=${Uri.encodeComponent(conversation.userName)}'
-                        '&avatar=${Uri.encodeComponent(conversation.userAvatar)}',
+                        '&avatar=${Uri.encodeComponent(conversation.userAvatar)}'
+                        '$peerQ',
                       );
                     },
                   ),

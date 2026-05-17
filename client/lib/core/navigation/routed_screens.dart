@@ -34,7 +34,11 @@ class RoutedJobDetailScreen extends StatelessWidget {
 
 /// Chat route with optional query params; falls back to [MessageRepository].
 class RoutedChatScreen extends StatelessWidget {
-  const RoutedChatScreen({super.key, required this.conversationId, this.query});
+  const RoutedChatScreen({
+    super.key,
+    required this.conversationId,
+    this.query = const {},
+  });
 
   final String conversationId;
   final Map<String, String> query;
@@ -51,6 +55,7 @@ class RoutedChatScreen extends StatelessWidget {
     }
     final name = query['name'];
     final avatar = query['avatar'];
+    final peer = query['peer'];
     return ChatScreen(
       conversationId: conversationId,
       userName: conv?.userName ??
@@ -58,6 +63,8 @@ class RoutedChatScreen extends StatelessWidget {
       userAvatar: conv?.userAvatar ??
           (avatar != null ? Uri.decodeComponent(avatar) : ''),
       isOnline: conv?.isOnline ?? false,
+      peerUserId: conv?.otherUserId ??
+          (peer != null && peer.isNotEmpty ? Uri.decodeComponent(peer) : null),
     );
   }
 }

@@ -123,6 +123,9 @@ class AuthService {
         skills: const [],
         location: 'Remote',
         isFreelancer: true,
+        isAdmin: false,
+        demoBalanceCents: 0,
+        earningsAvailableCents: 0,
         joinedDate: DateTime.tryParse(u.createdAt) ?? DateTime.now(),
       );
     }
@@ -134,6 +137,8 @@ class AuthService {
 
     final role = '${row['role']}';
     final isFreelancer = role != 'CLIENT';
+
+    final isAdmin = row['is_admin'] == true;
 
     return UserModel(
       id: row['id'] as String,
@@ -150,6 +155,10 @@ class AuthService {
       skills: skills,
       location: row['location'] as String? ?? 'Remote',
       isFreelancer: isFreelancer,
+      isAdmin: isAdmin,
+      demoBalanceCents: (row['demo_balance_cents'] as num?)?.toInt() ?? 0,
+      earningsAvailableCents:
+          (row['earnings_available_cents'] as num?)?.toInt() ?? 0,
       joinedDate: DateTime.tryParse('${row['created_at']}') ?? DateTime.now(),
     );
   }
@@ -158,10 +167,13 @@ class AuthService {
     final c = _client;
     if (c == null) return;
     final uid = rawUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      throw StateError(
+        'No authenticated session. Sign in again to save your profile.',
+      );
+    }
 
-    await c.from('profiles').upsert({
-      'id': uid,
+    final payload = <String, dynamic>{
       'email': user.email,
       'full_name': user.name,
       'avatar_url': user.avatarUrl,
@@ -175,7 +187,17 @@ class AuthService {
       'skills': user.skills,
       'location': user.location,
       'role': user.isFreelancer ? 'FREELANCER' : 'CLIENT',
-    });
+    };
+
+    final updated =
+        await c.from('profiles').update(payload).eq('id', uid).select('id').maybeSingle();
+
+    if (updated == null) {
+      await c.from('profiles').insert({
+        'id': uid,
+        ...payload,
+      });
+    }
   }
 
   static Future<void> initializeIfEnabled() async {
@@ -188,7 +210,6 @@ class AuthService {
       anonKey: SupabaseConfig.anonKey,
       authOptions: const FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
-        authCallbackUrlHostname: 'login-callback',
       ),
     );
     debugPrint('Supabase: initialized at ${SupabaseConfig.url}');

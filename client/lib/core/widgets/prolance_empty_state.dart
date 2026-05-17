@@ -27,28 +27,28 @@ class ProlanceEmptyState extends StatelessWidget {
   factory ProlanceEmptyState.favorites({VoidCallback? onBrowse}) =>
       ProlanceEmptyState(
         icon: Iconsax.heart,
-        title: 'Favori ilanınız yok',
-        subtitle: 'Beğendiğiniz ilanları kaydedin,\nhep burada ulaşın.',
-        actionLabel: 'İlanları Keşfet',
+        title: 'No saved listings yet',
+        subtitle: 'Save listings you like\nand find them here anytime.',
+        actionLabel: 'Browse listings',
         onAction: onBrowse,
       );
 
   factory ProlanceEmptyState.messages() => const ProlanceEmptyState(
         icon: Iconsax.message,
-        title: 'Henüz mesajınız yok',
-        subtitle: 'Bir işe teklif verin veya bir\nişverene mesaj gönderin.',
+        title: 'No messages yet',
+        subtitle: 'Send a proposal or message\na client to start chatting.',
       );
 
   factory ProlanceEmptyState.proposals() => const ProlanceEmptyState(
         icon: Iconsax.document_text,
-        title: 'Teklif göndermediniz',
-        subtitle: 'Uygun projelere teklif verin\nve sürecinizi buradan takip edin.',
+        title: 'No proposals sent yet',
+        subtitle: 'Submit proposals on matching projects\nand track them here.',
       );
 
   factory ProlanceEmptyState.notifications() => const ProlanceEmptyState(
         icon: Iconsax.notification,
-        title: 'Bildirim yok',
-        subtitle: 'Yeni bildirimler burada görünecek.',
+        title: 'No notifications',
+        subtitle: 'New alerts will appear here.',
       );
 
   @override

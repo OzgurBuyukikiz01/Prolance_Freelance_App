@@ -5,12 +5,17 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/config/supabase_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/messaging/proposal_intro_message.dart';
+import '../../../core/repositories/message_repository.dart';
 import '../../../core/repositories/proposal_repository.dart';
+import '../../../core/navigation/main_nav_controller.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/utils/project_duration_ymd.dart';
 import '../../../core/widgets/overlays/prolance_dialog.dart';
@@ -26,6 +31,10 @@ class SubmitProposalScreen extends StatefulWidget {
 }
 
 class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
+  static final RegExp _uuid = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
   final _formKey = GlobalKey<FormState>();
   final _bidController = TextEditingController();
   final _deliveryYearsController = TextEditingController(text: '0');
@@ -119,6 +128,67 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
     setState(() => _attachments.removeAt(index));
   }
 
+  Future<void> _sendProposalIntroToClient(
+    BuildContext context, {
+    required String proposalId,
+    required double bid,
+  }) async {
+    if (!SupabaseConfig.isEnabled || !_uuid.hasMatch(proposalId)) return;
+
+    final client = Supabase.instance.client;
+    final me = client.auth.currentUser?.id;
+    if (me == null) return;
+
+    final appState = context.read<AppState>();
+    final freelanceName = appState.currentUser.name;
+    final msgRepo = context.read<MessageRepository>();
+
+    String? employerId = widget.job.clientId;
+    if (employerId == null || employerId.isEmpty) {
+      try {
+        final row = await client
+            .from('jobs')
+            .select('client_id')
+            .eq('id', widget.job.id)
+            .maybeSingle();
+        employerId = row?['client_id'] as String?;
+      } catch (_) {}
+    }
+    if (employerId == null || employerId.isEmpty || employerId == me) return;
+    if (!context.mounted) return;
+
+    try {
+      final convId =
+          await msgRepo.ensureDirectConversation(otherUserId: employerId);
+      if (convId.startsWith('local_')) return;
+
+      final budget = _formatBudget(widget.job);
+      final skills = widget.job.skills.isEmpty
+          ? '—'
+          : widget.job.skills.take(8).join(', ');
+
+      final body = ProposalIntroMessage.compose(
+        jobTitle: widget.job.title,
+        jobDescription: widget.job.description,
+        budgetLine: budget,
+        category: widget.job.category,
+        duration: widget.job.duration,
+        skillsLine: skills,
+        pitch: _coverLetterController.text.trim(),
+        profilePath: '/user/$me',
+        proposalId: proposalId,
+        jobId: widget.job.id,
+        freelancerId: me,
+        freelancerName: freelanceName,
+        bid: bid,
+      );
+
+      await msgRepo.sendMessageAsync(convId, body);
+    } catch (e, st) {
+      debugPrint('[SubmitProposal] intro message: $e $st');
+    }
+  }
+
   Future<void> _submitProposal() async {
     if (_formKey.currentState?.validate() ?? false) {
       final y = int.tryParse(_deliveryYearsController.text.trim()) ?? 0;
@@ -143,15 +213,23 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
       }
 
       final repo = context.read<ProposalRepository>();
-      await repo.submitProposal(
+      final bid = double.tryParse(_bidController.text) ?? 0;
+      final proposalId = await repo.submitProposal(
         jobId: widget.job.id,
         jobTitle: widget.job.title,
-        bid: double.tryParse(_bidController.text) ?? 0,
+        bid: bid,
         deliveryYears: normalized.years,
         deliveryMonths: normalized.months,
         deliveryDays: normalized.days,
         coverLetter: _coverLetterController.text.trim(),
         attachmentNames: _attachments.map((f) => f.name).toList(),
+      );
+
+      if (!mounted) return;
+      await _sendProposalIntroToClient(
+        context,
+        proposalId: proposalId ?? '',
+        bid: bid,
       );
 
       if (!mounted) return;
@@ -165,8 +243,8 @@ class _SubmitProposalScreenState extends State<SubmitProposalScreen> {
         ),
         onDone: () {
           if (!context.mounted) return;
-          context.pop();
-          context.pop();
+          context.read<MainNavController>().selectTab(0);
+          context.go('/home');
           appState.triggerProposalSentCelebration();
         },
       );

@@ -41,7 +41,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   Future<void> _startCall() async {
     if (!SupabaseConfig.isEnabled) {
       setState(() {
-        _error = 'Supabase devre dışı.';
+        _error = 'Supabase is disabled.';
         _loading = false;
       });
       return;
@@ -53,7 +53,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     }
     if (!mic.isGranted) {
       setState(() {
-        _error = 'Mikrofon izni gerekli.';
+        _error = 'Microphone permission is required.';
         _loading = false;
       });
       return;
@@ -69,7 +69,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         final data = response.data;
         final message = data is Map && data['error'] != null
             ? '${data['error']}'
-            : 'Agora token alınamadı (${response.status}).';
+            : 'Could not fetch Agora token (${response.status}).';
         setState(() {
           _error = message;
           _loading = false;
@@ -80,7 +80,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       final raw = response.data;
       if (raw is! Map) {
         setState(() {
-          _error = 'Agora token yanıtı geçersiz.';
+          _error = 'Invalid Agora token response.';
           _loading = false;
         });
         return;
@@ -97,7 +97,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           uid == null ||
           appId.isEmpty) {
         setState(() {
-          _error = 'Geçersiz Agora yanıtı. AGORA_APP_ID ayarlarını kontrol edin.';
+          _error =
+              'Invalid Agora response. Check AGORA_APP_ID in configuration.';
           _loading = false;
         });
         return;
@@ -203,7 +204,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         title: Text(
-          widget.voiceOnly ? 'Sesli arama' : 'Görüntülü arama',
+          widget.voiceOnly ? 'Voice call' : 'Video call',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
       ),
@@ -259,21 +260,21 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                         children: [
                           _CallFab(
                             icon: _muted ? Iconsax.microphone_slash : Iconsax.microphone,
-                            label: _muted ? 'Sessiz' : 'Mik',
+                            label: _muted ? 'Muted' : 'Mic',
                             onTap: _toggleMute,
                           ),
                           if (!widget.voiceOnly) ...[
                             const SizedBox(width: 16),
                             _CallFab(
                               icon: _videoOff ? Iconsax.video_slash : Iconsax.video,
-                              label: _videoOff ? 'Kapalı' : 'Kamera',
+                              label: _videoOff ? 'Off' : 'Camera',
                               onTap: _toggleVideo,
                             ),
                           ],
                           const SizedBox(width: 16),
                           _CallFab(
                             icon: Iconsax.call_slash,
-                            label: 'Bitir',
+                            label: 'End',
                             color: AppColors.error,
                             onTap: _endCall,
                           ),
@@ -283,7 +284,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                     if (!_joined)
                       const Center(
                         child: Text(
-                          'Bağlanıyor…',
+                          'Connecting…',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ),
@@ -314,7 +315,7 @@ class _ErrorBody extends StatelessWidget {
             style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 24),
-          FilledButton(onPressed: onClose, child: const Text('Kapat')),
+          FilledButton(onPressed: onClose, child: const Text('Close')),
         ],
       ),
     );

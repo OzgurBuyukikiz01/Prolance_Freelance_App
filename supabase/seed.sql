@@ -1,6 +1,11 @@
 -- Prolance seed data — local development only.
--- Inserts 2 demo auth users, their profiles, 5 jobs, and a sample conversation.
+-- Inserts 3 demo auth users, their profiles, 5 jobs, and a sample conversation.
 -- Run with: supabase db reset  (which replays migrations then applies this file)
+--
+-- Demo logins:
+--   client@prolance.dev / demo1234
+--   freelancer@prolance.dev / demo1234
+--   admin@prolance.dev / admin1234  (is_admin; mock escrow on any job in the app)
 
 -- ---------------------------------------------------------------------------
 -- Auth users (Supabase auth schema)
@@ -35,6 +40,18 @@ insert into auth.users (
     '{"full_name":"Demo Freelancer","role":"FREELANCER"}'::jsonb,
     '{"provider":"email","providers":["email"]}'::jsonb,
     false, '', '', '', ''
+  ),
+  -- Platform demo admin  |  email: admin@prolance.dev  |  password: admin1234
+  (
+    'aaaaaaaa-0003-4000-8000-000000000003',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'admin@prolance.dev',
+    crypt('admin1234', gen_salt('bf')),
+    now(), now(), now(),
+    '{"full_name":"Demo Admin","role":"CLIENT"}'::jsonb,
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    false, '', '', '', ''
   )
 on conflict (id) do nothing;
 
@@ -55,6 +72,13 @@ insert into auth.identities (
     'freelancer@prolance.dev',
     '{"sub":"aaaaaaaa-0002-4000-8000-000000000002","email":"freelancer@prolance.dev"}'::jsonb,
     'email', now(), now(), now()
+  ),
+  (
+    'aaaaaaaa-0003-4000-8000-000000000003',
+    'aaaaaaaa-0003-4000-8000-000000000003',
+    'admin@prolance.dev',
+    '{"sub":"aaaaaaaa-0003-4000-8000-000000000003","email":"admin@prolance.dev"}'::jsonb,
+    'email', now(), now(), now()
   )
 on conflict (id) do nothing;
 
@@ -64,7 +88,7 @@ on conflict (id) do nothing;
 insert into public.profiles (
   id, email, full_name, avatar_url, role,
   skills, location, title, bio, hourly_rate,
-  rating, completed_jobs, total_earnings
+  rating, completed_jobs, total_earnings, is_admin
 ) values
   (
     'aaaaaaaa-0001-4000-8000-000000000001',
@@ -76,7 +100,7 @@ insert into public.profiles (
     'Istanbul, Turkey',
     'Product Owner',
     'Building great digital products with talented freelancers worldwide.',
-    0, 4.8, 12, 0
+    0, 4.8, 12, 0, false
   ),
   (
     'aaaaaaaa-0002-4000-8000-000000000002',
@@ -88,11 +112,29 @@ insert into public.profiles (
     'Ankara, Turkey',
     'Full-Stack Mobile Developer',
     'Crafting high-quality Flutter apps since 2019. Specialising in Supabase back-ends.',
-    75, 4.9, 34, 42000
+    75, 4.9, 34, 42000, false
+  ),
+  (
+    'aaaaaaaa-0003-4000-8000-000000000003',
+    'admin@prolance.dev',
+    'Demo Admin',
+    'https://i.pravatar.cc/150?img=12',
+    'CLIENT',
+    '[]'::jsonb,
+    'Istanbul, Turkey',
+    'Platform Admin',
+    'Prolance operations and demo escrow.',
+    0, 5.0, 0, 0, true
   )
 on conflict (id) do update
   set full_name = excluded.full_name,
+      is_admin = excluded.is_admin,
       updated_at = now();
+
+-- Demo client wallet: $100,000.00 = 10_000_000 cents.
+update public.profiles
+set demo_balance_cents = 10000000
+where id = 'aaaaaaaa-0001-4000-8000-000000000001';
 
 -- ---------------------------------------------------------------------------
 -- Jobs (5 demo listings from the CLIENT user)

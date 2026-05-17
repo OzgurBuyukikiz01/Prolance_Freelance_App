@@ -1,47 +1,66 @@
--- Demo data for hosted Supabase (cgxzpdhcaxiopdylwstr).
--- Safe to re-run (ON CONFLICT). Password for all demo users: demo1234
+-- Demo data for hosted Supabase (e.g. cgxzpdhcaxiopdylwstr).
+-- Run in Dashboard → SQL Editor (service role / postgres).
+--
+-- IMPORTANT: Hosted projects require auth.users.instance_id = auth.instances.id.
+-- Using 00000000-... causes "Invalid login credentials" for SQL-seeded users.
+--
+-- Passwords: client + freelancer: demo1234 | admin@prolance.dev: admin1234
+--
+-- Re-run safe: upserts refresh passwords and instance_id for the three demo UUIDs.
 
+with inst as (select id from auth.instances limit 1)
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, created_at, updated_at,
   raw_user_meta_data, raw_app_meta_data,
   is_super_admin, confirmation_token, recovery_token,
   email_change_token_new, email_change
-) values
-  (
-    'aaaaaaaa-0001-4000-8000-000000000001',
-    '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated',
-    'client@prolance.dev',
-    crypt('demo1234', gen_salt('bf')),
-    now(), now(), now(),
-    '{"full_name":"Demo Client","role":"CLIENT"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    false, '', '', '', ''
-  ),
-  (
-    'aaaaaaaa-0002-4000-8000-000000000002',
-    '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated',
-    'freelancer@prolance.dev',
-    crypt('demo1234', gen_salt('bf')),
-    now(), now(), now(),
-    '{"full_name":"Demo Freelancer","role":"FREELANCER"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    false, '', '', '', ''
-  ),
-  (
-    'aaaaaaaa-0003-4000-8000-000000000003',
-    '00000000-0000-0000-0000-000000000000',
-    'authenticated', 'authenticated',
-    'admin@prolance.dev',
-    crypt('demo1234', gen_salt('bf')),
-    now(), now(), now(),
-    '{"full_name":"Demo Admin","role":"CLIENT"}'::jsonb,
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    false, '', '', '', ''
-  )
-on conflict (id) do nothing;
+)
+select
+  'aaaaaaaa-0001-4000-8000-000000000001'::uuid,
+  inst.id,
+  'authenticated',
+  'authenticated',
+  'client@prolance.dev',
+  crypt('demo1234', gen_salt('bf')),
+  now(), now(), now(),
+  '{"full_name":"Demo Client","role":"CLIENT"}'::jsonb,
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  false, '', '', '', ''
+from inst
+union all
+select
+  'aaaaaaaa-0002-4000-8000-000000000002'::uuid,
+  inst.id,
+  'authenticated',
+  'authenticated',
+  'freelancer@prolance.dev',
+  crypt('demo1234', gen_salt('bf')),
+  now(), now(), now(),
+  '{"full_name":"Demo Freelancer","role":"FREELANCER"}'::jsonb,
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  false, '', '', '', ''
+from inst
+union all
+select
+  'aaaaaaaa-0003-4000-8000-000000000003'::uuid,
+  inst.id,
+  'authenticated',
+  'authenticated',
+  'admin@prolance.dev',
+  crypt('admin1234', gen_salt('bf')),
+  now(), now(), now(),
+  '{"full_name":"Demo Admin","role":"CLIENT"}'::jsonb,
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  false, '', '', '', ''
+from inst
+on conflict (id) do update set
+  instance_id = excluded.instance_id,
+  encrypted_password = excluded.encrypted_password,
+  email_confirmed_at = excluded.email_confirmed_at,
+  raw_user_meta_data = excluded.raw_user_meta_data,
+  raw_app_meta_data = excluded.raw_app_meta_data,
+  updated_at = now();
 
 insert into auth.identities (
   id, user_id, provider_id, identity_data, provider,
@@ -115,6 +134,11 @@ on conflict (id) do update
   set full_name = excluded.full_name,
       is_admin = excluded.is_admin,
       updated_at = now();
+
+-- Demo client wallet: $100,000.00 = 10_000_000 cents.
+update public.profiles
+set demo_balance_cents = 10000000
+where id = 'aaaaaaaa-0001-4000-8000-000000000001';
 
 insert into public.jobs (
   id, client_id, title, description,

@@ -1,6 +1,14 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+Map<String, List<String>> _parseSkillsJson(String raw) {
+  final decoded = jsonDecode(raw) as Map<String, dynamic>;
+  return decoded.map(
+    (k, v) => MapEntry(k, List<String>.from(v as List<dynamic>)),
+  );
+}
 
 /// Loads [assets/data/category_skills.json] keyed by post-job category names.
 class SkillsCatalogService {
@@ -14,10 +22,7 @@ class SkillsCatalogService {
     if (_map != null) return;
     final raw =
         await rootBundle.loadString('assets/data/category_skills.json');
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    _map = decoded.map(
-      (k, v) => MapEntry(k, List<String>.from(v as List<dynamic>)),
-    );
+    _map = await compute(_parseSkillsJson, raw);
   }
 
   bool get isLoaded => _map != null;

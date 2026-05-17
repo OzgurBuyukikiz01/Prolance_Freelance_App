@@ -1,3 +1,18 @@
+/// Supabase `proposals.lifecycle_phase` (subset used in UI).
+abstract class ProposalLifecycle {
+  ProposalLifecycle._();
+
+  static const String submitted = 'submitted';
+  static const String escrowFunded = 'escrow_funded';
+  /// Freelancer confirmed files; client may download and accept/decline.
+  static const String awaitingClientReview = 'awaiting_client_review';
+  /// Legacy phase (treated like [awaitingClientReview] in DB after migration).
+  static const String delivered = 'delivered';
+  static const String payoutPending = 'payout_pending';
+  static const String closed = 'closed';
+  static const String disputed = 'disputed';
+}
+
 enum SubmittedProposalStatus {
   awaitingResponse,
   accepted,
@@ -10,6 +25,7 @@ SubmittedProposalStatus submittedProposalStatusFromJson(String? raw) {
     case 'accepted':
       return SubmittedProposalStatus.accepted;
     case 'declined':
+    case 'rejected':
       return SubmittedProposalStatus.declined;
     case 'cancelled':
       return SubmittedProposalStatus.cancelled;
@@ -45,6 +61,11 @@ class SubmittedProposal {
     required this.attachmentNames,
     required this.submittedAt,
     this.status = SubmittedProposalStatus.awaitingResponse,
+    this.lifecyclePhase = ProposalLifecycle.submitted,
+    this.fundedAmountCents,
+    this.freelancerPayoutCents,
+    this.deliveryDisputeDeadline,
+    this.payoutFinalized = false,
   });
 
   final String id;
@@ -58,12 +79,45 @@ class SubmittedProposal {
   final List<String> attachmentNames;
   final DateTime submittedAt;
   final SubmittedProposalStatus status;
+  final String lifecyclePhase;
+  final int? fundedAmountCents;
+  final int? freelancerPayoutCents;
+  final DateTime? deliveryDisputeDeadline;
+  final bool payoutFinalized;
+
+  /// Combined label for list chips (freelancer My proposals).
+  String get workflowLabel {
+    if (status == SubmittedProposalStatus.cancelled) return 'Withdrawn';
+    if (status == SubmittedProposalStatus.declined) return 'Declined';
+    if (status == SubmittedProposalStatus.awaitingResponse) return 'Waiting';
+    switch (lifecyclePhase) {
+      case ProposalLifecycle.escrowFunded:
+        return 'In escrow · upload files';
+      case ProposalLifecycle.awaitingClientReview:
+      case ProposalLifecycle.delivered:
+        return 'With client · review';
+      case ProposalLifecycle.payoutPending:
+        return 'Payout pending (24h)';
+      case ProposalLifecycle.closed:
+        return 'Completed';
+      case ProposalLifecycle.disputed:
+        return 'Disputed';
+      default:
+        return status == SubmittedProposalStatus.accepted ? 'Accepted' : 'Waiting';
+    }
+  }
 
   SubmittedProposal copyWith({
+    String? id,
     SubmittedProposalStatus? status,
+    String? lifecyclePhase,
+    int? fundedAmountCents,
+    int? freelancerPayoutCents,
+    DateTime? deliveryDisputeDeadline,
+    bool? payoutFinalized,
   }) {
     return SubmittedProposal(
-      id: id,
+      id: id ?? this.id,
       jobId: jobId,
       jobTitle: jobTitle,
       bid: bid,
@@ -74,6 +128,13 @@ class SubmittedProposal {
       attachmentNames: attachmentNames,
       submittedAt: submittedAt,
       status: status ?? this.status,
+      lifecyclePhase: lifecyclePhase ?? this.lifecyclePhase,
+      fundedAmountCents: fundedAmountCents ?? this.fundedAmountCents,
+      freelancerPayoutCents:
+          freelancerPayoutCents ?? this.freelancerPayoutCents,
+      deliveryDisputeDeadline:
+          deliveryDisputeDeadline ?? this.deliveryDisputeDeadline,
+      payoutFinalized: payoutFinalized ?? this.payoutFinalized,
     );
   }
 
@@ -89,6 +150,12 @@ class SubmittedProposal {
         'attachmentNames': attachmentNames,
         'submittedAt': submittedAt.toIso8601String(),
         'status': submittedProposalStatusToJson(status),
+        'lifecyclePhase': lifecyclePhase,
+        'fundedAmountCents': fundedAmountCents,
+        'freelancerPayoutCents': freelancerPayoutCents,
+        'deliveryDisputeDeadline':
+            deliveryDisputeDeadline?.toIso8601String(),
+        'payoutFinalized': payoutFinalized,
       };
 
   factory SubmittedProposal.fromJson(Map<String, dynamic> json) {
@@ -125,6 +192,14 @@ class SubmittedProposal {
       submittedAt: DateTime.tryParse(json['submittedAt'] as String? ?? '') ??
           DateTime.now(),
       status: status,
+      lifecyclePhase:
+          json['lifecyclePhase'] as String? ?? ProposalLifecycle.submitted,
+      fundedAmountCents: (json['fundedAmountCents'] as num?)?.toInt(),
+      freelancerPayoutCents: (json['freelancerPayoutCents'] as num?)?.toInt(),
+      deliveryDisputeDeadline: DateTime.tryParse(
+        '${json['deliveryDisputeDeadline'] ?? ''}',
+      ),
+      payoutFinalized: json['payoutFinalized'] as bool? ?? false,
     );
   }
 }

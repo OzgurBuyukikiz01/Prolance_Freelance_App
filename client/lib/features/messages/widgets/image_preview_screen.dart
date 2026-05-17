@@ -28,7 +28,7 @@ class ImagePreviewScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () => Share.share(imageUrl, subject: 'Paylaşılan Görsel'),
+            onPressed: () => Share.share(imageUrl, subject: 'Shared image'),
             icon: const Icon(Iconsax.share, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 8),

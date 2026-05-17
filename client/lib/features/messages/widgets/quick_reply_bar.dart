@@ -10,12 +10,12 @@ class QuickReplyBar extends StatelessWidget {
   final void Function(String text) onSelect;
 
   static const _replies = [
-    'Merhaba! Teklifiniz için teşekkürler.',
-    'Daha fazla bilgi alabilir miyim?',
-    'Ödeme escrow\'a yatırıldı.',
-    'Projeyi teslim ettim.',
-    'Ne zaman başlayabiliriz?',
-    'Fiyat konusunda görüşebilir miyiz?',
+    'Hi! Thanks for your proposal.',
+    'Could you share more details?',
+    'Payment has been funded to escrow.',
+    'I have delivered the project.',
+    'When can we get started?',
+    'Can we discuss the budget?',
   ];
 
   @override

@@ -18,6 +18,7 @@ class CustomTextField extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.textInputAction = TextInputAction.done,
     this.maxLines = 1,
+    this.minLines,
     this.maxLength,
     this.validator,
     this.onChanged,
@@ -37,6 +38,7 @@ class CustomTextField extends StatefulWidget {
   final TextInputType keyboardType;
   final TextInputAction textInputAction;
   final int maxLines;
+  final int? minLines;
   final int? maxLength;
   final String? Function(String?)? validator;
   final void Function(String)? onChanged;
@@ -92,6 +94,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
           maxLines: widget.maxLines,
+          minLines: widget.minLines,
           maxLength: widget.maxLength,
           validator: widget.validator,
           onChanged: widget.onChanged,
@@ -112,12 +115,27 @@ class _CustomTextFieldState extends State<CustomTextField> {
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),
+            alignLabelWithHint: widget.maxLines > 1,
             prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    size: 22,
-                    color: scheme.onSurfaceVariant,
-                  )
+                ? widget.maxLines > 1
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 12, left: 12, right: 4),
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          widthFactor: 1.0,
+                          heightFactor: null,
+                          child: Icon(
+                            widget.prefixIcon,
+                            size: 22,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    : Icon(
+                        widget.prefixIcon,
+                        size: 22,
+                        color: scheme.onSurfaceVariant,
+                      )
                 : null,
             suffixIcon: widget.obscureText
                 ? IconButton(

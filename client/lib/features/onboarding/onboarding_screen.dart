@@ -25,25 +25,28 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       icon: Iconsax.search_normal_1,
       emoji: '🔍',
       gradientColors: [Color(0xFF6C63FF), Color(0xFF8B85FF)],
-      title: 'En İyi Yetenekleri\nKeşfet',
-      subtitle: 'Dünyanın dört bir yanından yetenekli freelancerları bulun. Profillere göz atın, değerlendirmeleri inceleyin.',
-      tags: ['5.000+ Freelancer', 'Anlık Eşleşme', 'Yapay Zeka Önerileri'],
+      title: 'Discover top\ntalent',
+      subtitle:
+          'Find skilled freelancers worldwide. Browse profiles and read reviews.',
+      tags: ['5,000+ freelancers', 'Instant matching', 'AI suggestions'],
     ),
     _OnboardingData(
       icon: Iconsax.document_upload,
       emoji: '🚀',
       gradientColors: [Color(0xFF00BFA6), Color(0xFF00E5CC)],
-      title: 'Projenizi\nYayınlayın',
-      subtitle: 'Dakikalar içinde proje detaylarınızı paylaşın. Teklif alın ve hemen çalışmaya başlayın.',
-      tags: ['Hızlı Yayınlama', 'Akıllı Eşleştirme', 'Ücretsiz'],
+      title: 'Post your\nproject',
+      subtitle:
+          'Share project details in minutes. Get proposals and start working fast.',
+      tags: ['Quick posting', 'Smart matching', 'Free to post'],
     ),
     _OnboardingData(
       icon: Iconsax.wallet_money,
       emoji: '🔒',
       gradientColors: [Color(0xFF7C3AED), Color(0xFF9D5CF0)],
-      title: 'Escrow ile\nGüvende Öde',
-      subtitle: 'Paranız, iş tamamlanana kadar güvende tutulur. Tek taraflı mağduriyet sona erdi.',
-      tags: ['Escrow Koruması', 'AES-256', 'Anlaşmazlık Çözümü'],
+      title: 'Pay safely\nwith escrow',
+      subtitle:
+          'Funds are held securely until work is done. Reduce one-sided risk.',
+      tags: ['Escrow protection', 'AES-256', 'Dispute support'],
     ),
   ];
 
@@ -134,7 +137,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         TextButton(
                           onPressed: () => context.go('/login'),
                           child: Text(
-                            'Geç',
+                            'Skip',
                             style: GoogleFonts.poppins(
                               color: Colors.white.withValues(alpha: 0.85),
                               fontWeight: FontWeight.w500,
@@ -380,7 +383,7 @@ class _NextButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              isLast ? "Başla" : "Devam",
+              isLast ? 'Get started' : 'Continue',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

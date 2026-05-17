@@ -78,10 +78,10 @@ class _FloatingBottomNav extends StatelessWidget {
   final void Function(int) onTabTap;
 
   static const _items = [
-    (icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Ana Sayfa'),
-    (icon: Iconsax.briefcase, activeIcon: Iconsax.briefcase5, label: 'İlanlar'),
-    (icon: Iconsax.message, activeIcon: Iconsax.message5, label: 'Mesajlar'),
-    (icon: Iconsax.user, activeIcon: Iconsax.profile_circle, label: 'Profil'),
+    (icon: Iconsax.home_2, activeIcon: Iconsax.home_25, label: 'Home'),
+    (icon: Iconsax.briefcase, activeIcon: Iconsax.briefcase5, label: 'Jobs'),
+    (icon: Iconsax.message, activeIcon: Iconsax.message5, label: 'Messages'),
+    (icon: Iconsax.user, activeIcon: Iconsax.profile_circle, label: 'Profile'),
   ];
 
   @override
@@ -108,9 +108,10 @@ class _FloatingBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: SizedBox(
-          height: 64,
-          child: Row(
-            children: [
+          height: 76,
+          child: ClipRect(
+            child: Row(
+              children: [
               // Left 2 tabs
               ..._items.sublist(0, 2).asMap().entries.map((e) {
                 return Expanded(
@@ -145,6 +146,7 @@ class _FloatingBottomNav extends StatelessWidget {
                 );
               }),
             ],
+            ),
           ),
         ),
       ),
@@ -174,17 +176,15 @@ class _NavTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    Widget iconWidget = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      transitionBuilder: (child, anim) => ScaleTransition(
-        scale: anim,
-        child: child,
-      ),
-      child: Icon(
-        isSelected ? activeIcon : icon,
-        key: ValueKey(isSelected),
-        size: 22,
-        color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
+    Widget iconWidget = SizedBox(
+      width: 28,
+      height: 28,
+      child: Center(
+        child: Icon(
+          isSelected ? activeIcon : icon,
+          size: 22,
+          color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
+        ),
       ),
     );
 
@@ -235,10 +235,15 @@ class _NavTab extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               style: GoogleFonts.poppins(
                 fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 color: isSelected ? AppColors.primary : scheme.onSurfaceVariant,
               ),
-              child: Text(label),
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -282,9 +287,10 @@ class _PostFabState extends State<_PostFab>
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Transform.translate(
-            offset: const Offset(0, -14),
+            offset: const Offset(0, -8),
             child: GestureDetector(
               onTapDown: (_) => _ctrl.forward(),
               onTapUp: (_) {
@@ -332,12 +338,13 @@ class _PostFabState extends State<_PostFab>
                 delay: 200.ms,
               )
               .fadeIn(delay: 150.ms),
-          const SizedBox(height: 2),
+          const SizedBox(height: 0),
           Text(
-            'Yayınla',
+            'Post',
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w500,
+              height: 1.0,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

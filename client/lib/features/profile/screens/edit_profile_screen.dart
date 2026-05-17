@@ -10,8 +10,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/supabase_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/services/auth_service.dart';
 import '../../../core/services/location_catalog_service.dart';
+import '../../../core/services/skills_catalog_service.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/overlays/prolance_dialog.dart';
@@ -57,6 +57,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     LocationCatalogService.instance.ensureLoaded().then((_) {
       if (mounted) setState(() => _locationsReady = true);
     });
+    SkillsCatalogService.instance.ensureLoaded();
   }
 
   @override
@@ -76,25 +77,76 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final added = await showProlanceFramedDialog<bool>(
       context: context,
       title: appState.t('Add skill', 'Beceri ekle'),
-      child: TextField(
-        controller: controller,
-        autofocus: true,
-        decoration: InputDecoration(
-          hintText: appState.t('Enter skill name', 'Beceri adı girin'),
-          hintStyle: GoogleFonts.poppins(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-          ),
-        ),
-        style: GoogleFonts.poppins(
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-        onSubmitted: (value) {
-          if (value.trim().isNotEmpty) {
-            Navigator.pop(context, true);
-          }
+      child: StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final scheme = Theme.of(dialogContext).colorScheme;
+          final query = controller.text.trim();
+          final suggestions = query.isEmpty
+              ? <String>[]
+              : SkillsCatalogService.instance.searchSkills(query, limit: 8);
+          return SizedBox(
+            width: double.infinity,
+            height: 300,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: appState.t('Type to search skills…', 'Beceri arayın…'),
+                    hintStyle: GoogleFonts.poppins(color: scheme.onSurfaceVariant),
+                    prefixIcon: Icon(Iconsax.search_normal_1, color: scheme.onSurfaceVariant, size: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                    ),
+                  ),
+                  style: GoogleFonts.poppins(color: scheme.onSurface),
+                  onChanged: (_) => setDialogState(() {}),
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      Navigator.pop(dialogContext, true);
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: suggestions.isEmpty
+                      ? const SizedBox.shrink()
+                      : ListView.builder(
+                          itemCount: suggestions.length,
+                          itemBuilder: (_, i) {
+                            final s = suggestions[i];
+                            final alreadyAdded = _skills.any(
+                              (sk) => sk.toLowerCase() == s.toLowerCase(),
+                            );
+                            return ListTile(
+                              dense: true,
+                              title: Text(
+                                s,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: alreadyAdded
+                                      ? scheme.onSurfaceVariant
+                                      : scheme.onSurface,
+                                ),
+                              ),
+                              trailing: alreadyAdded
+                                  ? Icon(Iconsax.tick_circle5, color: scheme.primary, size: 18)
+                                  : null,
+                              onTap: alreadyAdded
+                                  ? null
+                                  : () {
+                                      controller.text = s;
+                                      setDialogState(() {});
+                                    },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
         },
       ),
       actions: [
@@ -123,8 +175,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ],
     );
-    if (added == true && controller.text.trim().isNotEmpty) {
-      setState(() => _skills.add(controller.text.trim()));
+    final skill = controller.text.trim();
+    if (added == true && skill.isNotEmpty) {
+      final duplicate = _skills.any((s) => s.toLowerCase() == skill.toLowerCase());
+      if (!duplicate) {
+        setState(() => _skills.add(skill));
+      }
     }
     controller.dispose();
   }
@@ -188,7 +244,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  bool _saving = false;
+
   Future<void> _saveProfile() async {
+    if (_saving) return;
     final current = context.read<AppState>().currentUser;
     final hourly = double.tryParse(_hourlyRateController.text.trim()) ?? 0;
     final updated = current.copyWith(
@@ -202,10 +261,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       avatarUrl: _avatarOverrideUrl ?? current.avatarUrl,
     );
     if (!mounted) return;
-    context.read<AppState>().updateUser(updated);
-    // Persist to Supabase profiles table (fire-and-forget, non-blocking)
-    AuthService.instance.upsertProfileFromUserModel(updated).catchError((_) {});
-    if (mounted) Navigator.pop(context);
+    setState(() => _saving = true);
+    try {
+      await context.read<AppState>().updateUser(updated);
+      if (!mounted) return;
+      setState(() => _saving = false);
+      context.pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        debugPrint('[EditProfile] save error: $e');
+        ProlanceMessenger.error(
+          context,
+          context.read<AppState>().t(
+                'Could not save profile. Check your connection and try again.',
+                'Profil kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.',
+              ),
+        );
+      }
+    }
   }
 
   @override
@@ -223,20 +297,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              Navigator.maybePop(context);
+            }
+          },
         ),
         actions: [
-          TextButton(
-            onPressed: _saveProfile,
-            child: Text(
-              'Save',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+          if (_saving)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: _saveProfile,
+              child: Text(
+                'Save',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
               ),
             ),
-          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -335,7 +425,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               label: 'Bio',
               hint: 'Tell clients about yourself...',
               prefixIcon: Iconsax.document_text,
-              maxLines: 4,
+              minLines: 3,
+              maxLines: 10,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
             ),
             const SizedBox(height: AppConstants.paddingMd),
 

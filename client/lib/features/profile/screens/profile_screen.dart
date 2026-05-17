@@ -1,22 +1,27 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/portfolio_item.dart';
 import '../../../core/models/review_model.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/repositories/review_repository.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/state/jobs_provider.dart';
+import '../../../core/utils/save_portfolio_download.dart';
 import '../../../core/utils/external_url_launch.dart';
 import '../../../core/widgets/skill_chip.dart';
 import '../../../core/widgets/stat_card.dart';
@@ -43,7 +48,7 @@ String _displayWebsite(String raw) {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final List<PlatformFile> _portfolioFiles = [];
+  final List<PortfolioItem> _portfolioItems = [];
 
   Future<List<ReviewModel>>? _reviewsFuture;
 
@@ -59,6 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final user = state.currentUser;
+    final scheme = Theme.of(context).colorScheme;
     final activeJobs =
         context.watch<JobsProvider>().activeJobsForUser(user.name);
     return Scaffold(
@@ -109,6 +115,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 100),
               child: _buildStatsRow(user),
+            ),
+            const SizedBox(height: AppConstants.paddingMd),
+            FadeInUp(
+              duration: const Duration(milliseconds: 400),
+              delay: const Duration(milliseconds: 120),
+              child: _buildWalletRow(user, scheme),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -317,6 +329,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildWalletRow(UserModel user, ColorScheme scheme) {
+    final demo = (user.demoBalanceCents / 100).toStringAsFixed(2);
+    final avail = (user.earningsAvailableCents / 100).toStringAsFixed(2);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppConstants.paddingMd),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Demo wallet',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '\$$demo',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Available (freelancer)',
+                  textAlign: TextAlign.end,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '\$$avail',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfileCompletion(UserModel user) {
     final double completion = () {
       double v = 0.2;
@@ -518,10 +597,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ...jobs.take(5).map(
                   (job) {
                     final statusLabel = switch (job.status) {
-                      'pending_review' => 'İnceleniyor',
-                      'rejected' => 'Reddedildi',
-                      'open' => 'Yayında',
-                      'in_progress' => 'Devam ediyor',
+                      'pending_review' => 'Pending review',
+                      'rejected' => 'Rejected',
+                      'open' => 'Published',
+                      'in_progress' => 'In progress',
                       _ => job.status,
                     };
                     final subtitle = job.status == 'rejected' &&
@@ -554,28 +633,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
       allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
     );
     if (result == null) return;
-    setState(() {
-      _portfolioFiles.addAll(result.files);
-    });
+    for (final file in result.files) {
+      Uint8List? thumb;
+      if ((file.extension ?? '').toLowerCase() == 'pdf' && file.bytes != null) {
+        try {
+          final doc = await PdfDocument.openData(file.bytes!);
+          final page = await doc.getPage(1);
+          final img = await page.render(
+            width: page.width * 2,
+            height: page.height * 2,
+            format: PdfPageImageFormat.png,
+          );
+          thumb = img?.bytes;
+          await page.close();
+          await doc.close();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() {
+        _portfolioItems.add(PortfolioItem(
+          file: file,
+          thumbnailBytes: thumb,
+        ));
+      });
+    }
   }
 
   Future<void> _downloadPortfolioFile(PlatformFile file) async {
     final bytes = file.bytes;
     if (bytes == null) return;
-    await FileSaver.instance.saveFile(
-      name: file.name.split('.').first,
+    await savePortfolioDownload(
+      name: file.name,
       bytes: bytes,
-      ext: file.extension ?? 'bin',
-      mimeType: MimeType.other,
+      extension: file.extension,
+    );
+  }
+
+  void _showFullPreview(BuildContext context, PortfolioItem item) {
+    showDialog(
+      context: context,
+      builder: (_) => _PortfolioPreviewDialog(item: item),
     );
   }
 
   Widget _buildPortfolio(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dateFmt = DateFormat('MMM d, yyyy – HH:mm');
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingLg),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(AppConstants.radiusLg),
         boxShadow: [
           BoxShadow(
@@ -593,7 +701,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -603,10 +711,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: const Text('Add from device (jpg/png/pdf)'),
           ),
           const SizedBox(height: AppConstants.paddingMd),
-          if (_portfolioFiles.isEmpty)
+          if (_portfolioItems.isEmpty)
             Text(
               'No portfolio files yet.',
-              style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: GoogleFonts.poppins(color: scheme.onSurfaceVariant),
             )
           else
             GridView.builder(
@@ -616,51 +724,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 1.4,
+                childAspectRatio: 0.75,
               ),
-              itemCount: _portfolioFiles.length,
+              itemCount: _portfolioItems.length,
               itemBuilder: (context, index) {
-                final file = _portfolioFiles[index];
-                final isPdf = (file.extension ?? '').toLowerCase() == 'pdf';
+                final item = _portfolioItems[index];
                 return Container(
-                  padding: const EdgeInsets.all(10),
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: scheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                    border: Border.all(color: AppColors.grey300),
+                    border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: Center(
-                          child: Icon(
-                            isPdf ? Icons.picture_as_pdf : Icons.image,
-                            size: 42,
-                            color: isPdf ? Colors.red : AppColors.primary,
-                          ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            _buildPortfolioThumbnail(item),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Material(
+                                color: scheme.surface.withValues(alpha: 0.85),
+                                shape: const CircleBorder(),
+                                child: InkWell(
+                                  customBorder: const CircleBorder(),
+                                  onTap: () => _showFullPreview(context, item),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(Iconsax.maximize_3, size: 16, color: scheme.onSurface),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        file.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _downloadPortfolioFile(file),
-                              child: const Text('Download'),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 6, 4, 6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.onSurface),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: () => setState(() => _portfolioFiles.removeAt(index)),
-                            icon: const Icon(Iconsax.trash, size: 18),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              '${item.typeLabel} · ${item.sizeLabel}',
+                              style: GoogleFonts.poppins(fontSize: 10, color: scheme.onSurfaceVariant),
+                            ),
+                            Text(
+                              dateFmt.format(item.addedAt),
+                              style: GoogleFonts.poppins(fontSize: 10, color: scheme.onSurfaceVariant),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 28,
+                                    child: OutlinedButton(
+                                      onPressed: () => _downloadPortfolioFile(item.file),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        textStyle: GoogleFonts.poppins(fontSize: 10),
+                                      ),
+                                      child: const Text('Save'),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () => setState(() => _portfolioItems.removeAt(index)),
+                                    icon: Icon(Iconsax.trash, size: 16, color: scheme.error),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -668,6 +820,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPortfolioThumbnail(PortfolioItem item) {
+    if (item.isImage && item.file.bytes != null) {
+      return Image.memory(
+        item.file.bytes!,
+        fit: BoxFit.cover,
+      );
+    }
+    if (item.isPdf && item.thumbnailBytes != null) {
+      return Image.memory(
+        item.thumbnailBytes!,
+        fit: BoxFit.cover,
+      );
+    }
+    return Center(
+      child: Icon(
+        item.isPdf ? Icons.picture_as_pdf : Icons.image,
+        size: 42,
+        color: item.isPdf ? Colors.red : AppColors.primary,
       ),
     );
   }
@@ -840,5 +1014,137 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (diff.inDays > 0) return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     return 'Just now';
+  }
+}
+
+class _PortfolioPreviewDialog extends StatefulWidget {
+  const _PortfolioPreviewDialog({required this.item});
+  final PortfolioItem item;
+
+  @override
+  State<_PortfolioPreviewDialog> createState() => _PortfolioPreviewDialogState();
+}
+
+class _PortfolioPreviewDialogState extends State<_PortfolioPreviewDialog> {
+  PdfDocument? _pdfDoc;
+  int _pageCount = 0;
+  int _currentPage = 1;
+  PdfPageImage? _currentImage;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.item.isPdf && widget.item.file.bytes != null) {
+      _loadPdf();
+    } else {
+      _loading = false;
+    }
+  }
+
+  Future<void> _loadPdf() async {
+    try {
+      _pdfDoc = await PdfDocument.openData(widget.item.file.bytes!);
+      _pageCount = _pdfDoc!.pagesCount;
+      await _renderPage(1);
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _renderPage(int pageNum) async {
+    if (_pdfDoc == null) return;
+    final page = await _pdfDoc!.getPage(pageNum);
+    final img = await page.render(
+      width: page.width * 3,
+      height: page.height * 3,
+      format: PdfPageImageFormat.png,
+    );
+    await page.close();
+    if (mounted) {
+      setState(() {
+        _currentPage = pageNum;
+        _currentImage = img;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pdfDoc?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Dialog.fullscreen(
+      backgroundColor: scheme.surface,
+      child: Column(
+        children: [
+          AppBar(
+            title: Text(
+              widget.item.name,
+              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            leading: IconButton(
+              icon: const Icon(Iconsax.close_circle),
+              onPressed: () => Navigator.pop(context),
+            ),
+            elevation: 0,
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : widget.item.isImage && widget.item.file.bytes != null
+                    ? InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        child: Image.memory(widget.item.file.bytes!, fit: BoxFit.contain),
+                      )
+                    : widget.item.isPdf && _currentImage?.bytes != null
+                        ? InteractiveViewer(
+                            minScale: 0.5,
+                            maxScale: 4.0,
+                            child: Image.memory(_currentImage!.bytes, fit: BoxFit.contain),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.insert_drive_file,
+                              size: 80,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+          ),
+          if (widget.item.isPdf && _pageCount > 1)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _currentPage > 1 ? () => _renderPage(_currentPage - 1) : null,
+                      icon: const Icon(Iconsax.arrow_left_2),
+                    ),
+                    Text(
+                      'Page $_currentPage / $_pageCount',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _currentPage < _pageCount ? () => _renderPage(_currentPage + 1) : null,
+                      icon: const Icon(Iconsax.arrow_right_3),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

@@ -35,6 +35,10 @@ class SupabaseJobRepository {
         ? skillsRaw.map((e) => '$e').toList()
         : <String>[];
 
+    final clientIdRaw = row['client_id'];
+    final clientId =
+        clientIdRaw != null ? '${row['client_id']}' : null;
+
     return JobModel(
       id: id,
       title: row['title'] as String,
@@ -55,6 +59,7 @@ class SupabaseJobRepository {
       rejectionReason: row['rejection_reason'] as String?,
       isUserPosted: row['is_user_posted'] as bool? ?? false,
       listingKind: row['listing_kind'] as String? ?? JobListingKinds.jobOffer,
+      clientId: clientId,
     );
   }
 

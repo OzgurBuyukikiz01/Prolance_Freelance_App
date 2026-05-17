@@ -10,11 +10,15 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/messaging/proposal_intro_message.dart';
 import '../../../core/models/message_model.dart';
 import '../../../core/repositories/message_repository.dart';
+import '../../../core/repositories/proposal_repository.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/coming_soon_dialog.dart';
 import '../../../core/widgets/overlays/prolance_bottom_sheet.dart';
+import '../../../core/widgets/overlays/prolance_messenger.dart';
 import '../widgets/image_preview_screen.dart';
 import '../widgets/quick_reply_bar.dart';
 
@@ -25,12 +29,16 @@ class ChatScreen extends StatefulWidget {
     required this.userName,
     required this.userAvatar,
     this.isOnline = false,
+    this.peerUserId,
   });
 
   final String conversationId;
   final String userName;
   final String userAvatar;
   final bool isOnline;
+
+  /// Other participant profile UUID when known (opens `/user/:id`).
+  final String? peerUserId;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -152,6 +160,17 @@ class _ChatScreenState extends State<ChatScreen> {
       await context
           .read<MessageRepository>()
           .sendMessageAsync(widget.conversationId, text);
+    } catch (e) {
+      if (mounted) {
+        debugPrint('[ChatScreen] send error: $e');
+        ProlanceMessenger.error(
+          context,
+          context.read<AppState>().t(
+                'Message could not be sent.',
+                'Mesaj gönderilemedi.',
+              ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -172,8 +191,17 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         titleSpacing: 0,
         title: InkWell(
-          onTap: () =>
-              showComingSoonDialog(context, feature: 'Contact profile'),
+          onTap: () {
+            final raw = widget.peerUserId?.trim();
+            if (raw != null &&
+                RegExp(
+                  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+                ).hasMatch(raw)) {
+              context.push('/user/$raw');
+              return;
+            }
+            showComingSoonDialog(context, feature: 'Contact profile');
+          },
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -296,7 +324,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             size: 48, color: scheme.onSurfaceVariant),
                         const SizedBox(height: 12),
                         Text(
-                          'Henüz mesaj yok.\nBir şeyler yazın!',
+                          'No messages yet.\nSay hello!',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
                             color: scheme.onSurfaceVariant,
@@ -314,7 +342,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       horizontal: 16, vertical: 16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    return _MessageBubble(message: messages[index]);
+                    final m = messages[index];
+                    final payload = ProposalIntroMessage.tryParsePayload(m.text);
+                    if (payload != null) {
+                      return _ProposalIntroMessageTile(
+                        message: m,
+                        payload: payload,
+                      );
+                    }
+                    return _MessageBubble(message: m);
                   },
                 );
               },
@@ -477,7 +513,7 @@ class _TrustBadge extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            'Bu konuşma TLS + AES-256 ile korunmaktadır',
+            'This conversation is protected with TLS + AES-256',
             style: GoogleFonts.poppins(
               fontSize: 11,
               color: Colors.indigo.shade400,
@@ -485,6 +521,229 @@ class _TrustBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Proposal intro (structured message from freelancer)
+// ---------------------------------------------------------------------------
+
+class _ProposalIntroMessageTile extends StatefulWidget {
+  const _ProposalIntroMessageTile({
+    required this.message,
+    required this.payload,
+  });
+
+  final Message message;
+  final Map<String, dynamic> payload;
+
+  @override
+  State<_ProposalIntroMessageTile> createState() =>
+      _ProposalIntroMessageTileState();
+}
+
+class _ProposalIntroMessageTileState extends State<_ProposalIntroMessageTile> {
+  bool _busy = false;
+
+  Future<void> _onAccept() async {
+    final repo = context.read<ProposalRepository>();
+    final appState = context.read<AppState>();
+    final jobs = context.read<JobsProvider>();
+    final nav = context;
+
+    final jobId = '${widget.payload['jobId'] ?? ''}';
+    final proposalId = '${widget.payload['proposalId'] ?? ''}';
+    final freelancerId = '${widget.payload['freelancerId'] ?? ''}';
+    final bid = (widget.payload['bid'] as num?)?.toDouble() ?? 0;
+    if (jobId.isEmpty || proposalId.isEmpty || freelancerId.isEmpty) {
+      if (!nav.mounted) return;
+      ProlanceMessenger.error(
+        nav,
+        appState.t(
+          'This message is missing proposal data. Open the job and use the Proposals tab.',
+          'Bu mesajda teklif verisi yok. İlanı açıp Proposals sekmesini kullanın.',
+        ),
+      );
+      return;
+    }
+
+    setState(() => _busy = true);
+    final ok = await repo.acceptProposal(
+      proposalId: proposalId,
+      jobId: jobId,
+      freelancerId: freelancerId,
+      bid: bid,
+    );
+    if (!nav.mounted) return;
+    setState(() => _busy = false);
+
+    String? successMsg;
+    String? errorMsg;
+    if (ok) {
+      await appState.refreshProfileFromServer();
+      await jobs.refresh();
+      successMsg = appState.t('Proposal accepted', 'Teklif kabul edildi');
+    } else {
+      final code = repo.lastAcceptErrorCode;
+      if (code == 'insufficient_demo_balance') {
+        errorMsg = appState.t(
+          'Not enough demo wallet balance for this bid.',
+          'Bu teklif için demo cüzdan bakiyesi yetersiz.',
+        );
+      } else if (code == 'job_already_accepted') {
+        errorMsg = appState.t(
+          'This job already has an accepted proposal.',
+          'Bu iş için zaten kabul edilmiş bir teklif var.',
+        );
+      } else {
+        errorMsg =
+            appState.t('Could not accept proposal.', 'Teklif kabul edilemedi.');
+      }
+    }
+    if (!nav.mounted) return;
+    if (successMsg != null) {
+      ProlanceMessenger.success(nav, successMsg);
+    } else if (errorMsg != null) {
+      ProlanceMessenger.error(nav, errorMsg);
+    }
+  }
+
+  Future<void> _onDecline() async {
+    final proposalId = '${widget.payload['proposalId'] ?? ''}';
+    if (proposalId.isEmpty) return;
+
+    final repo = context.read<ProposalRepository>();
+    final appState = context.read<AppState>();
+
+    setState(() => _busy = true);
+    final ok = await repo.rejectProposal(proposalId);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      ProlanceMessenger.success(
+        context,
+        appState.t('Proposal declined', 'Teklif reddedildi'),
+      );
+    } else {
+      ProlanceMessenger.error(
+        context,
+        appState.t('Could not decline proposal.', 'Teklif reddedilemedi.'),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final intro = ProposalIntroMessage.humanIntro(widget.message.text);
+    final freelancerId = '${widget.payload['freelancerId'] ?? ''}'.trim();
+    final showActions = !widget.message.isMe;
+
+    return Align(
+      alignment: widget.message.isMe
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.92,
+        ),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.shadow.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              intro,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                height: 1.45,
+                color: scheme.onSurface,
+              ),
+            ),
+            if (freelancerId.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () {
+                        if (RegExp(
+                          r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+                        ).hasMatch(freelancerId)) {
+                          context.push('/user/$freelancerId');
+                        }
+                      },
+                icon: const Icon(Iconsax.user, size: 18),
+                label: Text(
+                  context.read<AppState>().t('View profile', 'Profili gör'),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+            if (showActions) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _busy ? null : _onAccept,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                      ),
+                      child: _busy
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              context
+                                  .read<AppState>()
+                                  .t('Accept', 'Kabul et'),
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _busy ? null : _onDecline,
+                      child: Text(
+                        context.read<AppState>().t('Decline', 'Reddet'),
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              timeago.format(widget.message.timestamp),
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

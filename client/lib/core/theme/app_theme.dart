@@ -82,6 +82,7 @@ class AppTheme {
         labelStyle: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w500,
+          color: scheme.onSurface,
         ),
       ),
       // Input decoration — filled, rounded, no underline

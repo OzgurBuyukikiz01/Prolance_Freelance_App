@@ -11,6 +11,16 @@ import '../theme/app_theme.dart';
 import '../theme/theme_preference.dart';
 import 'jobs_provider.dart';
 
+/// Result of [AppState.registerUser] (email confirmation vs immediate session).
+enum RegisterOutcome { loggedIn, needsEmailConfirmation, failed }
+
+class RegisterResult {
+  const RegisterResult(this.outcome, [this.message]);
+  final RegisterOutcome outcome;
+  /// Set when [outcome] is [RegisterOutcome.failed] (API / network message).
+  final String? message;
+}
+
 /// Slimmed-down AppState: owns auth, user, theme and proposal-celebration UI.
 ///
 /// Jobs / favorites / moderation now live in [JobsProvider].
@@ -59,7 +69,8 @@ class AppState extends ChangeNotifier {
       AppTheme.lightTheme(dynamicScheme: _lightDynamic);
   ThemeData get darkTheme => AppTheme.darkTheme(dynamicScheme: _darkDynamic);
 
-  String t(String en, String tr) => _languageCode == 'tr' ? tr : en;
+  /// English-only product: always returns [en]. Optional second argument kept for call-site compatibility.
+  String t(String en, [String? secondary]) => en;
 
   // ---------------------------------------------------------------------------
   // Dynamic colours
@@ -119,7 +130,11 @@ class AppState extends ChangeNotifier {
       _themePreference = ThemePreference.system;
       await prefs.setString(_kThemePreference, _themePreference.name);
     }
-    _languageCode = prefs.getString(_kLanguage) ?? 'en';
+    final storedLang = prefs.getString(_kLanguage);
+    _languageCode = 'en';
+    if (storedLang != null && storedLang != 'en') {
+      await prefs.setString(_kLanguage, 'en');
+    }
 
     if (SupabaseConfig.isEnabled) {
       _isLoggedIn = AuthService.instance.hasSession;
@@ -188,45 +203,81 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> registerUser({
+  Future<RegisterResult> registerUser({
     required String name,
     required String email,
     required String password,
     required bool isFreelancer,
   }) async {
-    if (!SupabaseConfig.isEnabled) return;
-    await AuthService.instance.signUp(
-      email: email,
-      password: password,
-      fullName: name,
-      isFreelancer: isFreelancer,
-    );
-    final u = await AuthService.instance.loadProfileAsUserModel();
-    if (u != null) {
-      _currentUser = u;
-    } else {
-      _currentUser = UserModel(
-        id: AuthService.instance.rawUser?.id ?? _currentUser.id,
-        name: name,
-        email: email,
-        avatarUrl:
-            'https://i.pravatar.cc/150?img=${DateTime.now().millisecond % 60}',
-        title: isFreelancer ? 'New Freelancer' : 'Project Owner',
-        bio: isFreelancer ? 'New freelancer profile.' : 'New client profile.',
-        hourlyRate: 0,
-        website: '',
-        rating: 0,
-        completedJobs: 0,
-        totalEarnings: 0,
-        skills: const [],
-        location: 'Not set',
-        isFreelancer: isFreelancer,
-        joinedDate: DateTime.now(),
+    if (!SupabaseConfig.isEnabled) {
+      return const RegisterResult(
+        RegisterOutcome.failed,
+        'Supabase is not configured.',
       );
-      await AuthService.instance.upsertProfileFromUserModel(_currentUser);
     }
-    _isLoggedIn = AuthService.instance.hasSession;
-    notifyListeners();
+    try {
+      final res = await AuthService.instance.signUp(
+        email: email,
+        password: password,
+        fullName: name,
+        isFreelancer: isFreelancer,
+      );
+      final user = res.user;
+      if (user == null) {
+        return const RegisterResult(
+          RegisterOutcome.failed,
+          'Could not create account.',
+        );
+      }
+
+      if (res.session != null) {
+        final u = await AuthService.instance.loadProfileAsUserModel();
+        if (u != null) {
+          _currentUser = u;
+        } else {
+          _currentUser = UserModel(
+            id: user.id,
+            name: name,
+            email: email,
+            avatarUrl:
+                'https://i.pravatar.cc/150?img=${DateTime.now().millisecond % 60}',
+            title: isFreelancer ? 'New Freelancer' : 'Project Owner',
+            bio:
+                isFreelancer ? 'New freelancer profile.' : 'New client profile.',
+            hourlyRate: 0,
+            website: '',
+            rating: 0,
+            completedJobs: 0,
+            totalEarnings: 0,
+            skills: const [],
+            location: 'Not set',
+            isFreelancer: isFreelancer,
+            isAdmin: false,
+            demoBalanceCents: 0,
+            earningsAvailableCents: 0,
+            joinedDate: DateTime.now(),
+          );
+          try {
+            await AuthService.instance.upsertProfileFromUserModel(_currentUser);
+          } catch (_) {
+            final u2 = await AuthService.instance.loadProfileAsUserModel();
+            if (u2 != null) _currentUser = u2;
+          }
+        }
+        _isLoggedIn = AuthService.instance.hasSession;
+        notifyListeners();
+        return const RegisterResult(RegisterOutcome.loggedIn);
+      }
+
+      // Email confirmation enabled: user is stored in Supabase Auth; no session yet.
+      _isLoggedIn = false;
+      notifyListeners();
+      return const RegisterResult(RegisterOutcome.needsEmailConfirmation);
+    } on AuthException catch (e) {
+      return RegisterResult(RegisterOutcome.failed, e.message);
+    } catch (e) {
+      return RegisterResult(RegisterOutcome.failed, '$e');
+    }
   }
 
   Future<void> logout() async {
@@ -236,6 +287,16 @@ class AppState extends ChangeNotifier {
     _isLoggedIn = false;
     _currentUser = UserModel.dummy();
     notifyListeners();
+  }
+
+  /// Reload wallet fields from Supabase after escrow-changing actions.
+  Future<void> refreshProfileFromServer() async {
+    if (!SupabaseConfig.isEnabled) return;
+    final u = await AuthService.instance.loadProfileAsUserModel();
+    if (u != null) {
+      _currentUser = u;
+      notifyListeners();
+    }
   }
 
   Future<void> changePassword(String nextPassword) async {
@@ -256,10 +317,10 @@ class AppState extends ChangeNotifier {
   // Theme / language
   // ---------------------------------------------------------------------------
 
-  Future<void> setLanguage(String code) async {
-    _languageCode = code;
+  Future<void> setLanguage(String _) async {
+    _languageCode = 'en';
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kLanguage, code);
+    await prefs.setString(_kLanguage, 'en');
     notifyListeners();
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/navigation/main_nav_controller.dart';
 import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/job_card.dart';
 import '../../../core/widgets/prolance_empty_state.dart';
@@ -19,7 +20,10 @@ class FavoritesScreen extends StatelessWidget {
       ),
       body: favorites.isEmpty
           ? ProlanceEmptyState.favorites(
-              onBrowse: () => context.go('/jobs'),
+              onBrowse: () {
+                context.read<MainNavController>().selectTab(1);
+                context.go('/home');
+              },
             )
           : ListView.separated(
               padding: const EdgeInsets.all(16),

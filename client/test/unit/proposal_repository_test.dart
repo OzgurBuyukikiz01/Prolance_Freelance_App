@@ -103,5 +103,31 @@ void main() {
       expect(repo.myProposals.first.status, SubmittedProposalStatus.cancelled);
       expect(repo.myProposals.length, 1);
     });
+
+    test('dismissFromMyList removes withdrawn proposal and hides on reload',
+        () async {
+      final repo = ProposalRepository();
+      await repo.initialize();
+      await repo.submitProposal(
+        jobId: 'job_5',
+        jobTitle: 'Swipe test',
+        bid: 100,
+        deliveryYears: 0,
+        deliveryMonths: 0,
+        deliveryDays: 1,
+        coverLetter: 'x',
+        attachmentNames: [],
+      );
+      final id = repo.myProposals.first.id;
+      await repo.cancelProposal(id);
+      expect(repo.myProposals.first.status, SubmittedProposalStatus.cancelled);
+
+      await repo.dismissFromMyList(id);
+      expect(repo.myProposals, isEmpty);
+
+      final repo2 = ProposalRepository();
+      await repo2.initialize();
+      expect(repo2.myProposals, isEmpty);
+    });
   });
 }

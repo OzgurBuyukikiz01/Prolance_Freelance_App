@@ -10,6 +10,9 @@ class Conversation {
   /// Ready for Supabase: DM channel participant UUIDs (empty in local demo).
   final List<String> participantIds;
 
+  /// Other participant profile id when known (Supabase DM).
+  final String? otherUserId;
+
   const Conversation({
     required this.id,
     required this.userName,
@@ -19,6 +22,7 @@ class Conversation {
     required this.unreadCount,
     required this.isOnline,
     this.participantIds = const [],
+    this.otherUserId,
   });
 
   Conversation copyWith({
@@ -30,6 +34,7 @@ class Conversation {
     int? unreadCount,
     bool? isOnline,
     List<String>? participantIds,
+    String? otherUserId,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -40,6 +45,7 @@ class Conversation {
       unreadCount: unreadCount ?? this.unreadCount,
       isOnline: isOnline ?? this.isOnline,
       participantIds: participantIds ?? this.participantIds,
+      otherUserId: otherUserId ?? this.otherUserId,
     );
   }
 

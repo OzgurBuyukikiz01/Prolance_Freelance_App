@@ -19,7 +19,6 @@ import '../../../core/state/app_state.dart';
 import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../core/widgets/overlays/prolance_bottom_sheet.dart';
-import '../widgets/job_detail_bottom_sheet.dart';
 
 class JobDetailScreen extends StatefulWidget {
   const JobDetailScreen({super.key, required this.job});
@@ -214,7 +213,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 );
               },
         icon: const Icon(Iconsax.star, size: 18),
-        label: const Text('Değerlendirme Yaz'),
+        label: const Text('Write a review'),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.warning,
           foregroundColor: Colors.white,
@@ -228,29 +227,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildEscrowEntry(BuildContext context, JobModel job) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OutlinedButton.icon(
-          onPressed: () => showJobDetailBottomSheet(context, job),
-          icon: const Icon(Iconsax.eye),
-          label: const Text('Detayları Gör'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/escrow/${job.id}'),
-          icon: const Icon(Iconsax.wallet_money),
-          label: const Text('Escrow & payments (mock)'),
-        ),
-      ],
+    return OutlinedButton.icon(
+      onPressed: () => context.push('/escrow/${job.id}'),
+      icon: const Icon(Iconsax.wallet_money),
+      label: const Text('Escrow & payments (mock)'),
     );
   }
 
@@ -473,45 +453,51 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildDetailsSection(JobModel job) {
     final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 4),
+        iconColor: scheme.onSurfaceVariant,
+        collapsedIconColor: scheme.onSurfaceVariant,
+        title: Text(
           'Details',
           style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
         ),
-        const SizedBox(height: AppConstants.paddingMd),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppConstants.paddingMd,
-          crossAxisSpacing: AppConstants.paddingMd,
-          childAspectRatio: 2.2,
-          children: [
-            _DetailCard(
-              icon: Iconsax.dollar_circle,
-              label: 'Budget',
-              value: _formatBudget(job),
-            ),
-            _DetailCard(
-              icon: Iconsax.clock,
-              label: 'Duration',
-              value: job.duration,
-            ),
-            _DetailCard(
-              icon: Iconsax.crown,
-              label: 'Experience',
-              value: job.experienceLevel,
-            ),
-            _DetailCard(
-              icon: Iconsax.category_2,
-              label: 'Category',
-              value: job.category,
-            ),
-          ],
-        ),
-      ],
+        children: [
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: AppConstants.paddingMd,
+            crossAxisSpacing: AppConstants.paddingMd,
+            childAspectRatio: 2.2,
+            children: [
+              _DetailCard(
+                icon: Iconsax.dollar_circle,
+                label: 'Budget',
+                value: _formatBudget(job),
+              ),
+              _DetailCard(
+                icon: Iconsax.clock,
+                label: 'Duration',
+                value: job.duration,
+              ),
+              _DetailCard(
+                icon: Iconsax.crown,
+                label: 'Experience',
+                value: job.experienceLevel,
+              ),
+              _DetailCard(
+                icon: Iconsax.category_2,
+                label: 'Category',
+                value: job.category,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

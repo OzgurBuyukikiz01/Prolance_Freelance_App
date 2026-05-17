@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 28),
 
                         Text(
-                          'Tekrar\nHoşgeldiniz 👋',
+                          'Welcome\nback 👋',
                           style: GoogleFonts.poppins(
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
@@ -201,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 10),
 
                         Text(
-                          'Prolance hesabınıza giriş yapın',
+                          'Sign in to your Prolance account',
                           style: GoogleFonts.poppins(
                             fontSize: 15,
                             color: scheme.onSurfaceVariant,
@@ -217,12 +217,12 @@ class _LoginScreenState extends State<LoginScreen>
                     // Email
                     _AnimatedField(
                       controller: _emailController,
-                      hint: 'E-posta adresiniz',
+                      hint: 'Your email address',
                       icon: Iconsax.sms,
                       keyboardType: TextInputType.emailAddress,
                       delay: 200,
                       validator: (v) => (v == null || v.isEmpty)
-                          ? 'E-posta gerekli'
+                          ? 'Email is required'
                           : null,
                     ),
 
@@ -231,14 +231,14 @@ class _LoginScreenState extends State<LoginScreen>
                     // Password
                     _AnimatedField(
                       controller: _passwordController,
-                      hint: 'Şifreniz',
+                      hint: 'Your password',
                       icon: Iconsax.lock_1,
                       obscure: _obscurePassword,
                       delay: 280,
                       onToggleObscure: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
                       validator: (v) => (v == null || v.isEmpty)
-                          ? 'Şifre gerekli'
+                          ? 'Password is required'
                           : null,
                     ),
 
@@ -253,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen>
                               horizontal: 4, vertical: 4),
                         ),
                         child: Text(
-                          'Şifremi Unuttum',
+                          'Forgot password?',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -267,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen>
 
                     // Sign in button
                     _GradientButton(
-                      label: 'Giriş Yap',
+                      label: 'Sign in',
                       isLoading: _isLoading,
                       onTap: _onSignIn,
                       delay: 400,
@@ -283,7 +283,7 @@ class _LoginScreenState extends State<LoginScreen>
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
-                            'veya',
+                            'or',
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               color: scheme.onSurfaceVariant,
@@ -327,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Hesabınız yok mu?  ',
+                            "Don't have an account?  ",
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               color: scheme.onSurfaceVariant,
@@ -336,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen>
                           GestureDetector(
                             onTap: () => context.push('/register'),
                             child: Text(
-                              'Kayıt Ol',
+                              'Sign up',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,

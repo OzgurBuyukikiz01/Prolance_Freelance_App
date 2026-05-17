@@ -8,12 +8,14 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/home/screens/favorites_screen.dart';
 import '../../features/home/screens/main_navigation_screen.dart';
+import '../../features/home/screens/client_delivery_review_screen.dart';
 import '../../features/home/screens/my_proposals_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/messages/screens/video_call_screen.dart';
 import '../../features/post_job/screens/post_job_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
+import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import 'routed_screens.dart';
 import '../state/app_state.dart';
@@ -85,6 +87,12 @@ class AppRouter {
           builder: (context, state) => const MyProposalsScreen(),
         ),
         GoRoute(
+          path: '/review-delivery/:proposalId',
+          builder: (context, state) => ClientDeliveryReviewScreen(
+            proposalId: state.pathParameters['proposalId']!,
+          ),
+        ),
+        GoRoute(
           path: '/jobs/:id',
           builder: (context, state) => RoutedJobDetailScreen(
             jobId: state.pathParameters['id']!,
@@ -128,6 +136,12 @@ class AppRouter {
         GoRoute(
           path: '/edit-profile',
           builder: (context, state) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: '/user/:userId',
+          builder: (context, state) => UserProfileScreen(
+            userId: state.pathParameters['userId']!,
+          ),
         ),
       ],
     );

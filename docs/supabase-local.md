@@ -18,5 +18,8 @@ The anon JWT for local Supabase is stable across installs; see [Local developmen
 
 ## Seed users (`supabase/seed.sql`)
 
-- `employer@prolance.local` / `password123` (admin flag for admin UI flows)
-- `freelancer@prolance.local` / `password123`
+- `client@prolance.dev` / `demo1234` (CLIENT — demo ilanlar)
+- `freelancer@prolance.dev` / `demo1234` (FREELANCER)
+- `admin@prolance.dev` / `admin1234` (CLIENT + `is_admin` — başkalarının ilanlarında mock escrow tamamlamak için)
+
+Bulut projesinde demo kullanıcılar için `supabase/seed-cloud.sql` dosyasını SQL Editor’da çalıştırın (`admin@prolance.dev` şifresi `admin1234`). Eski sürümde `auth.users.instance_id` yanlış (`00000000-...`) kaldıysa giriş “Incorrect email or password” verir; bu durumda `supabase/fix-demo-users-instance-and-password.sql` script’ini bir kez çalıştırın.

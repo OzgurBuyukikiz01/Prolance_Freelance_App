@@ -341,7 +341,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 selected: sel,
                                 onSelected: (_) => _toggleStripSkill(skill),
-                                labelStyle: GoogleFonts.poppins(fontSize: 12),
+                                labelStyle: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: sel
+                                      ? scheme.onPrimary
+                                      : scheme.onSurface,
+                                ),
+                                backgroundColor: scheme.surfaceContainerHigh,
+                                selectedColor: scheme.primary,
                               );
                             },
                           ),
@@ -596,7 +603,7 @@ class _HomeHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Merhaba, $firstName 👋',
+                          'Hello, $firstName 👋',
                           style: GoogleFonts.poppins(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -605,7 +612,7 @@ class _HomeHeader extends StatelessWidget {
                           ),
                         ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
                         Text(
-                          'Yeni projenizi bulun',
+                          'Find your next project',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             color: Colors.white.withValues(alpha: 0.75),
@@ -618,13 +625,13 @@ class _HomeHeader extends StatelessWidget {
                     onPressed: onProposals,
                     icon: const Icon(Iconsax.briefcase,
                         color: Colors.white, size: 22),
-                    tooltip: 'Tekliflerim',
+                    tooltip: 'My proposals',
                   ),
                   IconButton(
                     onPressed: onFavorites,
                     icon: const Icon(Iconsax.heart,
                         color: Colors.white, size: 22),
-                    tooltip: 'Favoriler',
+                    tooltip: 'Favorites',
                   ),
                   badges.Badge(
                     showBadge: unreadNotifications > 0,
@@ -668,9 +675,9 @@ class _StatsStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = [
       (label: '5.200+', sub: 'Freelancer'),
-      (label: '\$2.4M+', sub: 'Ödeme'),
-      (label: '98%', sub: 'Memnuniyet'),
-      (label: '12K+', sub: 'Tamamlanan'),
+      (label: '\$2.4M+', sub: 'Paid out'),
+      (label: '98%', sub: 'Satisfaction'),
+      (label: '12K+', sub: 'Completed'),
     ];
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 20),

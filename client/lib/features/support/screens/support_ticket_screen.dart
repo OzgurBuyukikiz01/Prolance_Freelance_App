@@ -28,10 +28,10 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
 
   static const _priorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
   static const _priorityLabels = {
-    'LOW': 'Düşük',
+    'LOW': 'Low',
     'NORMAL': 'Normal',
-    'HIGH': 'Yüksek',
-    'URGENT': 'Acil',
+    'HIGH': 'High',
+    'URGENT': 'Urgent',
   };
   static const _priorityColors = {
     'LOW': Colors.green,
@@ -88,7 +88,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Destek Talebi',
+          'Support ticket',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: scheme.onSurface,
@@ -132,7 +132,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 ),
             const SizedBox(height: 24),
             Text(
-              'Talebiniz Alındı!',
+              'Request received!',
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -141,7 +141,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
             ).animate().fadeIn(delay: 200.ms),
             const SizedBox(height: 8),
             Text(
-              'Destek ekibimiz en kısa sürede\nsize geri dönecek.',
+              'Our support team will get back to you\nas soon as possible.',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -154,7 +154,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Iconsax.arrow_left, size: 18),
               label: Text(
-                'Ayarlara Dön',
+                'Back to settings',
                 style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
             ).animate().fadeIn(delay: 400.ms),
@@ -188,7 +188,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Ekibimiz genellikle 24 saat içinde yanıt verir.',
+                      'We usually reply within 24 hours.',
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         color: AppColors.primary,
@@ -203,7 +203,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
 
             // Subject
             Text(
-              'Konu',
+              'Subject',
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -216,7 +216,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
               textInputAction: TextInputAction.next,
               style: GoogleFonts.poppins(fontSize: 14, color: scheme.onSurface),
               decoration: InputDecoration(
-                hintText: 'Konuyu kısaca açıklayın',
+                hintText: 'Briefly describe the issue',
                 hintStyle: GoogleFonts.poppins(
                   fontSize: 14,
                   color: scheme.onSurfaceVariant,
@@ -227,8 +227,8 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 ),
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Konu boş olamaz';
-                if (v.trim().length < 5) return 'En az 5 karakter girin';
+                if (v == null || v.trim().isEmpty) return 'Subject cannot be empty';
+                if (v.trim().length < 5) return 'Enter at least 5 characters';
                 return null;
               },
             ).animate().fadeIn(delay: 100.ms),
@@ -237,7 +237,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
 
             // Priority
             Text(
-              'Öncelik',
+              'Priority',
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -272,7 +272,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
 
             // Body
             Text(
-              'Açıklama',
+              'Description',
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -285,7 +285,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
               maxLines: 6,
               style: GoogleFonts.poppins(fontSize: 14, color: scheme.onSurface),
               decoration: InputDecoration(
-                hintText: 'Sorununuzu veya önerinizi detaylıca açıklayın...',
+                hintText: 'Describe your issue or suggestion in detail...',
                 hintStyle: GoogleFonts.poppins(
                   fontSize: 14,
                   color: scheme.onSurfaceVariant,
@@ -296,9 +296,9 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 alignLabelWithHint: true,
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Açıklama boş olamaz';
+                if (v == null || v.trim().isEmpty) return 'Description cannot be empty';
                 if (v.trim().length < 20) {
-                  return 'En az 20 karakter girin';
+                  return 'Enter at least 20 characters';
                 }
                 return null;
               },
@@ -320,7 +320,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                     )
                   : const Icon(Iconsax.send_1, size: 18),
               label: Text(
-                _isLoading ? 'Gönderiliyor...' : 'Talebi Gönder',
+                _isLoading ? 'Sending...' : 'Submit ticket',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,

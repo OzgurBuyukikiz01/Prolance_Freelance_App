@@ -1,6 +1,17 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
+List<String> _parseLocationsJson(String raw) {
+  final decoded = jsonDecode(raw) as List<dynamic>;
+  final list = decoded
+      .map((e) => (e as String).trim())
+      .where((s) => s.isNotEmpty)
+      .toList()
+    ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  return list;
+}
 
 /// Loads [assets/data/world_locations.json]: sorted list of "City, Country" strings.
 class LocationCatalogService {
@@ -14,10 +25,7 @@ class LocationCatalogService {
     if (_locations != null) return;
     final raw =
         await rootBundle.loadString('assets/data/world_locations.json');
-    final decoded = jsonDecode(raw) as List<dynamic>;
-    _locations =
-        decoded.map((e) => (e as String).trim()).where((s) => s.isNotEmpty).toList()
-          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    _locations = await compute(_parseLocationsJson, raw);
   }
 
   bool get isLoaded => _locations != null;

@@ -26,7 +26,54 @@ class SupabaseMessageRepository extends MessageRepository {
   // Stream controllers per conversationId
   final Map<String, StreamController<List<Message>>> _msgControllers = {};
 
+  /// Demo threads (`conv_*`) are not in Postgres; keep in-memory lists + broadcast streams.
+  final Map<String, StreamController<List<Message>>> _demoMsgControllers = {};
+  final Map<String, List<Message>> _demoMsgLists = {};
+
   String get _userId => _client.auth.currentUser?.id ?? '';
+
+  static final RegExp _uuidRe = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  bool _isPersistedConversationId(String conversationId) {
+    if (conversationId.startsWith('conv_') ||
+        conversationId.startsWith('job_')) {
+      return false;
+    }
+    return _uuidRe.hasMatch(conversationId);
+  }
+
+  void _ensureDemoMessagesStream(String conversationId) {
+    if (_demoMsgControllers.containsKey(conversationId)) return;
+    _demoMsgLists[conversationId] = List<Message>.from(Message.dummyList());
+    final c = StreamController<List<Message>>.broadcast();
+    _demoMsgControllers[conversationId] = c;
+    scheduleMicrotask(() {
+      if (!c.isClosed) {
+        c.add(List<Message>.from(_demoMsgLists[conversationId]!));
+      }
+    });
+  }
+
+  void _appendDemoOutboundMessage(String conversationId, String body) {
+    _ensureDemoMessagesStream(conversationId);
+    final list = _demoMsgLists[conversationId]!;
+    list.insert(
+      0,
+      Message(
+        id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        senderId: _userId.isEmpty ? 'user_me' : _userId,
+        text: body,
+        timestamp: DateTime.now(),
+        isMe: true,
+      ),
+    );
+    final c = _demoMsgControllers[conversationId]!;
+    if (!c.isClosed) {
+      c.add(List<Message>.from(list));
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Conversations
@@ -49,9 +96,16 @@ class SupabaseMessageRepository extends MessageRepository {
         final conv = await _rowToConversation(row as Map<String, dynamic>);
         if (conv != null) _items.add(conv);
       }
+      if (_items.isEmpty) {
+        _items.addAll(Conversation.dummyList());
+      }
       notifyListeners();
     } catch (e) {
       debugPrint('[SupabaseMessageRepo] loadConversations error: $e');
+      if (_items.isEmpty) {
+        _items.addAll(Conversation.dummyList());
+        notifyListeners();
+      }
     }
   }
 
@@ -77,7 +131,7 @@ class SupabaseMessageRepository extends MessageRepository {
 
       return Conversation(
         id: row['id'] as String,
-        userName: profile?['full_name'] as String? ?? 'Kullanıcı',
+        userName: profile?['full_name'] as String? ?? 'User',
         userAvatar: profile?['avatar_url'] as String? ??
             'https://i.pravatar.cc/150?u=$otherId',
         lastMessage: lastMsg?['body'] as String? ?? '',
@@ -87,6 +141,7 @@ class SupabaseMessageRepository extends MessageRepository {
         unreadCount: 0,
         isOnline: false,
         participantIds: participantIds,
+        otherUserId: otherId != _userId ? otherId : null,
       );
     } catch (e) {
       debugPrint('[SupabaseMessageRepo] _rowToConversation error: $e');
@@ -112,6 +167,9 @@ class SupabaseMessageRepository extends MessageRepository {
     _channels.remove(id);
     _msgControllers[id]?.close();
     _msgControllers.remove(id);
+    _demoMsgControllers[id]?.close();
+    _demoMsgControllers.remove(id);
+    _demoMsgLists.remove(id);
     notifyListeners();
   }
 
@@ -121,7 +179,7 @@ class SupabaseMessageRepository extends MessageRepository {
     if (i < 0 || _items[i].unreadCount == 0) return;
     _items[i] = _items[i].copyWith(unreadCount: 0);
     notifyListeners();
-    // Mark messages as read in DB (fire-and-forget)
+    if (!_isPersistedConversationId(id) || _userId.isEmpty) return;
     _client
         .from('messages')
         .update({'is_read': true})
@@ -249,7 +307,52 @@ class SupabaseMessageRepository extends MessageRepository {
   // ---------------------------------------------------------------------------
 
   @override
+  Future<String> ensureDirectConversation({
+    required String otherUserId,
+  }) async {
+    if (_userId.isEmpty) {
+      return 'local_dm_$otherUserId';
+    }
+    try {
+      final rows = await _client
+          .from('conversations')
+          .select('id, participant_ids')
+          .contains('participant_ids', [_userId, otherUserId]);
+
+      for (final raw in rows as List<dynamic>) {
+        final map = raw as Map<String, dynamic>;
+        final ids = List<String>.from((map['participant_ids'] as List?) ?? []);
+        if (ids.length == 2 &&
+            ids.contains(_userId) &&
+            ids.contains(otherUserId)) {
+          return map['id'] as String;
+        }
+      }
+
+      final row = await _client.from('conversations').insert({
+        'participant_ids': [_userId, otherUserId],
+        'last_message_at': DateTime.now().toIso8601String(),
+      }).select('id').single();
+      final id = row['id'] as String;
+      await _loadConversations();
+      return id;
+    } catch (e) {
+      debugPrint('[SupabaseMessageRepo] ensureDirectConversation error: $e');
+      return 'local_dm_$otherUserId';
+    }
+  }
+
+  @override
   Future<void> sendMessageAsync(String conversationId, String body) async {
+    if (conversationId.startsWith('conv_')) {
+      _appendDemoOutboundMessage(conversationId, body);
+      recordOutboundPreview(conversationId, body);
+      return;
+    }
+    if (conversationId.startsWith('job_')) {
+      recordOutboundPreview(conversationId, body);
+      return;
+    }
     try {
       await _client.from('messages').insert({
         'conversation_id': conversationId,
@@ -270,6 +373,11 @@ class SupabaseMessageRepository extends MessageRepository {
   @override
   Future<void> uploadAttachment(
       String conversationId, PlatformFile file) async {
+    if (conversationId.startsWith('conv_') ||
+        conversationId.startsWith('job_')) {
+      recordOutboundPreview(conversationId, file.name);
+      return;
+    }
     try {
       final bytes = file.bytes;
       if (bytes == null) return;
@@ -310,6 +418,11 @@ class SupabaseMessageRepository extends MessageRepository {
 
   @override
   Stream<List<Message>> messagesStream(String conversationId) {
+    if (conversationId.startsWith('conv_')) {
+      _ensureDemoMessagesStream(conversationId);
+      return _demoMsgControllers[conversationId]!.stream;
+    }
+
     if (_msgControllers.containsKey(conversationId)) {
       return _msgControllers[conversationId]!.stream;
     }
@@ -398,6 +511,11 @@ class SupabaseMessageRepository extends MessageRepository {
     for (final ctrl in _msgControllers.values) {
       ctrl.close();
     }
+    for (final ctrl in _demoMsgControllers.values) {
+      ctrl.close();
+    }
+    _demoMsgControllers.clear();
+    _demoMsgLists.clear();
     super.dispose();
   }
 }

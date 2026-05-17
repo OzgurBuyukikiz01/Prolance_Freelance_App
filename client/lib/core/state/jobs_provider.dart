@@ -377,8 +377,7 @@ class JobsProvider extends ChangeNotifier {
   }) async {
 
     final toInsert =
-
-        job.isUserPosted ? job.copyWith(status: 'pending_review') : job;
+        job.isUserPosted ? job.copyWith(status: 'open') : job;
 
     final merged = toInsert.copyWith(
 
@@ -398,9 +397,9 @@ class JobsProvider extends ChangeNotifier {
 
         _jobs.insert(0, inserted);
 
-        if (inserted.isUserPosted && inserted.status == 'pending_review') {
+        if (inserted.isUserPosted && inserted.status == 'open') {
 
-          _notifyJobPosted(inserted.id, inserted.title,
+          _notifyUserPostLive(inserted.title,
 
               notifications: notifications, t: t);
 
@@ -410,9 +409,9 @@ class JobsProvider extends ChangeNotifier {
 
         _jobs.insert(0, merged);
 
-        if (merged.isUserPosted && merged.status == 'pending_review') {
+        if (merged.isUserPosted && merged.status == 'open') {
 
-          _notifyJobPosted(merged.id, merged.title,
+          _notifyUserPostLive(merged.title,
 
               notifications: notifications, t: t);
 
@@ -426,9 +425,9 @@ class JobsProvider extends ChangeNotifier {
 
       await JobRemoteRepository.tryCreate(merged);
 
-      if (merged.isUserPosted && merged.status == 'pending_review') {
+      if (merged.isUserPosted && merged.status == 'open') {
 
-        _notifyJobPosted(merged.id, merged.title,
+        _notifyUserPostLive(merged.title,
 
             notifications: notifications, t: t);
 
@@ -454,9 +453,7 @@ class JobsProvider extends ChangeNotifier {
 
 
 
-  void _notifyJobPosted(
-
-    String id,
+  void _notifyUserPostLive(
 
     String title, {
 
@@ -466,13 +463,13 @@ class JobsProvider extends ChangeNotifier {
 
   }) {
 
-    final titleText = t('Post received', 'İlanınız iletilmiştir');
+    final titleText = t('Published', 'Yayınlandı');
 
     final body = t(
 
-      'Your listing is being reviewed. It will appear on Home once approved.',
+      'Your listing is now visible on Home.',
 
-      'İlanınız inceleniyor; onaylanınca ana sayfada görünecektir.',
+      'İlanınız ana sayfada görünüyor.',
 
     );
 

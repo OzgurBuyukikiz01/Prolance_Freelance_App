@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/models/job_model.dart';
+import '../../../core/models/submitted_proposal_model.dart';
 import '../../../core/repositories/message_repository.dart';
 import '../../../core/repositories/proposal_repository.dart';
 import '../../../core/state/app_state.dart';
@@ -17,7 +18,7 @@ import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/overlays/prolance_bottom_sheet.dart';
 import '../../../core/widgets/overlays/prolance_messenger.dart';
 
-/// Rich bottom-sheet modal with 3 tabs: Özet / İşveren / Teklif
+/// Rich bottom-sheet modal with 3 tabs: Summary / Client / Proposal
 void showJobDetailBottomSheet(BuildContext context, JobModel job) {
   showProlanceBottomSheet<void>(
     context: context,
@@ -129,9 +130,9 @@ class JobDetailBottomSheet extends StatelessWidget {
                       unselectedLabelColor: scheme.onSurfaceVariant,
                       indicatorColor: AppColors.primary,
                       tabs: const [
-                        Tab(text: 'Özet'),
-                        Tab(text: 'İşveren'),
-                        Tab(text: 'Teklif'),
+                        Tab(text: 'Summary'),
+                        Tab(text: 'Client'),
+                        Tab(text: 'Proposal'),
                       ],
                     ),
                   ],
@@ -171,7 +172,7 @@ class _QuickActionsRow extends StatelessWidget {
         children: [
           _QuickAction(
             icon: Iconsax.share,
-            label: 'Paylaş',
+            label: 'Share',
             onTap: () => Share.share(
               '${job.title}\n${job.category}\n— Prolance',
               subject: job.title,
@@ -179,7 +180,7 @@ class _QuickActionsRow extends StatelessWidget {
           ),
           _QuickAction(
             icon: Iconsax.heart,
-            label: 'Kaydet',
+            label: 'Save',
             onTap: () {
               context.read<JobsProvider>().toggleFavorite(job.id, true);
               ProlanceMessenger.success(
@@ -190,7 +191,7 @@ class _QuickActionsRow extends StatelessWidget {
           ),
           _QuickAction(
             icon: Iconsax.message_2,
-            label: 'Mesaj',
+            label: 'Message',
             onTap: () {
               final repo = context.read<MessageRepository>();
               final convId = repo.ensureConversationForJob(
@@ -279,7 +280,7 @@ class _SummaryTab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'Açıklama',
+          'Description',
           style: AppTextStyles.heading6
               .copyWith(color: scheme.onSurface),
         ),
@@ -295,7 +296,7 @@ class _SummaryTab extends StatelessWidget {
         const SizedBox(height: 20),
         if (job.skills.isNotEmpty) ...[
           Text(
-            'Gerekli Beceriler',
+            'Required skills',
             style: AppTextStyles.heading6
                 .copyWith(color: scheme.onSurface),
           ),
@@ -386,7 +387,7 @@ class _ClientTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Doğrulanmış İşveren',
+                        'Verified client',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: scheme.onSurfaceVariant,
@@ -417,7 +418,7 @@ class _ClientTab extends StatelessWidget {
                 );
               },
               icon: const Icon(Iconsax.message_2),
-              label: const Text('Mesaj Gönder'),
+              label: const Text('Send message'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -455,6 +456,10 @@ class _ProposalTabState extends State<_ProposalTab> {
 
   bool get _isJobOwner {
     final user = context.read<AppState>().currentUser;
+    final cid = widget.job.clientId;
+    if (cid != null && cid.isNotEmpty && cid == user.id) {
+      return true;
+    }
     return widget.job.clientName == user.name;
   }
 
@@ -483,7 +488,10 @@ class _ProposalTabState extends State<_ProposalTab> {
 
   Future<void> _accept(JobProposalRow row) async {
     setState(() => _actingOnProposalId = row.id);
-    final ok = await context.read<ProposalRepository>().acceptProposal(
+    final repo = context.read<ProposalRepository>();
+    final appState = context.read<AppState>();
+    final jobs = context.read<JobsProvider>();
+    final ok = await repo.acceptProposal(
           proposalId: row.id,
           jobId: row.jobId,
           freelancerId: row.freelancerId,
@@ -492,22 +500,34 @@ class _ProposalTabState extends State<_ProposalTab> {
     if (!mounted) return;
     setState(() => _actingOnProposalId = null);
     if (ok) {
+      await appState.refreshProfileFromServer();
+      if (!mounted) return;
       ProlanceMessenger.success(
         context,
-        context.read<AppState>().t(
-          'Proposal accepted; escrow created.',
-          'Teklif kabul edildi; escrow oluşturuldu.',
+        appState.t(
+          'Proposal accepted; demo wallet debited and escrow funded.',
+          'Teklif kabul edildi; demo cüzdan kesildi ve escrow oluşturuldu.',
         ),
       );
+      await jobs.refresh();
       await _loadIncoming();
     } else {
-      ProlanceMessenger.error(
-        context,
-        context.read<AppState>().t(
-          'Could not accept proposal.',
-          'Teklif kabul edilemedi.',
-        ),
-      );
+      final code = repo.lastAcceptErrorCode;
+      final msg = code == 'insufficient_demo_balance'
+          ? appState.t(
+              'Not enough demo wallet balance for this bid amount.',
+              'Bu teklif tutarı için demo cüzdan bakiyesi yetersiz.',
+            )
+          : code == 'job_already_accepted'
+              ? appState.t(
+                  'Another proposal for this job is already accepted.',
+                  'Bu iş için başka bir teklif zaten kabul edilmiş.',
+                )
+              : appState.t(
+                  'Could not accept proposal.',
+                  'Teklif kabul edilemedi.',
+                );
+      ProlanceMessenger.error(context, msg);
     }
   }
 
@@ -531,6 +551,25 @@ class _ProposalTabState extends State<_ProposalTab> {
           'Teklif reddedilemedi.',
         ),
       );
+    }
+  }
+
+  String _lifecycleHint(JobProposalRow row) {
+    if (row.status != 'accepted') return '';
+    switch (row.lifecyclePhase) {
+      case ProposalLifecycle.escrowFunded:
+        return 'Escrow funded · waiting for freelancer delivery';
+      case ProposalLifecycle.awaitingClientReview:
+      case ProposalLifecycle.delivered:
+        return 'Files ready · download & review';
+      case ProposalLifecycle.payoutPending:
+        return 'Delivery accepted · 24h dispute window';
+      case ProposalLifecycle.closed:
+        return 'Completed';
+      case ProposalLifecycle.disputed:
+        return 'Disputed';
+      default:
+        return '';
     }
   }
 
@@ -561,7 +600,7 @@ class _ProposalTabState extends State<_ProposalTab> {
     final scheme = Theme.of(context).colorScheme;
 
     if (_isJobOwner) {
-      return _buildOwnerView(scheme);
+      return _buildOwnerView(context, scheme);
     }
 
     if (_submitted) {
@@ -573,7 +612,7 @@ class _ProposalTabState extends State<_ProposalTab> {
                 color: AppColors.success, size: 56),
             const SizedBox(height: 16),
             Text(
-              'Teklifiniz Gönderildi!',
+              'Proposal sent!',
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -582,7 +621,7 @@ class _ProposalTabState extends State<_ProposalTab> {
             ),
             const SizedBox(height: 8),
             Text(
-              'İşveren en kısa sürede size dönecektir.',
+              'The client will get back to you soon.',
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 color: scheme.onSurfaceVariant,
@@ -600,7 +639,7 @@ class _ProposalTabState extends State<_ProposalTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Teklifiniz',
+            'Your proposal',
             style: AppTextStyles.heading6
                 .copyWith(color: scheme.onSurface),
           ),
@@ -611,7 +650,7 @@ class _ProposalTabState extends State<_ProposalTab> {
             maxLines: 6,
             decoration: InputDecoration(
               hintText:
-                  'Kendinizi ve bu iş için neden uygun olduğunuzu anlatın...',
+                  'Explain why you are a great fit for this job...',
               hintStyle: GoogleFonts.poppins(
                   fontSize: 13, color: scheme.onSurfaceVariant),
               border: OutlineInputBorder(
@@ -630,7 +669,7 @@ class _ProposalTabState extends State<_ProposalTab> {
             controller: _priceController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Teklif Fiyatı (USD)',
+              labelText: 'Bid amount (USD)',
               prefixIcon: const Icon(Iconsax.dollar_circle),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -645,7 +684,7 @@ class _ProposalTabState extends State<_ProposalTab> {
             child: ElevatedButton.icon(
               onPressed: _submit,
               icon: const Icon(Iconsax.send_2),
-              label: const Text('Teklif Gönder'),
+              label: const Text('Submit proposal'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -661,14 +700,14 @@ class _ProposalTabState extends State<_ProposalTab> {
     );
   }
 
-  Widget _buildOwnerView(ColorScheme scheme) {
+  Widget _buildOwnerView(BuildContext context, ColorScheme scheme) {
     if (_loadingIncoming) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_incoming.isEmpty) {
       return Center(
         child: Text(
-          'Henüz teklif yok.',
+          'No proposals yet.',
           style: GoogleFonts.poppins(
             fontSize: 14,
             color: scheme.onSurfaceVariant,
@@ -706,7 +745,7 @@ class _ProposalTabState extends State<_ProposalTab> {
               ),
               const SizedBox(height: 6),
               Text(
-                '\$${row.bid.toStringAsFixed(0)} · ${row.deliveryDays} gün',
+                '\$${row.bid.toStringAsFixed(0)} · ${row.deliveryDays} days',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: scheme.onSurfaceVariant,
@@ -722,6 +761,37 @@ class _ProposalTabState extends State<_ProposalTab> {
                   color: scheme.onSurface,
                 ),
               ),
+              if (!row.isPending) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _lifecycleHint(row),
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (row.status == 'accepted' &&
+                  (row.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
+                      row.lifecyclePhase == ProposalLifecycle.delivered ||
+                      row.lifecyclePhase == ProposalLifecycle.payoutPending)) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => context.push('/review-delivery/${row.id}'),
+                    icon: const Icon(Iconsax.tick_square, size: 18),
+                    label: Text(
+                      context.read<AppState>().t(
+                            'Accept delivery',
+                            'Teslimi kabul et',
+                          ),
+                    ),
+                  ),
+                ),
+              ],
               if (row.isPending) ...[
                 const SizedBox(height: 12),
                 Row(
@@ -737,7 +807,7 @@ class _ProposalTabState extends State<_ProposalTab> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Ret'),
+                            : const Text('Decline'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -748,7 +818,7 @@ class _ProposalTabState extends State<_ProposalTab> {
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('Kabul'),
+                        child: const Text('Accept'),
                       ),
                     ),
                   ],
@@ -757,7 +827,7 @@ class _ProposalTabState extends State<_ProposalTab> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    row.status == 'accepted' ? 'Kabul edildi' : 'Reddedildi',
+                    row.status == 'accepted' ? 'Accepted' : 'Declined',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

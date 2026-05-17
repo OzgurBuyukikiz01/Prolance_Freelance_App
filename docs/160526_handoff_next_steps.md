@@ -36,9 +36,10 @@ cd packages/landing && npm run dev
 cd packages/admin && npm run dev
 ```
 
-Demo hesapları (seed.sql'den):
+Demo hesapları (seed.sql / seed-cloud.sql):
 - `client@prolance.dev` / `demo1234`
 - `freelancer@prolance.dev` / `demo1234`
+- `admin@prolance.dev` / `admin1234` — `profiles.is_admin`; uygulamada tüm ilanlarda mock escrow (fonlama / release) demo akışı
 
 ---
 

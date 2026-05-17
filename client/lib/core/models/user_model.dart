@@ -13,6 +13,12 @@ class UserModel {
   final List<String> skills;
   final String location;
   final bool isFreelancer;
+  /// From `profiles.is_admin` — demo platform admin (escrow on any job).
+  final bool isAdmin;
+  /// Demo employer wallet (Supabase `profiles.demo_balance_cents`).
+  final int demoBalanceCents;
+  /// Freelancer cleared earnings (Supabase `profiles.earnings_available_cents`).
+  final int earningsAvailableCents;
   final DateTime joinedDate;
 
   const UserModel({
@@ -30,6 +36,9 @@ class UserModel {
     required this.skills,
     required this.location,
     required this.isFreelancer,
+    this.isAdmin = false,
+    this.demoBalanceCents = 0,
+    this.earningsAvailableCents = 0,
     required this.joinedDate,
   });
 
@@ -48,6 +57,9 @@ class UserModel {
     List<String>? skills,
     String? location,
     bool? isFreelancer,
+    bool? isAdmin,
+    int? demoBalanceCents,
+    int? earningsAvailableCents,
     DateTime? joinedDate,
   }) {
     return UserModel(
@@ -65,6 +77,10 @@ class UserModel {
       skills: skills ?? this.skills,
       location: location ?? this.location,
       isFreelancer: isFreelancer ?? this.isFreelancer,
+      isAdmin: isAdmin ?? this.isAdmin,
+      demoBalanceCents: demoBalanceCents ?? this.demoBalanceCents,
+      earningsAvailableCents:
+          earningsAvailableCents ?? this.earningsAvailableCents,
       joinedDate: joinedDate ?? this.joinedDate,
     );
   }
@@ -86,6 +102,9 @@ class UserModel {
       skills: ['Flutter', 'Dart', 'Firebase', 'REST APIs', 'Clean Architecture'],
       location: 'San Francisco, CA',
       isFreelancer: true,
+      isAdmin: false,
+      demoBalanceCents: 0,
+      earningsAvailableCents: 0,
       joinedDate: DateTime.now().subtract(const Duration(days: 420)),
     );
   }

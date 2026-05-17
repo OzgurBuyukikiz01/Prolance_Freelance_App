@@ -48,6 +48,11 @@ abstract class MessageRepository extends ChangeNotifier {
   /// Send a text message, persisting to Supabase if available.
   Future<void> sendMessageAsync(String conversationId, String body);
 
+  /// Ensures a two-party DM exists and returns its conversation id (UUID on Supabase).
+  Future<String> ensureDirectConversation({
+    required String otherUserId,
+  });
+
   /// Upload [file] to Supabase Storage, then insert an attachment message.
   Future<void> uploadAttachment(String conversationId, PlatformFile file);
 
@@ -126,6 +131,13 @@ class LocalMessageRepository extends MessageRepository {
   @override
   Future<void> sendMessageAsync(String conversationId, String body) async {
     recordOutboundPreview(conversationId, body);
+  }
+
+  @override
+  Future<String> ensureDirectConversation({
+    required String otherUserId,
+  }) async {
+    return 'local_dm_$otherUserId';
   }
 
   @override
