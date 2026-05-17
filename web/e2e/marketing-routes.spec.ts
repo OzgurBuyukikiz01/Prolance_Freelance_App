@@ -28,6 +28,6 @@ for (const post of blogPosts) {
 
 test('footer company link navigates to /about', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Hakkımızda' }).click();
+  await page.locator('footer').getByRole('link', { name: 'Hakkımızda' }).click();
   await expect(page).toHaveURL(/\/about$/);
 });

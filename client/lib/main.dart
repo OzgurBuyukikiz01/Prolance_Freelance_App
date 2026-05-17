@@ -43,9 +43,12 @@ const bool _deviceFrameOnWeb = bool.fromEnvironment(
 
 Widget _wrapWebDeviceFrame(Widget child) {
   if (!kIsWeb || !_deviceFrameOnWeb) return child;
-  return DeviceFrame(
-    device: Devices.ios.iPhone13ProMax,
-    screen: child,
+  return Directionality(
+    textDirection: TextDirection.ltr,
+    child: DeviceFrame(
+      device: Devices.ios.iPhone13ProMax,
+      screen: child,
+    ),
   );
 }
 
