@@ -28,3 +28,28 @@ export const PROPOSAL_STATUS_LABELS: Record<string, { label: string; className: 
   accepted: { label: 'Kabul edildi', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   rejected: { label: 'Reddedildi', className: 'bg-red-50 text-red-700 border-red-200' },
 };
+
+export const LIFECYCLE_LABELS: Record<string, { label: string; className: string }> = {
+  submitted: { label: 'Gönderildi', className: 'bg-slate-50 text-slate-600 border-slate-200' },
+  escrow_funded: { label: 'Escrow\'da Bekliyor', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  awaiting_client_review: { label: 'İnceleme Bekliyor', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  delivered: { label: 'Teslim Edildi', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  payout_pending: { label: 'Ödeme Bekliyor', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  closed: { label: 'Tamamlandı', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  disputed: { label: 'İtiraz Edildi', className: 'bg-red-50 text-red-700 border-red-200' },
+};
+
+export function formatCents(cents: number | null | undefined): string {
+  if (cents == null) return '₺0';
+  return `₺${(cents / 100).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}`;
+}
+
+export function formatDeadlineCountdown(deadline: string | null | undefined): string {
+  if (!deadline) return '';
+  const diff = new Date(deadline).getTime() - Date.now();
+  if (diff <= 0) return 'Süre doldu';
+  const hours = Math.floor(diff / 3_600_000);
+  const mins = Math.floor((diff % 3_600_000) / 60_000);
+  if (hours > 0) return `${hours} sa ${mins} dk kaldı`;
+  return `${mins} dakika kaldı`;
+}

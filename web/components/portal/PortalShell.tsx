@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import {
   Bell,
   Briefcase,
+  FileCheck,
   Home,
   MessageCircle,
   User,
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils';
 const NAV_ITEMS = [
   { href: '/portal', label: 'Ana Sayfa', icon: Home, exact: true },
   { href: '/portal/jobs', label: 'İş İlanları', icon: Briefcase, exact: false },
+  { href: '/portal/contracts', label: 'Sözleşmeler', icon: FileCheck, exact: false },
   { href: '/portal/messages', label: 'Mesajlar', icon: MessageCircle, exact: false },
   { href: '/portal/profile', label: 'Profil', icon: User, exact: false },
   { href: '/portal/notifications', label: 'Bildirimler', icon: Bell, exact: false },

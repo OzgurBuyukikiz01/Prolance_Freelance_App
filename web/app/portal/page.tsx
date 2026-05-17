@@ -4,6 +4,7 @@ import { logout } from '@/app/login/actions';
 import { createClient } from '@/lib/supabase/server';
 import { MagicCard } from '@/components/ui/magic-card';
 import { PortalStats } from '@/components/portal/PortalStats';
+import { formatCents } from '@/lib/portal/format';
 
 const ROLE_LABELS: Record<string, string> = {
   FREELANCER: 'Freelancer',
@@ -28,16 +29,33 @@ export default async function PortalPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, is_admin, avatar_url, completed_jobs, rating, total_earnings')
+    .select('full_name, role, is_admin, avatar_url, completed_jobs, rating, total_earnings, earnings_available_cents')
     .eq('id', user.id)
     .single();
 
   const name = profile?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
   const role = profile?.role ?? 'FREELANCER';
   const isAdmin = profile?.is_admin ?? false;
+  const isFreelancer = role === 'FREELANCER';
   const completedJobs = (profile?.completed_jobs as number | null) ?? 0;
   const rating = profile?.rating != null ? Number(profile.rating) : null;
   const totalEarnings = (profile?.total_earnings as number | null) ?? 0;
+  const earningsAvailableCents = (profile?.earnings_available_cents as number | null) ?? 0;
+
+  // Sum pending balance from payout_pending proposals
+  let pendingCents = 0;
+  if (isFreelancer) {
+    const { data: pendingProposals } = await supabase
+      .from('proposals')
+      .select('freelancer_payout_cents, funded_amount_cents')
+      .eq('freelancer_id', user.id)
+      .eq('lifecycle_phase', 'payout_pending')
+      .eq('payout_finalized', false);
+    pendingCents = (pendingProposals ?? []).reduce(
+      (acc, p) => acc + (p.freelancer_payout_cents ?? p.funded_amount_cents ?? 0),
+      0,
+    );
+  }
 
   return (
     <div>
@@ -76,6 +94,24 @@ export default async function PortalPage() {
           totalEarnings={totalEarnings}
         />
 
+        {/* Freelancer balance summary */}
+        {isFreelancer && (pendingCents > 0 || earningsAvailableCents > 0) && (
+          <div className="grid grid-cols-2 gap-3 mb-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p className="text-xs text-slate-400">Bekleyen Ödeme</p>
+              <p className="text-base font-bold text-purple-700 mt-0.5">
+                {formatCents(pendingCents)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Kullanılabilir Bakiye</p>
+              <p className="text-base font-bold text-emerald-700 mt-0.5">
+                {formatCents(earningsAvailableCents)}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-3">
           {isAdmin && (
             <Link
@@ -90,6 +126,12 @@ export default async function PortalPage() {
             className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-xl transition-colors"
           >
             İş İlanlarına Göz At
+          </Link>
+          <Link
+            href="/portal/contracts"
+            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors"
+          >
+            Sözleşmelerim
           </Link>
           <Link
             href="/portal/proposals"

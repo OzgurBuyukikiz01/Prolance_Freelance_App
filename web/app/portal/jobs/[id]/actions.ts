@@ -47,8 +47,6 @@ export async function submitProposal(formData: FormData) {
 export async function acceptProposal(formData: FormData) {
   const proposalId = formData.get('proposal_id') as string;
   const jobId = formData.get('job_id') as string;
-  const freelancerId = formData.get('freelancer_id') as string;
-  const bid = Number(formData.get('bid'));
 
   const supabase = await createClient();
   const {
@@ -57,25 +55,20 @@ export async function acceptProposal(formData: FormData) {
 
   if (!user) redirect('/login');
 
-  const { data: job } = await supabase
-    .from('jobs')
-    .select('client_id')
-    .eq('id', jobId)
-    .single();
+  const { data, error } = await supabase.rpc('rpc_accept_proposal', {
+    p_proposal_id: proposalId,
+  });
 
-  if (!job || job.client_id !== user.id) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Yetkisiz işlem.')}`);
+  if (error || !data?.ok) {
+    const msg = data?.err === 'insufficient_demo_balance'
+      ? 'Demo bakiyeniz yetersiz. Lütfen admin ile iletişime geçin.'
+      : data?.err === 'job_already_accepted'
+      ? 'Bu iş için zaten bir teklif kabul edildi.'
+      : (error?.message ?? data?.err ?? 'Teklif kabul edilemedi.');
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(msg)}`);
   }
 
-  const { error: acceptError } = await supabase
-    .from('proposals')
-    .update({ status: 'accepted' })
-    .eq('id', proposalId);
-
-  if (acceptError) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(acceptError.message)}`);
-  }
-
+  // Reject remaining pending proposals on the same job
   await supabase
     .from('proposals')
     .update({ status: 'rejected' })
@@ -83,16 +76,9 @@ export async function acceptProposal(formData: FormData) {
     .neq('id', proposalId)
     .eq('status', 'pending');
 
-  await supabase.from('escrow_transactions').insert({
-    job_id: jobId,
-    employer_id: user.id,
-    freelancer_id: freelancerId,
-    amount_cents: Math.round(bid * 100),
-    status: 'HELD',
-  });
-
   revalidatePath(`/portal/jobs/${jobId}`);
   revalidatePath('/portal/proposals');
+  revalidatePath('/portal/contracts');
   redirect(`/portal/jobs/${jobId}?accepted=1`);
 }
 
