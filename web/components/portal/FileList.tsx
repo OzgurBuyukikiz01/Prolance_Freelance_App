@@ -14,12 +14,8 @@ type FileListProps = {
 
 export function FileList({ files }: FileListProps) {
   const getDownloadUrl = (storagePath: string) => {
-    // Generate Supabase Storage URL for downloads
-    // This will be replaced with actual signed URL when integrated with Supabase
-    if (storagePath.startsWith('deliveries/')) {
-      return `/api/download?path=${encodeURIComponent(storagePath)}`;
-    }
-    return storagePath;
+    // Use the download API endpoint for file downloads
+    return `/api/download?path=${encodeURIComponent(storagePath)}`;
   };
 
   if (files.length === 0) {
@@ -51,15 +47,9 @@ export function FileList({ files }: FileListProps) {
             </div>
             <a
               href={getDownloadUrl(file.storage_path)}
-              target="_blank"
-              rel="noopener noreferrer"
+              download={file.file_name}
               className="ml-2 p-1.5 text-slate-400 hover:text-brand transition-colors shrink-0"
               aria-label="İndir"
-              onClick={(e) => {
-                // For now, this will open the file. Later, we'll add proper download handling
-                e.preventDefault();
-                window.open(getDownloadUrl(file.storage_path), '_blank');
-              }}
             >
               <Download className="w-4 h-4" />
             </a>
