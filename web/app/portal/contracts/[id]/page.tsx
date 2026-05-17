@@ -1,6 +1,16 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import {
+  Clock,
+  DollarSign,
+  CheckCircle2,
+  RefreshCw,
+  AlertTriangle,
+  Flag,
+} from 'lucide-react';
 import { MagicCard } from '@/components/ui/magic-card';
+import { DeliverySubmitForm } from '@/components/portal/DeliverySubmitForm';
+import { FileList } from '@/components/portal/FileList';
 import { createClient } from '@/lib/supabase/server';
 import {
   LIFECYCLE_LABELS,
@@ -203,41 +213,9 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         <MagicCard innerClassName="p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-1">Teslimat Gönder</h2>
           <p className="text-sm text-slate-500 mb-5">
-            Tamamladığınız çalışmanın notunu ve varsa bağlantısını girin.
+            Tamamladığınız çalışmanın notunu ve dosyalarını yükleyin.
           </p>
-          <form action={submitDelivery} className="space-y-4">
-            <input type="hidden" name="proposal_id" value={id} />
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Teslimat Notu <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="note"
-                rows={4}
-                required
-                minLength={5}
-                placeholder="Teslim ettiğiniz çalışmayı açıklayın..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Bağlantı / Link (isteğe bağlı)
-              </label>
-              <input
-                type="url"
-                name="url"
-                placeholder="https://drive.google.com/... veya GitHub linki"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors"
-            >
-              Teslimatı Gönder
-            </button>
-          </form>
+          <DeliverySubmitForm proposalId={id} />
         </MagicCard>
       )}
 
@@ -245,7 +223,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {!isClient && phase === 'awaiting_client_review' && (
         <MagicCard innerClassName="p-6 text-center">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">⏳</span>
+            <Clock className="w-6 h-6 text-amber-600" />
           </div>
           <h2 className="font-bold text-slate-900 mb-1">İnceleme Bekleniyor</h2>
           <p className="text-sm text-slate-500">İşvereniniz teslimatınızı inceliyor. Kabul ettiğinde ödeme süreci başlayacak.</p>
@@ -260,7 +238,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
             İşvereniniz teslimatı kabul etti. 24 saatlik itiraz süresi dolduktan sonra ödemeyi talep edebilirsiniz.
           </p>
           <div className="flex items-center gap-3 p-4 rounded-xl bg-purple-50 border border-purple-100 mb-5">
-            <span className="text-2xl">💰</span>
+            <DollarSign className="w-8 h-8 text-purple-600 shrink-0" />
             <div>
               <p className="text-xs text-purple-600 font-medium">Bekleyen Ödeme</p>
               <p className="text-xl font-extrabold text-purple-800">
@@ -290,7 +268,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {!isClient && phase === 'closed' && (
         <MagicCard innerClassName="p-6 text-center">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">🎉</span>
+            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
           </div>
           <h2 className="font-bold text-slate-900 mb-1">Proje Tamamlandı</h2>
           <p className="text-sm text-slate-500 mb-4">
@@ -314,7 +292,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {isClient && phase === 'escrow_funded' && (
         <MagicCard innerClassName="p-6 text-center">
           <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">🔄</span>
+            <RefreshCw className="w-6 h-6 text-blue-600" />
           </div>
           <h2 className="font-bold text-slate-900 mb-1">Teslimat Bekleniyor</h2>
           <p className="text-sm text-slate-500">Freelancer çalışmasını hazırlıyor. Teslim ettiğinde buradan inceleyebilirsiniz.</p>
@@ -325,31 +303,11 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {isClient && phase === 'awaiting_client_review' && deliveries && deliveries.length > 0 && (
         <MagicCard innerClassName="p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Teslimat İnceleme</h2>
-          <div className="space-y-3 mb-6">
-            {deliveries.map((d) => (
-              <div
-                key={d.id}
-                className="flex items-start gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50"
-              >
-                <span className="text-xl mt-0.5">📦</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 text-sm">{d.file_name}</p>
-                  {d.storage_path && d.storage_path !== 'demo://no-file' && (
-                    <a
-                      href={d.storage_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline mt-0.5 inline-block truncate max-w-xs"
-                    >
-                      {d.storage_path}
-                    </a>
-                  )}
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {formatRelativeTime(d.created_at)}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <p className="text-sm text-slate-500 mb-4">
+            Freelancer tarafından {deliveries.length} dosya yüklenmiştir.
+          </p>
+          <div className="mb-6">
+            <FileList files={deliveries} />
           </div>
           <div className="flex flex-wrap gap-3">
             <form action={acceptDelivery}>
@@ -378,7 +336,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {isClient && phase === 'payout_pending' && (
         <MagicCard innerClassName="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">✅</span>
+            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
             <div>
               <h2 className="font-bold text-slate-900">Teslimat Kabul Edildi</h2>
               <p className="text-sm text-slate-500">
@@ -436,7 +394,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {isClient && phase === 'closed' && (
         <MagicCard innerClassName="p-6 text-center">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">🏁</span>
+            <Flag className="w-6 h-6 text-emerald-600" />
           </div>
           <h2 className="font-bold text-slate-900 mb-1">Proje Tamamlandı</h2>
           <p className="text-sm text-slate-500">Harika bir iş birliği oldu!</p>
@@ -447,7 +405,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {phase === 'disputed' && (
         <MagicCard innerClassName="p-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">⚠️</span>
+            <AlertTriangle className="w-6 h-6 text-red-600 shrink-0" />
             <h2 className="font-bold text-slate-900">İtiraz Açıldı</h2>
           </div>
           <p className="text-sm text-slate-500">
@@ -528,27 +486,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {!isClient && deliveries && deliveries.length > 0 && (
         <MagicCard innerClassName="p-6">
           <h2 className="text-base font-bold text-slate-900 mb-3">Gönderilen Teslimatlar</h2>
-          <div className="space-y-2">
-            {deliveries.map((d) => (
-              <div key={d.id} className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50">
-                <span className="text-lg mt-0.5">📄</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{d.file_name}</p>
-                  {d.storage_path && d.storage_path !== 'demo://no-file' && (
-                    <a
-                      href={d.storage_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline truncate max-w-xs inline-block"
-                    >
-                      {d.storage_path}
-                    </a>
-                  )}
-                  <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(d.created_at)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <FileList files={deliveries} />
         </MagicCard>
       )}
     </div>

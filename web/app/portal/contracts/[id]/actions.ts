@@ -8,30 +8,95 @@ function contractPath(id: string) {
   return `/portal/contracts/${id}`;
 }
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'text/plain',
+  'text/csv',
+];
+
 export async function submitDelivery(formData: FormData) {
   const proposalId = formData.get('proposal_id') as string;
   const note = (formData.get('note') as string)?.trim();
-  const url = (formData.get('url') as string)?.trim();
+  const files = formData.getAll('files') as File[];
 
   if (!note || note.length < 5) {
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Lütfen teslimat notu girin (en az 5 karakter).')}`);
+  }
+
+  if (files.length === 0 || files[0]?.name === '') {
+    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Lütfen en az 1 dosya yükleyin.')}`);
+  }
+
+  if (files.length > 10) {
+    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Maksimum 10 dosya yükleyebilirsiniz.')}`);
+  }
+
+  // Validate files
+  for (const file of files) {
+    if (file.size > MAX_FILE_SIZE) {
+      redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(`${file.name} dosyası çok büyük (maksimum 50MB).`)}`);
+    }
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(`${file.name} dosya türü desteklenmiyor.`)}`);
+    }
   }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Register delivery metadata (note as file_name, url or placeholder as storage_path)
+  // Register delivery metadata
   const { data: reg, error: regErr } = await supabase.rpc('rpc_register_proposal_delivery', {
     p_proposal_id: proposalId,
     p_file_name: note.slice(0, 512),
-    p_storage_path: url || 'demo://no-file',
+    p_storage_path: `deliveries/${proposalId}`,
   });
 
   if (regErr || !reg?.ok) {
     const msg = reg?.err === 'invalid_phase'
       ? 'Bu sözleşme teslimat için uygun aşamada değil.'
       : (regErr?.message ?? reg?.err ?? 'Teslimat kaydedilemedi.');
+    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
+  }
+
+  // Upload files to Supabase Storage
+  const storagePath = `deliveries/${proposalId}`;
+  const uploadedFiles = [];
+
+  try {
+    for (const file of files) {
+      const fileExtension = file.name.split('.').pop() || 'bin';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+      const filePath = `${storagePath}/${fileName}`;
+
+      const { data, error: uploadErr } = await supabase.storage
+        .from('deliveries')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadErr) {
+        throw new Error(`Dosya yükleme başarısız: ${file.name}`);
+      }
+
+      uploadedFiles.push({
+        name: file.name,
+        path: filePath,
+        size: file.size,
+      });
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Dosya yükleme başarısız.';
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 

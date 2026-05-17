@@ -3,6 +3,7 @@ import { MagicCard } from '@/components/ui/magic-card';
 import { markAllNotificationsRead, markNotificationRead } from '@/app/portal/notifications/actions';
 import { createClient } from '@/lib/supabase/server';
 import { formatRelativeTime } from '@/lib/portal/format';
+import { getNotificationIcon } from '@/lib/portal/icons';
 
 type PageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -33,21 +34,6 @@ export default async function PortalNotificationsPage({ searchParams }: PageProp
   }
 
   const unreadCount = (notifications ?? []).filter((n) => !n.read_at).length;
-
-  const typeIcon = (type: string | null) => {
-    switch (type) {
-      case 'job':
-        return '💼';
-      case 'payment':
-        return '💳';
-      case 'message':
-        return '💬';
-      case 'system':
-        return '⚙️';
-      default:
-        return '🔔';
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -84,6 +70,7 @@ export default async function PortalNotificationsPage({ searchParams }: PageProp
         <ul className="space-y-3">
           {notifications.map((n) => {
             const isRead = Boolean(n.read_at);
+            const IconComponent = getNotificationIcon(n.type);
             return (
               <li key={n.id}>
                 <MagicCard
@@ -91,15 +78,12 @@ export default async function PortalNotificationsPage({ searchParams }: PageProp
                   innerClassName="p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-lg shrink-0" aria-hidden>
-                      {typeIcon(n.type)}
-                    </span>
+                    <IconComponent className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900">{n.title}</p>
                       <p className="text-sm text-slate-600 mt-1">{n.body}</p>
                       <p className="text-xs text-slate-400 mt-2">
                         {formatRelativeTime(n.created_at)}
-                        {n.type ? ` · ${n.type}` : ''}
                       </p>
                     </div>
                     {!isRead && (
