@@ -49,7 +49,6 @@ export async function acceptProposal(formData: FormData) {
   const proposalId = formData.get('proposal_id') as string;
   const jobId = formData.get('job_id') as string;
   const freelancerId = formData.get('freelancer_id') as string;
-  const bid = Number(formData.get('bid'));
 
   const supabase = await createClient();
   const {
@@ -58,35 +57,21 @@ export async function acceptProposal(formData: FormData) {
 
   if (!user) redirect('/login');
 
-  const { data: job } = await supabase
-    .from('jobs')
-    .select('client_id')
-    .eq('id', jobId)
-    .single();
+  // Use RPC to accept proposal — handles demo_balance deduction, escrow creation, lifecycle phase
+  const { data, error } = await supabase.rpc('rpc_accept_proposal', {
+    p_proposal_id: proposalId,
+  });
 
-  if (!job || job.client_id !== user.id) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Yetkisiz işlem.')}`);
+  if (error || !data?.ok) {
+    const msg = data?.err === 'insufficient_demo_balance'
+      ? 'Demo bakiyeniz yetersiz. Lütfen admin ile iletişime geçin.'
+      : data?.err === 'job_already_accepted'
+      ? 'Bu iş için zaten bir teklif kabul edildi.'
+      : (error?.message ?? data?.err ?? 'Teklif kabul edilemedi.');
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(msg)}`);
   }
 
-  const { data: proposal, error: proposalError } = await supabase
-    .from('proposals')
-    .select('delivery_days')
-    .eq('id', proposalId)
-    .single();
-
-  if (proposalError || !proposal) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(proposalError?.message ?? 'Teklif bulunamadı.')}`);
-  }
-
-  const { error: acceptError } = await supabase
-    .from('proposals')
-    .update({ status: 'accepted' })
-    .eq('id', proposalId);
-
-  if (acceptError) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(acceptError.message)}`);
-  }
-
+  // Reject remaining pending proposals on the same job
   await supabase
     .from('proposals')
     .update({ status: 'rejected' })
@@ -94,26 +79,30 @@ export async function acceptProposal(formData: FormData) {
     .neq('id', proposalId)
     .eq('status', 'pending');
 
-  await supabase.from('escrow_transactions').insert({
-    job_id: jobId,
-    employer_id: user.id,
-    freelancer_id: freelancerId,
-    amount_cents: Math.round(bid * 100),
-    status: 'HELD',
-  });
+  // Fetch delivery_days for milestone creation
+  const { data: proposal } = await supabase
+    .from('proposals')
+    .select('delivery_days')
+    .eq('id', proposalId)
+    .maybeSingle();
 
-  const milestones = buildMilestoneRows(
-    jobId,
-    proposalId,
-    proposal.delivery_days,
-    freelancerId,
-    user.id,
-  );
-  await supabase.from('job_schedule_items').insert(milestones);
+  if (proposal?.delivery_days && freelancerId && user.id) {
+    const milestones = buildMilestoneRows(
+      jobId,
+      proposalId,
+      proposal.delivery_days,
+      freelancerId,
+      user.id,
+    );
+    if (milestones?.length) {
+      await supabase.from('job_schedule_items').insert(milestones);
+    }
+  }
 
   revalidatePath(`/portal/jobs/${jobId}`);
   revalidatePath('/portal/calendar');
   revalidatePath('/portal/proposals');
+  revalidatePath('/portal/contracts');
   redirect(`/portal/jobs/${jobId}?accepted=1`);
 }
 
@@ -179,8 +168,7 @@ export async function openEscrowDispute(formData: FormData) {
 
   if (
     !escrow ||
-    (escrow.employer_id !== user.id &&
-      escrow.freelancer_id !== user.id)
+    (escrow.employer_id !== user.id && escrow.freelancer_id !== user.id)
   ) {
     redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Yetkisiz işlem.')}`);
   }

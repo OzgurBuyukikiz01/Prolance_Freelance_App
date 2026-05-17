@@ -6,6 +6,7 @@ import type { JobListItem } from '@/components/portal/JobsListClient';
 import { createClient } from '@/lib/supabase/server';
 import { applyStatFloors, STAT_FLOORS } from '@/lib/landing-stats';
 import { createServiceClient } from '@/lib/supabaseAdmin';
+import { formatCents } from '@/lib/portal/format';
 
 const ROLE_LABELS: Record<string, string> = {
   FREELANCER: 'Freelancer',
@@ -72,7 +73,7 @@ export default async function PortalPage() {
   const [{ data: profile }, { data: jobs, error: jobsError }, platformStats] = await Promise.all([
     supabase
       .from('profiles')
-      .select('full_name, role, is_admin, avatar_url')
+      .select('full_name, role, is_admin, avatar_url, earnings_available_cents')
       .eq('id', user.id)
       .single(),
     supabase
@@ -89,6 +90,23 @@ export default async function PortalPage() {
   const name = profile?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
   const role = profile?.role ?? 'FREELANCER';
   const isAdmin = profile?.is_admin ?? false;
+  const isFreelancer = role === 'FREELANCER';
+  const earningsAvailableCents = (profile?.earnings_available_cents as number | null) ?? 0;
+
+  // Sum pending balance from payout_pending proposals (freelancer only)
+  let pendingCents = 0;
+  if (isFreelancer) {
+    const { data: pendingProposals } = await supabase
+      .from('proposals')
+      .select('freelancer_payout_cents, funded_amount_cents')
+      .eq('freelancer_id', user.id)
+      .eq('lifecycle_phase', 'payout_pending')
+      .eq('payout_finalized', false);
+    pendingCents = (pendingProposals ?? []).reduce(
+      (acc, p) => acc + (p.freelancer_payout_cents ?? p.funded_amount_cents ?? 0),
+      0,
+    );
+  }
 
   return (
     <div>
@@ -109,6 +127,33 @@ export default async function PortalPage() {
           Admin Panele Geç
         </Link>
       )}
+
+      {/* Freelancer balance summary */}
+      {isFreelancer && (pendingCents > 0 || earningsAvailableCents > 0) && (
+        <div className="grid grid-cols-2 gap-3 mb-6 p-4 rounded-2xl bg-white/80 border border-slate-100 shadow-sm">
+          <div>
+            <p className="text-xs text-slate-400">Bekleyen Ödeme</p>
+            <p className="text-base font-bold text-purple-700 mt-0.5">
+              {formatCents(pendingCents)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400">Kullanılabilir Bakiye</p>
+            <p className="text-base font-bold text-emerald-700 mt-0.5">
+              {formatCents(earningsAvailableCents)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Contracts quick link */}
+      <Link
+        href="/portal/contracts"
+        className="mb-6 flex items-center justify-between gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-5 py-3.5 text-sm font-semibold text-white transition-colors shadow-sm"
+      >
+        <span>Sözleşmelerim</span>
+        <span className="opacity-70">→</span>
+      </Link>
 
       {jobsError ? (
         <p className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-600">
