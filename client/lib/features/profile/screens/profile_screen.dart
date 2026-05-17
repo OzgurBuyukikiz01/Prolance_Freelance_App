@@ -18,6 +18,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/portfolio_item.dart';
 import '../../../core/models/review_model.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/models/submitted_proposal_model.dart';
+import '../../../core/repositories/proposal_repository.dart';
 import '../../../core/repositories/review_repository.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/state/jobs_provider.dart';
@@ -120,7 +122,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FadeInUp(
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 120),
-              child: _buildWalletRow(user, scheme),
+              child: _buildWalletRow(
+                user,
+                scheme,
+                pendingCents: context
+                    .watch<ProposalRepository>()
+                    .myProposals
+                    .where((p) => p.lifecyclePhase == ProposalLifecycle.payoutPending)
+                    .fold(0, (sum, p) => sum + (p.fundedAmountCents ?? 0)),
+              ),
             ),
             const SizedBox(height: AppConstants.paddingLg),
 
@@ -329,9 +339,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildWalletRow(UserModel user, ColorScheme scheme) {
+  Widget _buildWalletRow(UserModel user, ColorScheme scheme, {int pendingCents = 0}) {
     final demo = (user.demoBalanceCents / 100).toStringAsFixed(2);
     final avail = (user.earningsAvailableCents / 100).toStringAsFixed(2);
+    final pending = (pendingCents / 100).toStringAsFixed(2);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.paddingMd),
@@ -340,57 +351,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(AppConstants.radiusLg),
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Demo wallet',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: scheme.onSurfaceVariant,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Demo wallet',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$$demo',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '\$$demo',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Available (freelancer)',
+                      textAlign: TextAlign.end,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$$avail',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Available (freelancer)',
-                  textAlign: TextAlign.end,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: scheme.onSurfaceVariant,
+          if (pendingCents > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Iconsax.clock, size: 14, color: Colors.amber),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Pending (24h hold)',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.amber.shade700,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '\$$avail',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.success,
+                  Text(
+                    '\$$pending',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.amber.shade700,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

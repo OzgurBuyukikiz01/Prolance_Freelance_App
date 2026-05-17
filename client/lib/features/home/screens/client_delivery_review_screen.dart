@@ -385,26 +385,27 @@ class _ClientDeliveryReviewScreenState
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            if (timeLeft != null)
+            if (timeLeft != null) ...[
               Text(
                 app.t(
-                  'Time left: ${_formatDuration(timeLeft)}',
-                  'Kalan süre: ${_formatDuration(timeLeft)}',
-                ),
-              )
-            else
-              Text(
-                app.t(
-                  'Window closed — freelancer may finalize earnings on refresh.',
-                  'Süre doldu — serbest çalışan yenileyerek kazancı sonuçlandırabilir.',
+                  'Time left: ${_formatDuration(timeLeft!)}',
+                  'Kalan süre: ${_formatDuration(timeLeft!)}',
                 ),
               ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _acting ? null : _onReportIssue,
-              icon: const Icon(Iconsax.warning_2),
-              label: Text(app.t('Report issue (refund demo)', 'Sorun bildir (demo iade)')),
-            ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _acting ? null : _onReportIssue,
+                icon: const Icon(Iconsax.warning_2),
+                label: Text(app.t('Report an Issue', 'Sorun Bildir')),
+              ),
+            ] else
+              Text(
+                app.t(
+                  'The 24-hour dispute window has closed. Payment will be released to the freelancer.',
+                  '24 saatlik itiraz süresi doldu. Ödeme serbest çalışana aktarılacak.',
+                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
           ],
         ],
       ),

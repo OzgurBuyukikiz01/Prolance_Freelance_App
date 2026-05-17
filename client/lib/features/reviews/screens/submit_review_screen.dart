@@ -44,13 +44,6 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
   Future<void> _submit() async {
     final comment = _commentController.text.trim();
-    if (comment.isEmpty) {
-      ProlanceMessenger.error(
-        context,
-        context.read<AppState>().t('Please write a review.', 'Lütfen bir yorum yazın.'),
-      );
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -266,7 +259,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
 
           // Comment
           Text(
-            'Your comment',
+            'Your comment (optional)',
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
