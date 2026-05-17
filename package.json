@@ -1,0 +1,8 @@
+{
+  "name": "prolance-root-tools",
+  "private": true,
+  "description": "Local tooling (e.g. rapor.js docx generator)",
+  "dependencies": {
+    "docx": "^9.1.0"
+  }
+}

@@ -34,15 +34,15 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <script src='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs' type='module'></script>
-  <script type='module'>
-  var { pdfjsLib } = globalThis;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.mjs';
-
-  var pdfRenderOptions = {
-    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/cmaps/',
-    cMapPacked: true,
-  }
+  <!-- pdfx checks globalThis.pdfjsLib at startup; use classic script so it exists before flutter_bootstrap. -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    var pdfRenderOptions = {
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/cmaps/',
+      cMapPacked: true,
+    };
   </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
