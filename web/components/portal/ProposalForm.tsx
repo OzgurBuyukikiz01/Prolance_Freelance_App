@@ -11,7 +11,7 @@ function SubmitButton() {
       disabled={pending}
       className="w-full bg-brand hover:bg-brand-dark disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors"
     >
-      {pending ? 'Gönderiliyor…' : 'Teklif Gönder'}
+      {pending ? 'Submitting…' : 'Submit Proposal'}
     </button>
   );
 }
@@ -26,8 +26,8 @@ export function ProposalForm({ jobId, defaultBid }: ProposalFormProps) {
     <form action={submitProposal} className="space-y-4">
       <input type="hidden" name="job_id" value={jobId} />
       <div>
-        <label htmlFor="bid" className="block text-sm font-medium text-slate-700 mb-1">
-          Teklif tutarı (₺)
+        <label htmlFor="bid" className="block text-sm font-medium text-slate-300 mb-1">
+          Bid Amount ($)
         </label>
         <input
           id="bid"
@@ -37,12 +37,12 @@ export function ProposalForm({ jobId, defaultBid }: ProposalFormProps) {
           step={1}
           required
           defaultValue={defaultBid}
-          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+          className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
         />
       </div>
       <div>
-        <label htmlFor="delivery_days" className="block text-sm font-medium text-slate-700 mb-1">
-          Teslim süresi (gün)
+        <label htmlFor="delivery_days" className="block text-sm font-medium text-slate-300 mb-1">
+          Delivery Time (days)
         </label>
         <input
           id="delivery_days"
@@ -51,12 +51,12 @@ export function ProposalForm({ jobId, defaultBid }: ProposalFormProps) {
           min={1}
           required
           defaultValue={14}
-          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+          className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
         />
       </div>
       <div>
-        <label htmlFor="cover_letter" className="block text-sm font-medium text-slate-700 mb-1">
-          Kapak yazısı
+        <label htmlFor="cover_letter" className="block text-sm font-medium text-slate-300 mb-1">
+          Cover Letter
         </label>
         <textarea
           id="cover_letter"
@@ -64,8 +64,8 @@ export function ProposalForm({ jobId, defaultBid }: ProposalFormProps) {
           rows={5}
           required
           minLength={10}
-          placeholder="Neden bu iş için uygun olduğunuzu anlatın…"
-          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+          placeholder="Tell us why you're the best fit for this job…"
+          className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
         />
       </div>
       <SubmitButton />

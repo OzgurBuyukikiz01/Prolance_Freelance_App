@@ -14,7 +14,7 @@ export async function submitDelivery(formData: FormData) {
   const url = (formData.get('url') as string)?.trim();
 
   if (!note || note.length < 5) {
-    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Lütfen teslimat notu girin (en az 5 karakter).')}`);
+    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Please enter a delivery note (min. 5 characters).')}`);
   }
 
   const supabase = await createClient();
@@ -30,8 +30,8 @@ export async function submitDelivery(formData: FormData) {
 
   if (regErr || !reg?.ok) {
     const msg = reg?.err === 'invalid_phase'
-      ? 'Bu sözleşme teslimat için uygun aşamada değil.'
-      : (regErr?.message ?? reg?.err ?? 'Teslimat kaydedilemedi.');
+      ? 'This contract is not in the correct phase for delivery.'
+      : (regErr?.message ?? reg?.err ?? 'Failed to save delivery.');
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -42,7 +42,7 @@ export async function submitDelivery(formData: FormData) {
   );
 
   if (confirmErr || !confirm?.ok) {
-    const msg = confirmErr?.message ?? confirm?.err ?? 'Teslimat onaylanamadı.';
+    const msg = confirmErr?.message ?? confirm?.err ?? 'Could not confirm delivery.';
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -64,7 +64,7 @@ export async function acceptDelivery(formData: FormData) {
   });
 
   if (error || !data?.ok) {
-    const msg = error?.message ?? data?.err ?? 'Teslimat kabul edilemedi.';
+    const msg = error?.message ?? data?.err ?? 'Could not accept delivery.';
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -86,7 +86,7 @@ export async function declineDelivery(formData: FormData) {
   });
 
   if (error || !data?.ok) {
-    const msg = error?.message ?? data?.err ?? 'İşlem gerçekleştirilemedi.';
+    const msg = error?.message ?? data?.err ?? 'Action could not be completed.';
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -100,7 +100,7 @@ export async function reportIssue(formData: FormData) {
   const note = (formData.get('note') as string)?.trim() ?? '';
 
   if (!note || note.length < 10) {
-    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Lütfen sorun açıklaması girin (en az 10 karakter).')}`);
+    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Please describe the issue (min. 10 characters).')}`);
   }
 
   const supabase = await createClient();
@@ -114,8 +114,8 @@ export async function reportIssue(formData: FormData) {
 
   if (error || !data?.ok) {
     const msg = data?.err === 'dispute_window_closed'
-      ? 'İtiraz süresi doldu. Artık sorun bildirimi yapamazsınız.'
-      : (error?.message ?? data?.err ?? 'Sorun bildirimi gönderilemedi.');
+      ? 'Dispute window closed. You can no longer report an issue.'
+      : (error?.message ?? data?.err ?? 'Failed to submit issue.');
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -134,7 +134,7 @@ export async function claimEarnings(formData: FormData) {
   const { data, error } = await supabase.rpc('rpc_finalize_proposal_payouts');
 
   if (error || !data?.ok) {
-    const msg = error?.message ?? data?.err ?? 'Ödeme alınamadı.';
+    const msg = error?.message ?? data?.err ?? 'Could not claim payment.';
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -156,7 +156,7 @@ export async function demoExpireDeadline(formData: FormData) {
   });
 
   if (error || !data?.ok) {
-    const msg = error?.message ?? data?.err ?? 'Demo işlemi başarısız.';
+    const msg = error?.message ?? data?.err ?? 'Demo action failed.';
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -172,7 +172,7 @@ export async function submitReview(formData: FormData) {
   const comment = (formData.get('comment') as string)?.trim() ?? '';
 
   if (!rating || rating < 1 || rating > 5) {
-    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Lütfen geçerli bir puan seçin (1-5).')}`);
+    redirect(`${contractPath(proposalId)}?error=${encodeURIComponent('Please select a valid rating (1-5).')}`);
   }
 
   const supabase = await createClient();
@@ -189,7 +189,7 @@ export async function submitReview(formData: FormData) {
 
   if (error) {
     const msg = error.code === '23505'
-      ? 'Bu proje için zaten bir değerlendirme yaptınız.'
+      ? 'You have already submitted a review for this project.'
       : error.message;
     redirect(`${contractPath(proposalId)}?error=${encodeURIComponent(msg)}`);
   }

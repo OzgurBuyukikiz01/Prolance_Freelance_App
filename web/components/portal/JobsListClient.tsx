@@ -42,23 +42,23 @@ export function JobsListClient({ jobs, isClient }: JobsListClientProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900">İş İlanları</h1>
+        <h1 className="text-2xl font-display font-bold text-white">Job Board</h1>
         <p className="text-sm text-slate-500 mt-1">
-          {isClient ? 'İlanlarını yönet veya yeni ilan yayınla.' : 'Açık ilanlara teklif ver.'}
+          {isClient ? 'Manage your listings or post a new job.' : 'Browse open listings and submit proposals.'}
         </p>
       </div>
 
       <input
         type="search"
-        placeholder="Başlık, açıklama veya beceri ara…"
+        placeholder="Search by title, description or skill…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
       />
 
       {filtered.length === 0 ? (
         <MagicCard innerClassName="p-8 text-center text-slate-500 text-sm">
-          {jobs.length === 0 ? 'Henüz açık ilan yok.' : 'Aramanızla eşleşen ilan bulunamadı.'}
+          {jobs.length === 0 ? 'No open jobs yet.' : 'No jobs match your search.'}
         </MagicCard>
       ) : (
         <ul className="space-y-4">
@@ -80,21 +80,21 @@ export function JobsListClient({ jobs, isClient }: JobsListClientProps) {
                           {formatBudget(job.budget_min, job.budget_max, job.budget_type)}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-600 mt-3 line-clamp-2">{job.description}</p>
+                      <p className="text-sm text-slate-400 mt-3 line-clamp-2">{job.description}</p>
                       {skills.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3">
                           {skills.map((skill) => (
                             <span
                               key={skill}
-                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600"
+                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/8 text-slate-400"
                             >
                               {skill}
                             </span>
                           ))}
                         </div>
                       )}
-                      <p className="text-xs text-slate-400 mt-3">
-                        {job.proposal_count} teklif · {job.category}
+                      <p className="text-xs text-slate-500 mt-3">
+                        {job.proposal_count} {job.proposal_count === 1 ? 'proposal' : 'proposals'} · {job.category}
                       </p>
                     </div>
                   </MagicCard>

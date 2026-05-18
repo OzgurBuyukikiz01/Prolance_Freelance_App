@@ -27,8 +27,8 @@ export default async function PortalMessagesPage() {
 
   if (error) {
     return (
-      <MagicCard innerClassName="p-6 text-sm text-red-600">
-        Mesajlar yüklenemedi: {error.message}
+      <MagicCard innerClassName="p-6 text-sm text-red-400">
+        Failed to load messages: {error.message}
       </MagicCard>
     );
   }
@@ -52,8 +52,8 @@ export default async function PortalMessagesPage() {
 
       return {
         id: conv.id,
-        otherName: profile?.full_name || 'Kullanıcı',
-        lastMessage: lastMsg?.body ?? 'Sohbet başlatın',
+        otherName: profile?.full_name || 'User',
+        lastMessage: lastMsg?.body ?? 'Start a conversation',
         lastAt: conv.last_message_at ?? lastMsg?.created_at ?? conv.created_at,
       };
     }),
@@ -62,13 +62,13 @@ export default async function PortalMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900">Mesajlar</h1>
-        <p className="text-sm text-slate-500 mt-1">Sohbetleriniz</p>
+        <h1 className="text-2xl font-extrabold text-white">Messages</h1>
+        <p className="text-sm text-slate-400 mt-1">Your conversations</p>
       </div>
 
       {enriched.length === 0 ? (
-        <MagicCard innerClassName="p-8 text-center text-sm text-slate-500">
-          Henüz sohbet yok. Bir iş ilanı veya teklif üzerinden mesajlaşma başlatabilirsiniz.
+        <MagicCard innerClassName="p-8 text-center text-sm text-slate-400">
+          No conversations yet. Start messaging via a job listing or proposal.
         </MagicCard>
       ) : (
         <ul className="space-y-3">
@@ -81,7 +81,7 @@ export default async function PortalMessagesPage() {
                       {conv.otherName.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900 truncate">{conv.otherName}</p>
+                      <p className="font-semibold text-white truncate">{conv.otherName}</p>
                       <p className="text-sm text-slate-500 truncate">{conv.lastMessage}</p>
                     </div>
                     <span className="text-xs text-slate-400 shrink-0">

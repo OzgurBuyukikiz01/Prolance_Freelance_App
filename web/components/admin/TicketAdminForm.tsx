@@ -27,14 +27,14 @@ export function TicketAdminForm({
         className="font-bold py-3 px-5 rounded-xl transition-all text-white hover:opacity-90"
         style={{ background: 'linear-gradient(135deg, #7248FE, #9075FF)' }}
       >
-        Durumu güncelle
+        Update Status
       </button>
 
       <AdminModal
         open={open}
         onOpenChange={setOpen}
-        title="Ticket güncelle"
-        description="Durum ve admin notunu kaydedin."
+        title="Update Ticket"
+        description="Save the status and admin note."
       >
         <form
           action={async (fd) => {
@@ -46,7 +46,7 @@ export function TicketAdminForm({
           <input type="hidden" name="ticket_id" value={ticketId} />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-300 text-sm font-medium">Durum</label>
+            <label className="text-slate-300 text-sm font-medium">Status</label>
             <select
               name="status"
               defaultValue={defaultStatus}
@@ -61,12 +61,12 @@ export function TicketAdminForm({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-300 text-sm font-medium">Admin Notu</label>
+            <label className="text-slate-300 text-sm font-medium">Admin Note</label>
             <textarea
               name="admin_notes"
               rows={4}
               defaultValue={defaultNotes}
-              placeholder="Çözüm notu, inceleme sonucu..."
+              placeholder="Resolution note, review outcome..."
               className="bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none placeholder:text-slate-500"
             />
           </div>
@@ -77,14 +77,14 @@ export function TicketAdminForm({
               onClick={() => setOpen(false)}
               className="px-4 py-2 rounded-lg text-slate-400 text-sm hover:text-white"
             >
-              İptal
+              Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded-lg text-white font-bold text-sm hover:opacity-90 transition-all"
               style={{ background: 'linear-gradient(135deg, #7248FE, #9075FF)' }}
             >
-              Kaydet
+              Save
             </button>
           </div>
         </form>

@@ -93,7 +93,7 @@ export function ChatClient({
     <div className="flex flex-col h-[min(70vh,560px)]">
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4">
         {messages.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-8">Henüz mesaj yok. İlk mesajı siz gönderin.</p>
+          <p className="text-sm text-slate-500 text-center py-8">No messages yet. Be the first to send one.</p>
         ) : (
           messages.map((msg) => {
             const mine = msg.sender_id === currentUserId;
@@ -108,14 +108,14 @@ export function ChatClient({
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                     mine
                       ? 'bg-brand text-white rounded-br-md'
-                      : 'bg-slate-100 text-slate-800 rounded-bl-md'
+                      : 'bg-white/10 text-white rounded-bl-md'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.body}</p>
                   <p
                     className={`text-[10px] mt-1 ${mine ? 'text-white/70' : 'text-slate-400'}`}
                   >
-                    {new Date(msg.created_at).toLocaleTimeString('tr-TR', {
+                    {new Date(msg.created_at).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -135,8 +135,8 @@ export function ChatClient({
           type="text"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Mesaj yazın…"
-          className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+          placeholder="Type a message…"
+          className="flex-1 rounded-xl border border-white/10 bg-white/5 text-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand placeholder:text-slate-500"
           disabled={sending}
         />
         <button
@@ -144,7 +144,7 @@ export function ChatClient({
           disabled={sending || !body.trim()}
           className="shrink-0 bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-semibold px-5 py-3 rounded-xl text-sm"
         >
-          Gönder
+          Send
         </button>
       </form>
     </div>

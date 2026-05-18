@@ -30,7 +30,7 @@ export default async function PortalJobsPage() {
   if (error) {
     return (
       <MagicCard innerClassName="p-6 text-sm text-red-600">
-        İlanlar yüklenemedi: {error.message}
+        Failed to load jobs: {error.message}
       </MagicCard>
     );
   }

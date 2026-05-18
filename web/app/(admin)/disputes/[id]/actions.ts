@@ -17,7 +17,7 @@ export async function resolveDispute(formData: FormData) {
   const resolutionNote = (formData.get('resolution_note') as string)?.trim();
 
   if (!resolutionNote || resolutionNote.length < 20) {
-    throw new Error('Karar açıklaması en az 20 karakter olmalıdır.');
+    throw new Error('Decision note must be at least 20 characters.');
   }
 
   const newStatus = resolution === 'release' ? 'RELEASED' : 'REFUNDED';
@@ -52,8 +52,8 @@ export async function resolveDispute(formData: FormData) {
         profile_id: escrow.freelancer_id,
         title:
           resolution === 'release'
-            ? 'İtiraz Kararı: Lehinize sonuçlandı ✓'
-            : 'İtiraz Kararı: Aleyhinize sonuçlandı',
+            ? 'Dispute Decision: Ruled in your favor ✓'
+            : 'Dispute Decision: Ruled against you',
         body: resolutionNote,
         type: 'dispute_resolved',
         payload: { escrow_id: escrowId, resolution },
@@ -62,8 +62,8 @@ export async function resolveDispute(formData: FormData) {
         profile_id: escrow.employer_id,
         title:
           resolution === 'refund'
-            ? 'İtiraz Kararı: Ödemeniz iade edildi ✓'
-            : 'İtiraz Kararı: Freelancer lehine sonuçlandı',
+            ? 'Dispute Decision: Payment refunded to you ✓'
+            : 'Dispute Decision: Ruled in favor of the freelancer',
         body: resolutionNote,
         type: 'dispute_resolved',
         payload: { escrow_id: escrowId, resolution },
@@ -76,7 +76,7 @@ export async function resolveDispute(formData: FormData) {
     user?.id ?? 'system',
     'escrow_resolution',
     escrowId,
-    `${resolution === 'release' ? 'Freelancer' : 'İşveren'} lehine karar. Not: ${resolutionNote.slice(0, 120)}`,
+    `Decision in favor of ${resolution === 'release' ? 'Freelancer' : 'Client'}. Note: ${resolutionNote.slice(0, 120)}`,
   );
 
   revalidatePath(`/disputes/${escrowId}`);

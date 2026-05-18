@@ -22,7 +22,7 @@ type Delivery = {
 };
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleString('tr-TR', {
+  return new Date(iso).toLocaleString('en-US', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -52,9 +52,9 @@ export default async function DisputeDetailPage({
   if (error || !escrow) {
     return (
       <div className="p-8">
-        <p className="text-red-400">Kayıt bulunamadı.</p>
+        <p className="text-red-400">Record not found.</p>
         <Link href="/disputes" className="text-primary-400 text-sm mt-2 block">
-          ← Anlaşmazlıklara Dön
+          ← Back to Disputes
         </Link>
       </div>
     );
@@ -109,13 +109,13 @@ export default async function DisputeDetailPage({
   return (
     <div className="p-8 max-w-4xl space-y-6">
       <Link href="/disputes" className="text-slate-400 hover:text-white text-sm block">
-        ← Tüm Anlaşmazlıklar
+        ← All Disputes
       </Link>
 
       {/* ── Parties & Amount ── */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-extrabold text-white">Escrow Kaydı</h1>
+          <h1 className="text-xl font-extrabold text-white">Escrow Record</h1>
           <span
             className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
               isDisputed
@@ -131,7 +131,7 @@ export default async function DisputeDetailPage({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-xs text-slate-500 mb-1">İşveren (Client)</div>
+            <div className="text-xs text-slate-500 mb-1">Client</div>
             <div className="text-white font-medium">{employer?.full_name ?? '—'}</div>
             <div className="text-slate-400 text-xs">{employer?.email}</div>
           </div>
@@ -141,13 +141,13 @@ export default async function DisputeDetailPage({
             <div className="text-slate-400 text-xs">{freelancer?.email}</div>
           </div>
           <div>
-            <div className="text-xs text-slate-500 mb-1">Tutar</div>
+            <div className="text-xs text-slate-500 mb-1">Amount</div>
             <div className="text-2xl font-extrabold text-white">
-              ₺{((escrow.amount_cents as number) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+              ${((escrow.amount_cents as number) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
           </div>
           <div>
-            <div className="text-xs text-slate-500 mb-1">Oluşturulma</div>
+            <div className="text-xs text-slate-500 mb-1">Created</div>
             <div className="text-white text-sm">{formatTime(escrow.created_at)}</div>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default async function DisputeDetailPage({
         {/* Dispute reason */}
         {(escrow.dispute_reason || proposalDisputeNote) && (
           <div>
-            <div className="text-xs text-slate-500 mb-1">İtiraz Sebebi</div>
+            <div className="text-xs text-slate-500 mb-1">Dispute Reason</div>
             <div className="bg-red-950/40 border border-red-500/20 rounded-xl px-4 py-3 text-red-300 text-sm">
               {escrow.dispute_reason || proposalDisputeNote}
             </div>
@@ -166,7 +166,7 @@ export default async function DisputeDetailPage({
       {/* ── Delivery Files ── */}
       {deliveries.length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-white font-bold mb-4">Freelancer Teslimatları</h2>
+          <h2 className="text-white font-bold mb-4">Freelancer Deliveries</h2>
           <div className="space-y-2">
             {deliveries.map((d) => (
               <div
@@ -185,7 +185,7 @@ export default async function DisputeDetailPage({
                     rel="noopener noreferrer"
                     className="text-primary-400 text-xs hover:underline shrink-0"
                   >
-                    Görüntüle →
+                    View →
                   </a>
                 )}
               </div>
@@ -197,14 +197,14 @@ export default async function DisputeDetailPage({
       {/* ── Conversation Timeline ── */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
         <h2 className="text-white font-bold mb-4">
-          Taraflar Arası Konuşma
+          Conversation Between Parties
           {messages.length > 0 && (
-            <span className="ml-2 text-xs text-slate-500 font-normal">({messages.length} mesaj)</span>
+            <span className="ml-2 text-xs text-slate-500 font-normal">({messages.length} messages)</span>
           )}
         </h2>
 
         {messages.length === 0 ? (
-          <p className="text-slate-500 text-sm">Bu taraflar arasında mesajlaşma kaydı bulunamadı.</p>
+          <p className="text-slate-500 text-sm">No conversation found between these parties.</p>
         ) : (
           <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
             {messages.map((msg) => {
@@ -259,7 +259,7 @@ export default async function DisputeDetailPage({
                         <span>
                           {msg.attachment_type === 'image' ? '🖼️' : '📎'}
                         </span>
-                        Ek Dosya Görüntüle
+                        View Attachment
                       </a>
                     )}
                   </div>
@@ -273,29 +273,29 @@ export default async function DisputeDetailPage({
       {/* ── Decision ── */}
       {isDisputed ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-white font-bold mb-1">Admin Kararı</h2>
+          <h2 className="text-white font-bold mb-1">Admin Decision</h2>
           <p className="text-slate-400 text-sm mb-5">
-            Yukarıdaki konuşma ve teslimatları inceleyin, ardından haklı tarafı seçin ve kararınızı yazın.
-            <span className="text-red-400"> Bu işlem geri alınamaz.</span>
+            Review the conversation and deliveries above, then select the winning party and write your decision note.
+            <span className="text-red-400"> This action cannot be undone.</span>
           </p>
           <DisputeResolvePanel
             escrowId={escrow.id as string}
             proposalId={escrow.proposal_id as string | null}
-            employerName={employer?.full_name ?? 'İşveren'}
+            employerName={employer?.full_name ?? 'Client'}
             freelancerName={freelancer?.full_name ?? 'Freelancer'}
           />
         </div>
       ) : (
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 space-y-2">
           <p className="text-slate-400 text-sm">
-            Bu anlaşmazlık çözümlendi: <strong className="text-white">{escrow.status}</strong>
+            This dispute has been resolved: <strong className="text-white">{escrow.status}</strong>
             {escrow.resolved_at && (
               <span className="ml-2 text-slate-500 text-xs">{formatTime(escrow.resolved_at)}</span>
             )}
           </p>
           {escrow.resolution_note && (
             <div className="mt-2 bg-slate-900 rounded-xl px-4 py-3">
-              <p className="text-xs text-slate-500 mb-1">Admin Açıklaması</p>
+              <p className="text-xs text-slate-500 mb-1">Admin Note</p>
               <p className="text-slate-200 text-sm">{escrow.resolution_note}</p>
             </div>
           )}

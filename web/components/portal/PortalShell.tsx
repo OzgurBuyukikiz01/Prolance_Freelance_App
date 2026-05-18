@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  Bell,
   Briefcase,
   FileCheck,
   Home,
@@ -12,14 +11,14 @@ import {
   User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationBell, NotificationBellMobile } from '@/components/portal/NotificationBell';
 
 const NAV_ITEMS = [
-  { href: '/portal', label: 'Ana Sayfa', icon: Home, exact: true },
-  { href: '/portal/jobs', label: 'İş İlanları', icon: Briefcase, exact: false },
-  { href: '/portal/contracts', label: 'Sözleşmeler', icon: FileCheck, exact: false },
-  { href: '/portal/messages', label: 'Mesajlar', icon: MessageCircle, exact: false },
-  { href: '/portal/profile', label: 'Profil', icon: User, exact: false },
-  { href: '/portal/notifications', label: 'Bildirimler', icon: Bell, exact: false },
+  { href: '/portal',           label: 'Home',          icon: Home,          exact: true },
+  { href: '/portal/jobs',      label: 'Jobs',          icon: Briefcase,     exact: false },
+  { href: '/portal/contracts', label: 'Contracts',     icon: FileCheck,     exact: false },
+  { href: '/portal/messages',  label: 'Messages',      icon: MessageCircle, exact: false },
+  { href: '/portal/profile',   label: 'Profile',       icon: User,          exact: false },
 ] as const;
 
 function isActive(pathname: string, href: string, exact: boolean) {
@@ -30,35 +29,30 @@ function isActive(pathname: string, href: string, exact: boolean) {
 type PortalShellProps = {
   children: React.ReactNode;
   userName: string;
+  initialUnreadCount?: number;
 };
 
-export function PortalShell({ children, userName }: PortalShellProps) {
+export function PortalShell({ children, userName, initialUnreadCount = 0 }: PortalShellProps) {
   const pathname = usePathname();
+  const notifActive = isActive(pathname, '/portal/notifications', false);
 
   return (
-    <motion.div className="min-h-screen bg-hero-gradient">
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-brand/10 blur-3xl" />
-        <motion.div
-          className="absolute top-1/2 right-0 w-[360px] h-[360px] rounded-full bg-indigo-100/60 blur-3xl"
-          animate={{ opacity: [0.5, 0.7, 0.5] }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
-      </div>
-
+    <div className="min-h-screen">
       <motion.div
         className="flex min-h-screen"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35 }}
       >
-        <aside className="hidden lg:flex flex-col w-[220px] shrink-0 border-r border-slate-200/80 bg-white/60 backdrop-blur-md pt-6 pb-4 px-3">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex flex-col w-[220px] shrink-0 border-r border-white/7 bg-dark-base/90 backdrop-blur-xl pt-6 pb-4 px-3">
           <Link href="/portal" className="flex items-center gap-2 px-3 mb-8">
-            <span className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center text-white text-sm font-black">
+            <span className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center text-white text-sm font-black shadow-brand">
               P
             </span>
-            <span className="font-bold text-slate-900">Prolance</span>
+            <span className="font-display font-bold text-white">Prolance</span>
           </Link>
+
           <nav className="flex flex-col gap-1 flex-1">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href, item.exact);
@@ -71,7 +65,7 @@ export function PortalShell({ children, userName }: PortalShellProps) {
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
                     active
                       ? 'bg-brand text-white shadow-brand'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                      : 'text-slate-400 hover:bg-white/6 hover:text-white',
                   )}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
@@ -79,8 +73,10 @@ export function PortalShell({ children, userName }: PortalShellProps) {
                 </Link>
               );
             })}
+            <NotificationBell initialUnreadCount={initialUnreadCount} active={notifActive} />
           </nav>
-          <p className="px-3 text-xs text-slate-400 truncate" title={userName}>
+
+          <p className="px-3 text-xs text-slate-600 truncate" title={userName}>
             {userName}
           </p>
         </aside>
@@ -91,12 +87,13 @@ export function PortalShell({ children, userName }: PortalShellProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
         >
-          <header className="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 h-14 flex items-center justify-between">
-            <Link href="/portal" className="flex items-center gap-2 font-bold text-slate-900">
+          {/* Mobile header */}
+          <header className="lg:hidden sticky top-0 z-40 bg-dark-base/90 backdrop-blur-xl border-b border-white/7 px-4 h-14 flex items-center justify-between">
+            <Link href="/portal" className="flex items-center gap-2 font-bold text-white">
               <span className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center text-white text-xs font-black">
                 P
               </span>
-              Prolance
+              <span className="font-display">Prolance</span>
             </Link>
             <span className="text-xs text-slate-500 truncate max-w-[140px]">{userName}</span>
           </header>
@@ -107,7 +104,8 @@ export function PortalShell({ children, userName }: PortalShellProps) {
         </motion.div>
       </motion.div>
 
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200">
+      {/* Mobile bottom nav */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-dark-base/95 backdrop-blur-xl border-t border-white/7">
         <div className="flex items-stretch justify-around h-16 max-w-lg mx-auto px-1 pb-[env(safe-area-inset-bottom)]">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href, item.exact);
@@ -118,7 +116,7 @@ export function PortalShell({ children, userName }: PortalShellProps) {
                 href={item.href}
                 className={cn(
                   'flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 px-1 transition-colors',
-                  active ? 'text-brand' : 'text-slate-400',
+                  active ? 'text-brand' : 'text-slate-600',
                 )}
               >
                 <Icon className={cn('w-5 h-5', active && 'stroke-[2.5]')} />
@@ -128,8 +126,9 @@ export function PortalShell({ children, userName }: PortalShellProps) {
               </Link>
             );
           })}
+          <NotificationBellMobile initialUnreadCount={initialUnreadCount} active={notifActive} />
         </div>
       </nav>
-    </motion.div>
+    </div>
   );
 }

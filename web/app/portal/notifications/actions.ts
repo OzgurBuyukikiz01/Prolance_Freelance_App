@@ -4,6 +4,22 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
+export async function sendTestNotification() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect('/login');
+
+  await supabase.from('notifications').insert({
+    profile_id: user.id,
+    title: '🧪 Realtime Test',
+    body: `This notification was created at ${new Date().toLocaleTimeString('en-US')} — web and Flutter should receive it simultaneously.`,
+    type: 'system',
+  });
+}
+
 export async function markNotificationRead(formData: FormData) {
   const id = formData.get('id') as string;
   const supabase = await createClient();

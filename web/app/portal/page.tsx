@@ -8,12 +8,12 @@ import { formatCents } from '@/lib/portal/format';
 
 const ROLE_LABELS: Record<string, string> = {
   FREELANCER: 'Freelancer',
-  CLIENT: 'İşveren',
+  CLIENT: 'Client',
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  FREELANCER: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  CLIENT: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  FREELANCER: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+  CLIENT: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
 };
 
 export default async function PortalPage() {
@@ -33,7 +33,7 @@ export default async function PortalPage() {
     .eq('id', user.id)
     .single();
 
-  const name = profile?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
+  const name = profile?.full_name || user.email?.split('@')[0] || 'User';
   const role = profile?.role ?? 'FREELANCER';
   const isAdmin = profile?.is_admin ?? false;
   const isFreelancer = role === 'FREELANCER';
@@ -66,11 +66,11 @@ export default async function PortalPage() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-extrabold text-slate-900 truncate">
-                Hoş geldin, {name}!
+              <h1 className="text-xl font-display font-bold text-white truncate">
+                Welcome back, {name}!
               </h1>
               {isAdmin && (
-                <span className="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                <span className="bg-amber-500/10 text-amber-300 border border-amber-500/20 text-xs font-bold px-2.5 py-1 rounded-full">
                   Admin
                 </span>
               )}
@@ -96,16 +96,16 @@ export default async function PortalPage() {
 
         {/* Freelancer balance summary */}
         {isFreelancer && (pendingCents > 0 || earningsAvailableCents > 0) && (
-          <div className="grid grid-cols-2 gap-3 mb-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="grid grid-cols-2 gap-3 mb-4 p-4 rounded-xl bg-white/4 border border-white/8">
             <div>
-              <p className="text-xs text-slate-400">Bekleyen Ödeme</p>
-              <p className="text-base font-bold text-purple-700 mt-0.5">
+              <p className="text-xs text-slate-500">Pending Payment</p>
+              <p className="text-base font-bold text-violet-400 mt-0.5">
                 {formatCents(pendingCents)}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-400">Kullanılabilir Bakiye</p>
-              <p className="text-base font-bold text-emerald-700 mt-0.5">
+              <p className="text-xs text-slate-500">Available Balance</p>
+              <p className="text-base font-bold text-emerald-400 mt-0.5">
                 {formatCents(earningsAvailableCents)}
               </p>
             </div>
@@ -118,33 +118,33 @@ export default async function PortalPage() {
               href="/dashboard"
               className="flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg"
             >
-              Admin Panele Geç
+              Go to Admin Panel
             </Link>
           )}
           <Link
             href="/portal/jobs"
             className="flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            İş İlanlarına Göz At
+            Browse Jobs
           </Link>
           <Link
             href="/portal/contracts"
             className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            Sözleşmelerim
+            My Contracts
           </Link>
           <Link
             href="/portal/proposals"
-            className="flex items-center justify-center gap-2 border border-slate-200 hover:border-brand/40 hover:bg-brand-light text-slate-700 font-medium py-3 rounded-xl transition-colors text-sm"
+            className="flex items-center justify-center gap-2 border border-white/10 hover:border-brand/40 hover:bg-brand/10 text-slate-300 font-medium py-3 rounded-xl transition-colors text-sm"
           >
-            Tekliflerim
+            My Proposals
           </Link>
           <form action={logout}>
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 border border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-slate-600 font-medium py-3 rounded-xl transition-colors text-sm"
+              className="w-full flex items-center justify-center gap-2 border border-white/8 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 text-slate-500 font-medium py-3 rounded-xl transition-colors text-sm"
             >
-              Çıkış Yap
+              Sign Out
             </button>
           </form>
         </div>

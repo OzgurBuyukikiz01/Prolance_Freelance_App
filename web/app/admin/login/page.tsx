@@ -33,8 +33,8 @@ export default async function AdminLoginPage({
 
         {/* Card */}
         <div className="glass-card p-8">
-          <h1 className="text-white text-xl font-bold mb-1">Admin Girişi</h1>
-          <p className="text-white/40 text-sm mb-6">Yalnızca yetkili admin hesapları girebilir.</p>
+          <h1 className="text-white text-xl font-bold mb-1">Admin Sign In</h1>
+          <p className="text-white/40 text-sm mb-6">Restricted to authorized admin accounts only.</p>
 
           {errorMsg && (
             <div className="mb-4 bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl">
@@ -44,7 +44,7 @@ export default async function AdminLoginPage({
 
           <form action={adminLogin} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 text-sm font-medium">E-posta</label>
+              <label className="text-white/60 text-sm font-medium">Email</label>
               <input
                 name="email"
                 type="email"
@@ -54,7 +54,7 @@ export default async function AdminLoginPage({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-white/60 text-sm font-medium">Şifre</label>
+              <label className="text-white/60 text-sm font-medium">Password</label>
               <input
                 name="password"
                 type="password"
@@ -68,13 +68,13 @@ export default async function AdminLoginPage({
               className="mt-2 w-full font-bold py-3 rounded-xl transition-all text-white hover:opacity-90"
               style={{ background: 'linear-gradient(135deg, #7248FE, #9075FF)' }}
             >
-              Giriş Yap
+              Sign In
             </button>
           </form>
         </div>
 
         <p className="text-center text-white/20 text-xs mt-6">
-          Prolance Admin Panel — Yetkisiz erişim yasaktır.
+          Prolance Admin Panel — Unauthorized access is prohibited.
         </p>
       </div>
     </div>

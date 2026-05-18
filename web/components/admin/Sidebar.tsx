@@ -14,12 +14,12 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/jobs', label: 'İlan Moderasyonu', icon: Briefcase },
-  { href: '/tickets', label: 'Ticketlar', icon: Ticket },
-  { href: '/disputes', label: 'Anlaşmazlıklar', icon: ShieldAlert },
-  { href: '/users', label: 'Kullanıcılar', icon: Users },
-  { href: '/audit', label: 'Audit Log', icon: ScrollText },
+  { href: '/dashboard', label: 'Dashboard',   icon: LayoutDashboard },
+  { href: '/jobs',      label: 'Job Moderation', icon: Briefcase },
+  { href: '/tickets',   label: 'Tickets',     icon: Ticket },
+  { href: '/disputes',  label: 'Disputes',    icon: ShieldAlert },
+  { href: '/users',     label: 'Users',       icon: Users },
+  { href: '/audit',     label: 'Audit Log',   icon: ScrollText },
 ];
 
 export default function Sidebar() {
@@ -72,7 +72,7 @@ export default function Sidebar() {
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 border-l-2 border-transparent"
           >
             <LogOut size={16} />
-            Çıkış Yap
+            Sign Out
           </button>
         </form>
       </div>

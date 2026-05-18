@@ -29,7 +29,7 @@ export function DisputeResolvePanel({
     resolution === 'release'
       ? `Freelancer (${freelancerName})`
       : resolution === 'refund'
-        ? `İşveren (${employerName})`
+        ? `Client (${employerName})`
         : '—';
 
   return (
@@ -48,13 +48,13 @@ export function DisputeResolvePanel({
         >
           <div className="flex items-center gap-2">
             <span className="text-xl">✅</span>
-            <span className="font-bold text-white text-sm">Freelancer Haklı</span>
+            <span className="font-bold text-white text-sm">Freelancer Wins</span>
             {resolution === 'release' && (
               <span className="ml-auto text-emerald-400 text-lg">●</span>
             )}
           </div>
           <p className="text-slate-400 text-xs leading-relaxed">
-            Escrow tutarı <strong className="text-emerald-400">{freelancerName}</strong> adına serbest bırakılır.
+            Escrow funds are released to <strong className="text-emerald-400">{freelancerName}</strong>.
           </p>
         </button>
 
@@ -70,13 +70,13 @@ export function DisputeResolvePanel({
         >
           <div className="flex items-center gap-2">
             <span className="text-xl">↩️</span>
-            <span className="font-bold text-white text-sm">İşveren Haklı</span>
+            <span className="font-bold text-white text-sm">Client Wins</span>
             {resolution === 'refund' && (
               <span className="ml-auto text-red-400 text-lg">●</span>
             )}
           </div>
           <p className="text-slate-400 text-xs leading-relaxed">
-            Escrow tutarı <strong className="text-red-400">{employerName}</strong> adına iade edilir.
+            Escrow funds are refunded to <strong className="text-red-400">{employerName}</strong>.
           </p>
         </button>
       </div>
@@ -84,20 +84,20 @@ export function DisputeResolvePanel({
       {/* Resolution note */}
       <div>
         <label className="block text-sm font-medium text-slate-300 mb-2">
-          Karar Açıklaması <span className="text-red-400">*</span>
+          Decision Note <span className="text-red-400">*</span>
           <span className="ml-2 text-slate-600 font-normal text-xs">
-            (min. 20 karakter — her iki taraf da görecektir)
+            (min. 20 chars — both parties will see this)
           </span>
         </label>
         <textarea
           rows={4}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Neden bu kararı verdiniz? Konuşma ve teslimatları değerlendirerek açıklayın. Her iki taraf bu metni alacaktır."
+          placeholder="Explain your decision. Review the conversation and deliverables. Both parties will receive this message."
           className="w-full rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 text-white text-sm placeholder:text-white/25 px-4 py-3 resize-none outline-none transition"
         />
         <p className={`text-xs mt-1 text-right ${noteValid ? 'text-emerald-500' : 'text-slate-600'}`}>
-          {note.trim().length} / 20+ karakter
+          {note.trim().length} / 20+ chars
         </p>
       </div>
 
@@ -115,10 +115,10 @@ export function DisputeResolvePanel({
         }`}
       >
         {canConfirm
-          ? `Kararı Onayla → ${winnerLabel}`
+          ? `Confirm Decision → ${winnerLabel}`
           : !resolution
-            ? 'Önce bir taraf seçin'
-            : 'Açıklama gerekli (min. 20 karakter)'}
+            ? 'Select a side first'
+            : 'Note required (min. 20 chars)'}
       </button>
 
       {/* Confirmation modal */}
@@ -127,12 +127,12 @@ export function DisputeResolvePanel({
         onOpenChange={(next) => {
           if (!pending) setOpen(next);
         }}
-        title="Kararı Onayla"
-        description={`Bu işlem geri alınamaz. "${winnerLabel}" lehine karar verilecek.`}
+        title="Confirm Decision"
+        description={`This action cannot be undone. The decision will be ruled in favor of "${winnerLabel}".`}
       >
         <div className="space-y-4">
           <div className="bg-slate-800 rounded-xl px-4 py-3 text-slate-300 text-sm">
-            <p className="text-xs text-slate-500 mb-1">Açıklama</p>
+            <p className="text-xs text-slate-500 mb-1">Note</p>
             {note}
           </div>
           <form
@@ -159,7 +159,7 @@ export function DisputeResolvePanel({
               onClick={() => setOpen(false)}
               className="px-4 py-2 rounded-lg text-slate-400 text-sm hover:text-white disabled:opacity-50"
             >
-              İptal
+              Cancel
             </button>
             <button
               type="submit"
@@ -167,7 +167,7 @@ export function DisputeResolvePanel({
               className="px-5 py-2 rounded-lg text-white font-bold text-sm disabled:opacity-40 hover:opacity-90 transition-all"
               style={{ background: 'linear-gradient(135deg, #7248FE, #9075FF)' }}
             >
-              {pending ? 'Kaydediliyor…' : 'Evet, Onayla'}
+              {pending ? 'Saving…' : 'Yes, Confirm'}
             </button>
           </form>
         </div>

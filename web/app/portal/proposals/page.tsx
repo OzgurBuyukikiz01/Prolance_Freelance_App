@@ -20,8 +20,8 @@ export default async function PortalProposalsPage() {
 
   if (error) {
     return (
-      <MagicCard innerClassName="p-6 text-sm text-red-600">
-        Teklifler yüklenemedi: {error.message}
+      <MagicCard innerClassName="p-6 text-sm text-red-400">
+        Failed to load proposals: {error.message}
       </MagicCard>
     );
   }
@@ -40,18 +40,18 @@ export default async function PortalProposalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900">Tekliflerim</h1>
-        <p className="text-sm text-slate-500 mt-1">Gönderdiğiniz tekliflerin durumu</p>
+        <h1 className="text-2xl font-extrabold text-white">My Proposals</h1>
+        <p className="text-sm text-slate-400 mt-1">Status of your submitted proposals</p>
       </div>
 
       {!enriched.length ? (
         <MagicCard innerClassName="p-8 text-center">
-          <p className="text-sm text-slate-500 mb-4">Henüz teklif göndermediniz.</p>
+          <p className="text-sm text-slate-400 mb-4">You haven&apos;t submitted any proposals yet.</p>
           <Link
             href="/portal/jobs"
             className="inline-flex text-sm font-semibold text-brand hover:text-brand-dark"
           >
-            İlanlara göz at →
+            Browse jobs →
           </Link>
         </MagicCard>
       ) : (
@@ -66,12 +66,12 @@ export default async function PortalProposalsPage() {
                       <div>
                         <Link
                           href={p.job ? `/portal/jobs/${p.job.id}` : '#'}
-                          className="font-bold text-slate-900 hover:text-brand"
+                          className="font-bold text-white hover:text-brand"
                         >
-                          {p.job?.title ?? 'İlan'}
+                          {p.job?.title ?? 'Job'}
                         </Link>
                         <p className="text-xs text-slate-400 mt-0.5">
-                          {formatRelativeTime(p.created_at)} · {p.delivery_days} gün
+                          {formatRelativeTime(p.created_at)} · {p.delivery_days} days
                         </p>
                       </div>
                       <span
@@ -83,13 +83,13 @@ export default async function PortalProposalsPage() {
                     <p className="text-sm font-bold text-brand mb-2">
                       ₺{p.bid.toLocaleString('tr-TR')}
                     </p>
-                    <p className="text-sm text-slate-600 line-clamp-2">{p.cover_letter}</p>
+                    <p className="text-sm text-slate-400 line-clamp-2">{p.cover_letter}</p>
                     {p.status === 'accepted' && p.job && (
                       <Link
                         href={`/portal/jobs/${p.job.id}`}
                         className="inline-block mt-3 text-xs font-semibold text-brand"
                       >
-                        İlan detayı →
+                        View Job →
                       </Link>
                     )}
                   </div>

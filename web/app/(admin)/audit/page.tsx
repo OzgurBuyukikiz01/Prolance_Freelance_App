@@ -34,7 +34,7 @@ export default async function AuditPage({
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-white">Audit Log</h1>
         <p className="text-slate-400 text-sm mt-1">
-          Tüm admin işlemleri — {count ?? 0} kayıt
+          All admin actions — {count ?? 0} records
         </p>
       </div>
 
@@ -48,11 +48,11 @@ export default async function AuditPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 text-left">
-              <th className="px-4 py-3 font-medium">İşlem</th>
+              <th className="px-4 py-3 font-medium">Action</th>
               <th className="px-4 py-3 font-medium">Admin</th>
-              <th className="px-4 py-3 font-medium">Hedef ID</th>
-              <th className="px-4 py-3 font-medium">Detay</th>
-              <th className="px-4 py-3 font-medium">Tarih</th>
+              <th className="px-4 py-3 font-medium">Target ID</th>
+              <th className="px-4 py-3 font-medium">Detail</th>
+              <th className="px-4 py-3 font-medium">Date</th>
             </tr>
           </thead>
           <tbody>
@@ -82,7 +82,7 @@ export default async function AuditPage({
                     {((l.details as Record<string, string>)?.detail) || '—'}
                   </td>
                   <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                    {new Date(l.created_at as string).toLocaleString('tr-TR')}
+                    {new Date(l.created_at as string).toLocaleString('en-US')}
                   </td>
                 </tr>
               );
@@ -90,7 +90,7 @@ export default async function AuditPage({
             {(logs ?? []).length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-sm">
-                  Henüz audit logu yok.
+                  No audit logs yet.
                 </td>
               </tr>
             )}
@@ -102,7 +102,7 @@ export default async function AuditPage({
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-slate-500 text-xs">
-            Sayfa {page} / {totalPages}
+            Page {page} / {totalPages}
           </p>
           <div className="flex gap-2">
             {page > 1 && (
@@ -110,7 +110,7 @@ export default async function AuditPage({
                 href={`/audit?page=${page - 1}`}
                 className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg hover:text-white transition-colors"
               >
-                ← Önceki
+                ← Previous
               </a>
             )}
             {page < totalPages && (
@@ -118,7 +118,7 @@ export default async function AuditPage({
                 href={`/audit?page=${page + 1}`}
                 className="text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg hover:text-white transition-colors"
               >
-                Sonraki →
+                Next →
               </a>
             )}
           </div>

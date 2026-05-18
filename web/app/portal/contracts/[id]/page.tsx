@@ -61,19 +61,16 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
 
   if (!job) notFound();
 
-  // Verify the current user is a participant
   const isOwner = job.client_id === user.id;
   const isFreelancer = proposal.freelancer_id === user.id;
   if (!isOwner && !isFreelancer) redirect('/portal/contracts');
 
-  // Fetch deliveries
   const { data: deliveries } = await supabase
     .from('proposal_deliveries')
     .select('id, file_name, storage_path, created_at')
     .eq('proposal_id', id)
     .order('created_at', { ascending: false });
 
-  // Fetch other party info
   const otherPartyId = isClient ? proposal.freelancer_id : job.client_id;
   const { data: otherParty } = await supabase
     .from('profiles')
@@ -81,7 +78,6 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
     .eq('id', otherPartyId)
     .maybeSingle();
 
-  // Check if client already submitted a review
   const { data: existingReview } = isClient
     ? await supabase
         .from('reviews')
@@ -109,48 +105,48 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         href="/portal/contracts"
         className="text-sm font-medium text-brand hover:text-brand-dark"
       >
-        ← Sözleşmelerime Dön
+        ← Back to My Contracts
       </Link>
 
       {/* Alerts */}
       {query.error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           {decodeURIComponent(query.error)}
         </div>
       )}
       {query.success === 'delivered' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Teslimatınız gönderildi. İşveren inceleyecek.
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Delivery submitted. The client will review it.
         </div>
       )}
       {query.success === 'accepted' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Teslimat kabul edildi. Ödeme 24 saat sonra freelancer&apos;a aktarılacak.
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Delivery accepted. Payment will be released to the freelancer in 24 hours.
         </div>
       )}
       {query.success === 'declined' && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          Teslimat reddedildi. Escrow tutarı iade edildi.
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+          Delivery declined. Escrow funds have been refunded.
         </div>
       )}
       {query.success === 'reported' && (
-        <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
-          Sorun bildiriminiz alındı. Escrow tutarı iade edildi.
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-400">
+          Issue reported. Escrow funds have been refunded.
         </div>
       )}
       {query.success === 'claimed' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Ödeme bakiyenize aktarıldı!
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Payment transferred to your balance!
         </div>
       )}
       {query.success === 'deadline_expired' && (
-        <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700">
-          Demo: 24 saatlik süre geçirildi. Freelancer ödemeyi talep edebilir.
+        <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-4 py-3 text-sm text-purple-400">
+          Demo: 24-hour window expired. The freelancer can now claim payment.
         </div>
       )}
       {query.success === 'reviewed' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Değerlendirmeniz gönderildi.
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Your review has been submitted.
         </div>
       )}
 
@@ -158,10 +154,10 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       <MagicCard innerClassName="p-6">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900">{job.title}</h1>
+            <h1 className="text-xl font-extrabold text-white">{job.title}</h1>
             <p className="text-xs text-slate-400 mt-1">
-              {isClient ? 'Freelancer' : 'İşveren'}:{' '}
-              <span className="font-medium text-slate-600">{otherParty?.full_name ?? '—'}</span>
+              {isClient ? 'Freelancer' : 'Client'}:{' '}
+              <span className="font-medium text-slate-300">{otherParty?.full_name ?? '—'}</span>
               {otherParty?.title ? ` · ${otherParty.title}` : ''}
             </p>
           </div>
@@ -172,17 +168,17 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/8">
           <div>
-            <p className="text-xs text-slate-400">Escrow Tutarı</p>
-            <p className="font-bold text-slate-900 mt-0.5">{formatCents(fundedCents)}</p>
+            <p className="text-xs text-slate-400">Escrow Amount</p>
+            <p className="font-bold text-white mt-0.5">{formatCents(fundedCents)}</p>
           </div>
           {phase === 'payout_pending' && (
             <div>
               <p className="text-xs text-slate-400">
-                {isClient ? '24s İtiraz Süresi' : 'Bekleyen Ödeme'}
+                {isClient ? '24h Dispute Window' : 'Pending Payment'}
               </p>
-              <p className="font-bold text-slate-900 mt-0.5">
+              <p className="font-bold text-white mt-0.5">
                 {isClient
                   ? formatDeadlineCountdown(proposal.delivery_dispute_deadline)
                   : formatCents(proposal.freelancer_payout_cents)}
@@ -190,8 +186,8 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
             </div>
           )}
           <div>
-            <p className="text-xs text-slate-400">Teslim Süresi</p>
-            <p className="font-bold text-slate-900 mt-0.5">{proposal.bid} gün</p>
+            <p className="text-xs text-slate-400">Delivery Time</p>
+            <p className="font-bold text-white mt-0.5">{proposal.bid} days</p>
           </div>
         </div>
       </MagicCard>
@@ -201,41 +197,41 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* Freelancer: submit delivery */}
       {!isClient && phase === 'escrow_funded' && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-1">Teslimat Gönder</h2>
-          <p className="text-sm text-slate-500 mb-5">
-            Tamamladığınız çalışmanın notunu ve varsa bağlantısını girin.
+          <h2 className="text-lg font-bold text-white mb-1">Submit Delivery</h2>
+          <p className="text-sm text-slate-400 mb-5">
+            Add a note and optional link for your completed work.
           </p>
           <form action={submitDelivery} className="space-y-4">
             <input type="hidden" name="proposal_id" value={id} />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Teslimat Notu <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Delivery Note <span className="text-red-400">*</span>
               </label>
               <textarea
                 name="note"
                 rows={4}
                 required
                 minLength={5}
-                placeholder="Teslim ettiğiniz çalışmayı açıklayın..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
+                placeholder="Describe the work you've delivered..."
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Bağlantı / Link (isteğe bağlı)
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Link (optional)
               </label>
               <input
                 type="url"
                 name="url"
-                placeholder="https://drive.google.com/... veya GitHub linki"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                placeholder="https://drive.google.com/... or GitHub link"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
               />
             </div>
             <button
               type="submit"
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors"
             >
-              Teslimatı Gönder
+              Submit Delivery
             </button>
           </form>
         </MagicCard>
@@ -244,26 +240,26 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* Freelancer: waiting for client review */}
       {!isClient && phase === 'awaiting_client_review' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">⏳</span>
           </div>
-          <h2 className="font-bold text-slate-900 mb-1">İnceleme Bekleniyor</h2>
-          <p className="text-sm text-slate-500">İşvereniniz teslimatınızı inceliyor. Kabul ettiğinde ödeme süreci başlayacak.</p>
+          <h2 className="font-bold text-white mb-1">Awaiting Review</h2>
+          <p className="text-sm text-slate-400">Your client is reviewing the delivery. Payment will begin once accepted.</p>
         </MagicCard>
       )}
 
       {/* Freelancer: payout pending */}
       {!isClient && phase === 'payout_pending' && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-1">Ödeme Onaylandı</h2>
-          <p className="text-sm text-slate-500 mb-4">
-            İşvereniniz teslimatı kabul etti. 24 saatlik itiraz süresi dolduktan sonra ödemeyi talep edebilirsiniz.
+          <h2 className="text-lg font-bold text-white mb-1">Payment Approved</h2>
+          <p className="text-sm text-slate-400 mb-4">
+            Your client accepted the delivery. You can claim payment after the 24-hour dispute window.
           </p>
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-purple-50 border border-purple-100 mb-5">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20 mb-5">
             <span className="text-2xl">💰</span>
             <div>
-              <p className="text-xs text-purple-600 font-medium">Bekleyen Ödeme</p>
-              <p className="text-xl font-extrabold text-purple-800">
+              <p className="text-xs text-violet-400 font-medium">Pending Payment</p>
+              <p className="text-xl font-extrabold text-violet-300">
                 {formatCents(proposal.freelancer_payout_cents ?? fundedCents)}
               </p>
             </div>
@@ -275,12 +271,12 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
                 type="submit"
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
               >
-                Ödemeyi Al
+                Claim Payment
               </button>
             </form>
           ) : (
-            <p className="text-sm text-slate-500">
-              Süre: {formatDeadlineCountdown(proposal.delivery_dispute_deadline)}
+            <p className="text-sm text-slate-400">
+              Time remaining: {formatDeadlineCountdown(proposal.delivery_dispute_deadline)}
             </p>
           )}
         </MagicCard>
@@ -289,13 +285,13 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* Freelancer: closed */}
       {!isClient && phase === 'closed' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">🎉</span>
           </div>
-          <h2 className="font-bold text-slate-900 mb-1">Proje Tamamlandı</h2>
-          <p className="text-sm text-slate-500 mb-4">
-            Ödeme bakiyenize aktarıldı.{' '}
-            <span className="font-semibold text-emerald-700">
+          <h2 className="font-bold text-white mb-1">Project Complete</h2>
+          <p className="text-sm text-slate-400 mb-4">
+            Payment has been added to your balance.{' '}
+            <span className="font-semibold text-emerald-400">
               {formatCents(proposal.freelancer_payout_cents ?? fundedCents)}
             </span>
           </p>
@@ -303,7 +299,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
             href="/portal/profile"
             className="text-sm font-semibold text-brand hover:text-brand-dark"
           >
-            Profilinizi Görüntüleyin →
+            View Your Profile →
           </Link>
         </MagicCard>
       )}
@@ -313,27 +309,27 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* Client: waiting for delivery */}
       {isClient && phase === 'escrow_funded' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">🔄</span>
           </div>
-          <h2 className="font-bold text-slate-900 mb-1">Teslimat Bekleniyor</h2>
-          <p className="text-sm text-slate-500">Freelancer çalışmasını hazırlıyor. Teslim ettiğinde buradan inceleyebilirsiniz.</p>
+          <h2 className="font-bold text-white mb-1">Awaiting Delivery</h2>
+          <p className="text-sm text-slate-400">The freelancer is working on your project. You can review it here once submitted.</p>
         </MagicCard>
       )}
 
       {/* Client: delivery ready for review */}
       {isClient && phase === 'awaiting_client_review' && deliveries && deliveries.length > 0 && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Teslimat İnceleme</h2>
+          <h2 className="text-lg font-bold text-white mb-4">Review Delivery</h2>
           <div className="space-y-3 mb-6">
             {deliveries.map((d) => (
               <div
                 key={d.id}
-                className="flex items-start gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50"
+                className="flex items-start gap-3 p-4 rounded-xl border border-white/8 bg-white/4"
               >
                 <span className="text-xl mt-0.5">📦</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 text-sm">{d.file_name}</p>
+                  <p className="font-medium text-white text-sm">{d.file_name}</p>
                   {d.storage_path && d.storage_path !== 'demo://no-file' && (
                     <a
                       href={d.storage_path}
@@ -358,16 +354,16 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
                 type="submit"
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
               >
-                ✓ Teslimatı Kabul Et
+                ✓ Accept Delivery
               </button>
             </form>
             <form action={declineDelivery}>
               <input type="hidden" name="proposal_id" value={id} />
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl border border-slate-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-slate-600 text-sm font-semibold transition-colors"
+                className="px-5 py-2.5 rounded-xl border border-white/10 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 text-slate-300 text-sm font-semibold transition-colors"
               >
-                Revizyon İste
+                Request Revision
               </button>
             </form>
           </div>
@@ -380,19 +376,19 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
           <div className="flex items-center gap-3 mb-4">
             <span className="text-2xl">✅</span>
             <div>
-              <h2 className="font-bold text-slate-900">Teslimat Kabul Edildi</h2>
-              <p className="text-sm text-slate-500">
+              <h2 className="font-bold text-white">Delivery Accepted</h2>
+              <p className="text-sm text-slate-400">
                 {deadlinePassed
-                  ? 'İtiraz süresi doldu. Ödeme serbest bırakıldı.'
-                  : `İtiraz süresi: ${formatDeadlineCountdown(proposal.delivery_dispute_deadline)}`}
+                  ? 'Dispute window closed. Payment released.'
+                  : `Dispute window: ${formatDeadlineCountdown(proposal.delivery_dispute_deadline)}`}
               </p>
             </div>
           </div>
 
           {canReportIssue && (
             <details className="mt-2">
-              <summary className="text-sm font-semibold text-red-600 cursor-pointer hover:text-red-700 select-none">
-                ⚠ Sorun Bildir (İtiraz)
+              <summary className="text-sm font-semibold text-red-400 cursor-pointer hover:text-red-300 select-none">
+                ⚠ Report an Issue (Dispute)
               </summary>
               <form action={reportIssue} className="mt-3 space-y-3">
                 <input type="hidden" name="proposal_id" value={id} />
@@ -401,14 +397,14 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
                   rows={3}
                   required
                   minLength={10}
-                  placeholder="Sorunu açıklayın..."
-                  className="w-full rounded-xl border border-red-200 bg-red-50/30 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-200 resize-none"
+                  placeholder="Describe the issue..."
+                  className="w-full rounded-xl border border-red-500/30 bg-red-500/10 text-white px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 resize-none"
                 />
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
                 >
-                  Sorun Gönder
+                  Submit Issue
                 </button>
               </form>
             </details>
@@ -416,15 +412,15 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
 
           {/* Demo acceleration — clearly marked */}
           {!deadlinePassed && (
-            <div className="mt-4 pt-4 border-t border-dashed border-slate-200">
-              <p className="text-xs text-slate-400 mb-2 font-mono">DEMO MODU</p>
+            <div className="mt-4 pt-4 border-t border-dashed border-white/10">
+              <p className="text-xs text-slate-500 mb-2 font-mono">DEMO MODE</p>
               <form action={demoExpireDeadline}>
                 <input type="hidden" name="proposal_id" value={id} />
                 <button
                   type="submit"
-                  className="text-xs px-3 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 font-medium transition-colors"
                 >
-                  ⚡ Demo: 24 Saati Geç (Sunum için)
+                  ⚡ Demo: Skip 24 Hours (for presentation)
                 </button>
               </form>
             </div>
@@ -435,11 +431,11 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* Client: project closed */}
       {isClient && phase === 'closed' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">🏁</span>
           </div>
-          <h2 className="font-bold text-slate-900 mb-1">Proje Tamamlandı</h2>
-          <p className="text-sm text-slate-500">Harika bir iş birliği oldu!</p>
+          <h2 className="font-bold text-white mb-1">Project Complete</h2>
+          <p className="text-sm text-slate-400">Great collaboration!</p>
         </MagicCard>
       )}
 
@@ -448,20 +444,20 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         <MagicCard innerClassName="p-6">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl">⚠️</span>
-            <h2 className="font-bold text-slate-900">İtiraz Açıldı</h2>
+            <h2 className="font-bold text-white">Dispute Opened</h2>
           </div>
-          <p className="text-sm text-slate-500 mb-3">
-            Bu sözleşmeye itiraz edildi.{' '}
+          <p className="text-sm text-slate-400 mb-3">
+            This contract has been disputed.{' '}
             {proposal.dispute_note ? (
-              <span>Not: {proposal.dispute_note}</span>
+              <span>Note: {proposal.dispute_note}</span>
             ) : (
-              'Escrow tutarı işverene iade edildi.'
+              'Escrow funds have been refunded to the client.'
             )}
           </p>
           {proposal.admin_resolution_note && (
-            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-xs font-semibold text-amber-700 mb-1">⚖️ Admin Kararı</p>
-              <p className="text-sm text-amber-900">{proposal.admin_resolution_note}</p>
+            <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+              <p className="text-xs font-semibold text-amber-400 mb-1">⚖️ Admin Decision</p>
+              <p className="text-sm text-amber-300">{proposal.admin_resolution_note}</p>
             </div>
           )}
         </MagicCard>
@@ -470,23 +466,23 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* === REVIEW SECTION (CLIENT only, after payout_pending or closed) === */}
       {showReviewSection && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-1">Freelancer&apos;ı Değerlendir</h2>
-          <p className="text-sm text-slate-500 mb-5">
-            <span className="font-medium text-slate-700">{otherParty?.full_name}</span> ile çalışma deneyiminizi paylaşın.
+          <h2 className="text-lg font-bold text-white mb-1">Review the Freelancer</h2>
+          <p className="text-sm text-slate-400 mb-5">
+            Share your experience working with <span className="font-medium text-slate-200">{otherParty?.full_name}</span>.
           </p>
           <form action={submitReview} className="space-y-4">
             <input type="hidden" name="proposal_id" value={id} />
             <input type="hidden" name="job_id" value={proposal.job_id} />
             <input type="hidden" name="reviewee_id" value={proposal.freelancer_id} />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Puan <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Rating <span className="text-red-400">*</span>
               </label>
               <div className="flex gap-2">
                 {STAR_VALUES.map((v) => (
                   <label key={v} className="cursor-pointer">
                     <input type="radio" name="rating" value={v} required className="sr-only peer" />
-                    <span className="text-2xl text-slate-300 peer-checked:text-amber-400 hover:text-amber-300 transition-colors select-none">
+                    <span className="text-2xl text-slate-600 peer-checked:text-amber-400 hover:text-amber-300 transition-colors select-none">
                       ★
                     </span>
                   </label>
@@ -494,21 +490,21 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Yorum (isteğe bağlı)
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Comment (optional)
               </label>
               <textarea
                 name="comment"
                 rows={3}
-                placeholder="Deneyiminizi anlatın..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
+                placeholder="Describe your experience..."
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
               />
             </div>
             <button
               type="submit"
               className="px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors"
             >
-              Değerlendirmeyi Gönder
+              Submit Review
             </button>
           </form>
         </MagicCard>
@@ -517,29 +513,29 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       {/* Existing review display */}
       {isClient && existingReview && (
         <MagicCard innerClassName="p-5">
-          <h3 className="text-sm font-bold text-slate-700 mb-2">Gönderilen Değerlendirme</h3>
+          <h3 className="text-sm font-bold text-slate-300 mb-2">Your Submitted Review</h3>
           <div className="flex items-center gap-1 mb-1">
             {STAR_VALUES.map((v) => (
-              <span key={v} className={v <= existingReview.rating ? 'text-amber-400' : 'text-slate-200'}>★</span>
+              <span key={v} className={v <= existingReview.rating ? 'text-amber-400' : 'text-slate-600'}>★</span>
             ))}
             <span className="text-xs text-slate-400 ml-2">{formatRelativeTime(existingReview.created_at)}</span>
           </div>
           {existingReview.comment && (
-            <p className="text-sm text-slate-600 mt-1">{existingReview.comment}</p>
+            <p className="text-sm text-slate-400 mt-1">{existingReview.comment}</p>
           )}
         </MagicCard>
       )}
 
-      {/* Delivery history (for freelancer after submit, or reference) */}
+      {/* Delivery history */}
       {!isClient && deliveries && deliveries.length > 0 && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-base font-bold text-slate-900 mb-3">Gönderilen Teslimatlar</h2>
+          <h2 className="text-base font-bold text-white mb-3">Submitted Deliveries</h2>
           <div className="space-y-2">
             {deliveries.map((d) => (
-              <div key={d.id} className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50">
+              <div key={d.id} className="flex items-start gap-3 p-3 rounded-xl border border-white/8 bg-white/4">
                 <span className="text-lg mt-0.5">📄</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{d.file_name}</p>
+                  <p className="text-sm font-medium text-white truncate">{d.file_name}</p>
                   {d.storage_path && d.storage_path !== 'demo://no-file' && (
                     <a
                       href={d.storage_path}

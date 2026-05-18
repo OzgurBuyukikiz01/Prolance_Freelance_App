@@ -18,7 +18,17 @@ export default async function PortalLayout({ children }: { children: React.React
     .eq('id', user.id)
     .single();
 
-  const userName = profile?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
+  const { count: unreadCount } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', user.id)
+    .is('read_at', null);
 
-  return <PortalShell userName={userName}>{children}</PortalShell>;
+  const userName = profile?.full_name || user.email?.split('@')[0] || 'User';
+
+  return (
+    <PortalShell userName={userName} initialUnreadCount={unreadCount ?? 0}>
+      {children}
+    </PortalShell>
+  );
 }

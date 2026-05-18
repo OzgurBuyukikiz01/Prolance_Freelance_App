@@ -14,7 +14,7 @@ export async function adminLogin(formData: FormData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    redirect('/admin/login?error=' + encodeURIComponent(error?.message ?? 'Giriş başarısız'));
+    redirect('/admin/login?error=' + encodeURIComponent(error?.message ?? 'Sign in failed'));
   }
 
   // Check is_admin using service role (bypasses RLS)
@@ -28,7 +28,7 @@ export async function adminLogin(formData: FormData) {
   if (!profile?.is_admin) {
     // Sign out the non-admin immediately
     await supabase.auth.signOut();
-    redirect('/admin/login?error=' + encodeURIComponent('Bu panele erişim yetkiniz yok.'));
+    redirect('/admin/login?error=' + encodeURIComponent('You do not have permission to access this panel.'));
   }
 
   revalidatePath('/', 'layout');

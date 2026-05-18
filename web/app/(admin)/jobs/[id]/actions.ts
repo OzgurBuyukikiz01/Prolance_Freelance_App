@@ -27,7 +27,7 @@ export async function approveJob(formData: FormData) {
     user?.id ?? 'system',
     'job_approve',
     jobId,
-    'Admin ilanı onayladı',
+    'Admin approved the job listing',
     'jobs',
   );
 
@@ -59,7 +59,7 @@ export async function rejectJob(formData: FormData) {
     user?.id ?? 'system',
     'job_reject',
     jobId,
-    `Admin ilanı reddetti: ${reason}`,
+    `Admin rejected the job listing: ${reason}`,
     'jobs',
   );
 

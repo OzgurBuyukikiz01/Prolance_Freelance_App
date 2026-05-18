@@ -10,51 +10,45 @@ export default async function LoginPage({
   const tab = params.tab ?? 'login';
 
   return (
-    <div className="min-h-screen bg-hero-gradient flex items-center justify-center px-4 py-20">
-      {/* Background blobs */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-brand/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[360px] h-[360px] rounded-full bg-indigo-100/60 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen flex items-center justify-center px-4 py-20">
       <div className="w-full max-w-md">
         {/* Logo */}
         <a href="/" className="flex items-center justify-center gap-2 mb-8">
           <span className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center text-white font-black text-lg shadow-brand">
             P
           </span>
-          <span className="text-2xl font-extrabold text-slate-900">Prolance</span>
+          <span className="text-2xl font-display font-bold text-white">Prolance</span>
         </a>
 
         {/* Card */}
-        <div className="bg-white rounded-3xl shadow-card border border-slate-100 p-8">
+        <div className="bg-dark-surface rounded-3xl border border-white/10 p-8 shadow-glass">
           {/* Tabs */}
-          <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
+          <div className="flex bg-white/5 rounded-xl p-1 mb-8">
             <a
               href="/login?tab=login"
               className={`flex-1 text-center text-sm font-semibold py-2 rounded-lg transition-all ${
                 tab === 'login'
-                  ? 'bg-white text-slate-900 shadow-card'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-dark-elevated text-white shadow-glass-sm'
+                  : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              Giriş Yap
+              Sign In
             </a>
             <a
               href="/login?tab=signup"
               className={`flex-1 text-center text-sm font-semibold py-2 rounded-lg transition-all ${
                 tab === 'signup'
-                  ? 'bg-white text-slate-900 shadow-card'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-dark-elevated text-white shadow-glass-sm'
+                  : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              Kayıt Ol
+              Sign Up
             </a>
           </div>
 
           {/* Error */}
           {errorMsg && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+            <div className="mb-4 bg-red-900/30 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl">
               {decodeURIComponent(errorMsg)}
             </div>
           )}
@@ -62,90 +56,90 @@ export default async function LoginPage({
           {tab === 'login' ? (
             <form action={login} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">E-posta</label>
+                <label className="text-sm font-medium text-slate-300">Email</label>
                 <input
                   name="email"
                   type="email"
                   required
-                  placeholder="ornek@email.com"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition"
+                  placeholder="you@example.com"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand/50 transition"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">Şifre</label>
+                <label className="text-sm font-medium text-slate-300">Password</label>
                 <input
                   name="password"
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand/50 transition"
                 />
               </div>
               <button
                 type="submit"
                 className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-xl transition-colors shadow-brand mt-2"
               >
-                Giriş Yap
+                Sign In
               </button>
-              <p className="text-center text-xs text-slate-400 mt-1">
-                Hesabın yok mu?{' '}
+              <p className="text-center text-xs text-slate-500 mt-1">
+                Don&apos;t have an account?{' '}
                 <a href="/login?tab=signup" className="text-brand font-medium hover:underline">
-                  Kayıt ol
+                  Sign up
                 </a>
               </p>
             </form>
           ) : (
             <form action={signup} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">Ad Soyad</label>
+                <label className="text-sm font-medium text-slate-300">Full Name</label>
                 <input
                   name="full_name"
                   type="text"
                   required
-                  placeholder="Adınız Soyadınız"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition"
+                  placeholder="Your full name"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand/50 transition"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">E-posta</label>
+                <label className="text-sm font-medium text-slate-300">Email</label>
                 <input
                   name="email"
                   type="email"
                   required
-                  placeholder="ornek@email.com"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition"
+                  placeholder="you@example.com"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand/50 transition"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">Şifre</label>
+                <label className="text-sm font-medium text-slate-300">Password</label>
                 <input
                   name="password"
                   type="password"
                   required
-                  placeholder="En az 6 karakter"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition"
+                  placeholder="Minimum 6 characters"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand/50 transition"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-slate-700">Hesap Türü</label>
+                <label className="text-sm font-medium text-slate-300">Account Type</label>
                 <select
                   name="role"
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand bg-white transition"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand/50 transition"
                 >
-                  <option value="FREELANCER">Freelancer</option>
-                  <option value="CLIENT">İşveren</option>
+                  <option value="FREELANCER" className="bg-dark-surface">Freelancer</option>
+                  <option value="CLIENT" className="bg-dark-surface">Client</option>
                 </select>
               </div>
               <button
                 type="submit"
                 className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-xl transition-colors shadow-brand mt-2"
               >
-                Kayıt Ol
+                Create Account
               </button>
-              <p className="text-center text-xs text-slate-400 mt-1">
-                Zaten hesabın var mı?{' '}
+              <p className="text-center text-xs text-slate-500 mt-1">
+                Already have an account?{' '}
                 <a href="/login?tab=login" className="text-brand font-medium hover:underline">
-                  Giriş yap
+                  Sign in
                 </a>
               </p>
             </form>

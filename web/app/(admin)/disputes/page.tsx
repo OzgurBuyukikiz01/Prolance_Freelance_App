@@ -27,9 +27,9 @@ export default async function DisputesPage() {
   return (
     <div className="p-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">Escrow Anlaşmazlıkları</h1>
+        <h1 className="text-2xl font-extrabold text-white">Escrow Disputes</h1>
         <p className="text-slate-400 text-sm mt-1">
-          DISPUTED durumundaki işlemler ve geçmiş tüm escrow kayıtları
+          Transactions in DISPUTED status and all escrow records
         </p>
       </div>
 
@@ -43,11 +43,11 @@ export default async function DisputesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 text-left">
-              <th className="px-4 py-3 font-medium">İşveren</th>
+              <th className="px-4 py-3 font-medium">Client</th>
               <th className="px-4 py-3 font-medium">Freelancer</th>
-              <th className="px-4 py-3 font-medium">Tutar</th>
-              <th className="px-4 py-3 font-medium">Durum</th>
-              <th className="px-4 py-3 font-medium">Tarih</th>
+              <th className="px-4 py-3 font-medium">Amount</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Date</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -79,14 +79,14 @@ export default async function DisputesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-500 text-xs">
-                    {new Date(d.created_at as string).toLocaleDateString('tr-TR')}
+                    {new Date(d.created_at as string).toLocaleDateString('en-US')}
                   </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/disputes/${d.id}`}
                       className="text-primary-400 hover:text-primary-300 text-xs font-semibold transition-colors"
                     >
-                      Karar Ver →
+                      Resolve →
                     </Link>
                   </td>
                 </tr>
@@ -95,7 +95,7 @@ export default async function DisputesPage() {
             {(disputes ?? []).length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
-                  Kayıt bulunamadı.
+                  No records found.
                 </td>
               </tr>
             )}
