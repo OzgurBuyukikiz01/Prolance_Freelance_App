@@ -21,9 +21,9 @@ export default async function TicketDetailPage({
   if (error || !ticket) {
     return (
       <div className="p-8">
-        <p className="text-red-400">Ticket bulunamadı.</p>
+        <p className="text-red-400">Ticket not found.</p>
         <Link href="/tickets" className="text-primary-400 text-sm mt-2 block">
-          ← Ticketlara Dön
+          ← Back to Tickets
         </Link>
       </div>
     );
@@ -34,7 +34,7 @@ export default async function TicketDetailPage({
   return (
     <div className="p-8 max-w-3xl">
       <Link href="/tickets" className="text-slate-400 hover:text-white text-sm mb-6 block">
-        ← Tüm Ticketlar
+        ← All Tickets
       </Link>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
@@ -46,7 +46,7 @@ export default async function TicketDetailPage({
               <span>·</span>
               <span>{profile?.email}</span>
               <span>·</span>
-              <span>{new Date(ticket.created_at).toLocaleString('tr-TR')}</span>
+              <span>{new Date(ticket.created_at).toLocaleString('en-US')}</span>
             </div>
           </div>
           <span className="shrink-0 text-xs font-bold bg-primary-500/15 text-primary-400 border border-primary-500/30 px-2.5 py-1 rounded-full">
@@ -62,7 +62,7 @@ export default async function TicketDetailPage({
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <h2 className="text-white font-bold mb-4">Admin İşlemi</h2>
+        <h2 className="text-white font-bold mb-4">Admin Actions</h2>
         <TicketAdminForm
           ticketId={ticket.id as string}
           defaultStatus={ticket.status as string}

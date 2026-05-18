@@ -19,7 +19,7 @@ export async function toggleBan(formData: FormData) {
     adminUser?.id ?? 'system',
     isBanned ? 'user_banned' : 'user_unbanned',
     userId,
-    `Admin ${isBanned ? 'banladı' : 'banı kaldırdı'}`,
+    `Admin ${isBanned ? 'banned user' : 'unbanned user'}`,
   );
 
   revalidatePath(`/users/${userId}`);

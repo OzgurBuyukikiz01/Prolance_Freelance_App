@@ -23,8 +23,8 @@ export function SignupChart({ data }: SignupChartProps) {
   return (
     <div className="glass-card p-6">
       <div className="mb-4">
-        <h2 className="text-sm font-semibold text-slate-200">Son 7 gün kayıtlar</h2>
-        <p className="text-xs text-slate-500 mt-0.5">Yeni kullanıcı profilleri</p>
+        <h2 className="text-sm font-semibold text-slate-200">Signups — Last 7 Days</h2>
+        <p className="text-xs text-slate-500 mt-0.5">New user profiles</p>
       </div>
       <div className="h-[240px] w-full">
         <ResponsiveContainer width="100%" height="100%">

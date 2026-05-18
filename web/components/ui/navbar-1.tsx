@@ -4,18 +4,18 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const LINKS = [
-  { label: 'Özellikler', href: '#features' },
-  { label: 'Nasıl Çalışır', href: '#how' },
-  { label: 'Fiyatlandırma', href: '#pricing' },
+  { label: 'Features',     href: '#features' },
+  { label: 'How It Works', href: '#how' },
+  { label: 'Pricing',      href: '#pricing' },
 ];
 
 function ProlanceLogo() {
   return (
-    <a href="#" className="flex items-center gap-2.5 font-bold text-slate-900 shrink-0">
+    <a href="#" className="flex items-center gap-2.5 font-bold text-white shrink-0">
       <span className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center text-white text-sm font-black shadow-brand">
         P
       </span>
-      <span className="text-lg tracking-tight">Prolance</span>
+      <span className="text-lg tracking-tight font-display">Prolance</span>
     </a>
   );
 }
@@ -39,8 +39,8 @@ export function Navbar1({ authSlot }: Navbar1Props) {
       <div
         className={`pointer-events-auto max-w-4xl mx-auto rounded-full border transition-all duration-300 ${
           scrolled
-            ? 'bg-white/90 backdrop-blur-xl border-slate-200/80 shadow-card'
-            : 'bg-white/70 backdrop-blur-md border-white/60 shadow-sm'
+            ? 'bg-dark-base/90 backdrop-blur-xl border-white/10 shadow-glass'
+            : 'bg-white/5 backdrop-blur-md border-white/8'
         }`}
       >
         <motion.div
@@ -56,7 +56,7 @@ export function Navbar1({ authSlot }: Navbar1Props) {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-slate-600 hover:text-brand px-3 py-1.5 rounded-full hover:bg-brand-light/80 transition-colors"
+                className="text-sm font-medium text-slate-300 hover:text-white px-3 py-1.5 rounded-full hover:bg-white/8 transition-colors"
               >
                 {link.label}
               </a>
@@ -73,16 +73,16 @@ export function Navbar1({ authSlot }: Navbar1Props) {
                 href="/login"
                 className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors shadow-brand"
               >
-                Giriş Yap
+                Sign In
               </a>
             )}
           </motion.div>
 
           <button
             type="button"
-            className="md:hidden p-2 rounded-full text-slate-600 hover:bg-slate-100"
+            className="md:hidden p-2 rounded-full text-slate-300 hover:bg-white/10"
             onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Menüyü aç"
+            aria-label="Toggle menu"
             aria-expanded={menuOpen}
           >
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -102,7 +102,7 @@ export function Navbar1({ authSlot }: Navbar1Props) {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden overflow-hidden border-t border-slate-100"
+              className="md:hidden overflow-hidden border-t border-white/8"
             >
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
@@ -114,7 +114,7 @@ export function Navbar1({ authSlot }: Navbar1Props) {
                   <a
                     key={link.href}
                     href={link.href}
-                    className="text-sm font-medium text-slate-700 py-2 px-3 rounded-xl hover:bg-slate-50"
+                    className="text-sm font-medium text-slate-300 py-2 px-3 rounded-xl hover:bg-white/8 hover:text-white"
                     onClick={() => setMenuOpen(false)}
                   >
                     {link.label}
@@ -132,7 +132,7 @@ export function Navbar1({ authSlot }: Navbar1Props) {
                       className="block text-center bg-brand text-white text-sm font-semibold px-4 py-2.5 rounded-full"
                       onClick={() => setMenuOpen(false)}
                     >
-                      Giriş Yap
+                      Sign In
                     </a>
                   )}
                 </motion.div>

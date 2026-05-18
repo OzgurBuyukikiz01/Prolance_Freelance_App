@@ -19,7 +19,7 @@ export function MagicCard({ children, className, innerClassName }: MagicCardProp
     >
       <div
         className={cn(
-          'relative rounded-[calc(1.5rem-1px)] bg-white border border-slate-100',
+          'relative rounded-[calc(1.5rem-1px)] bg-dark-surface border border-white/7',
           innerClassName,
         )}
       >

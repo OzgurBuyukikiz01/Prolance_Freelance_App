@@ -57,7 +57,7 @@ export default async function ContractsPage() {
           ]);
           return {
             ...p,
-            jobTitle: job?.title ?? 'İlan',
+            jobTitle: job?.title ?? 'Job',
             otherPartyName: freelancer?.full_name ?? 'Freelancer',
           };
         }),
@@ -85,8 +85,8 @@ export default async function ContractsPage() {
           funded_amount_cents: p.funded_amount_cents,
           lifecycle_phase: p.lifecycle_phase,
           created_at: p.created_at,
-          jobTitle: jobData?.title ?? 'İlan',
-          otherPartyName: client?.full_name ?? 'İşveren',
+          jobTitle: jobData?.title ?? 'Job',
+          otherPartyName: client?.full_name ?? 'Client',
         };
       }),
     );
@@ -95,24 +95,24 @@ export default async function ContractsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900">Sözleşmelerim</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          {isClient ? 'Kabul ettiğiniz teklifler ve proje süreçleri' : 'Kabul edilen teklifleriniz ve teslimat süreçleri'}
+        <h1 className="text-2xl font-extrabold text-white">My Contracts</h1>
+        <p className="text-sm text-slate-400 mt-1">
+          {isClient ? 'Accepted proposals and active projects' : 'Your accepted proposals and delivery progress'}
         </p>
       </div>
 
       {!contracts.length ? (
         <MagicCard innerClassName="p-10 text-center">
-          <p className="text-slate-500 text-sm mb-3">
+          <p className="text-slate-400 text-sm mb-3">
             {isClient
-              ? 'Henüz kabul edilmiş bir teklifiniz yok.'
-              : 'Henüz kabul edilmiş bir teklifiniz yok.'}
+              ? 'No accepted proposals yet.'
+              : 'No accepted proposals yet.'}
           </p>
           <Link
             href="/portal/jobs"
             className="text-sm font-semibold text-brand hover:text-brand-dark"
           >
-            İş İlanlarına Git →
+            Browse Jobs →
           </Link>
         </MagicCard>
       ) : (
@@ -126,11 +126,11 @@ export default async function ContractsPage() {
                     <div className="p-5">
                       <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 group-hover:text-brand transition-colors truncate">
+                          <p className="font-bold text-white group-hover:text-brand transition-colors truncate">
                             {c.jobTitle}
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            {isClient ? 'Freelancer' : 'İşveren'}: {c.otherPartyName} ·{' '}
+                            {isClient ? 'Freelancer' : 'Client'}: {c.otherPartyName} ·{' '}
                             {formatRelativeTime(c.created_at)}
                           </p>
                         </div>
@@ -145,7 +145,7 @@ export default async function ContractsPage() {
                           {formatCents(c.funded_amount_cents ?? Math.round(c.bid * 100))}
                         </p>
                         <span className="text-xs text-slate-400 group-hover:text-brand transition-colors">
-                          Detay →
+                          Details →
                         </span>
                       </div>
                     </div>

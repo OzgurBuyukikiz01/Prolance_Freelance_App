@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Poppins, Space_Grotesk } from 'next/font/google';
 import './globals.css';
+import { AuroraBackground } from '@/components/ui/AuroraBackground';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -9,10 +10,17 @@ const poppins = Poppins({
   display: 'swap',
 });
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-space',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: 'Prolance — Freelance Güvenle',
+  title: 'Prolance — Freelance with Confidence',
   description:
-    'İşveren ile freelancer arasında escrow koruması. Ödeme serbest bırakılana kadar güvende.',
+    'Escrow-protected payments between clients and freelancers. Funds stay locked until work is approved.',
 };
 
 export default function RootLayout({
@@ -21,8 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="tr" className={poppins.variable}>
-      <body>{children}</body>
+    <html lang="en" className={`${poppins.variable} ${spaceGrotesk.variable}`}>
+      <body>
+        <AuroraBackground />
+        {children}
+      </body>
     </html>
   );
 }

@@ -10,7 +10,7 @@ function LoginLink() {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
-      Giriş Yap
+      Sign In
     </a>
   );
 }
@@ -32,7 +32,7 @@ export default async function AuthNav() {
       .eq('id', user.id)
       .single();
 
-    const name = profile?.full_name || user.email?.split('@')[0] || 'Kullanıcı';
+    const name = profile?.full_name || user.email?.split('@')[0] || 'User';
     const initial = name.charAt(0).toUpperCase();
 
     return (
@@ -60,7 +60,7 @@ export default async function AuthNav() {
           <button
             type="submit"
             className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-            title="Çıkış Yap"
+            title="Sign Out"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

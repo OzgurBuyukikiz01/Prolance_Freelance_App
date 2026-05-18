@@ -46,11 +46,11 @@ export default async function PortalChatPage({ params }: PageProps) {
   return (
     <div className="space-y-4">
       <Link href="/portal/messages" className="text-sm font-medium text-brand hover:text-brand-dark">
-        ← Mesajlara dön
+        ← Back to Messages
       </Link>
       <MagicCard innerClassName="p-4 sm:p-6">
-        <h1 className="text-lg font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">
-          {profile?.full_name ?? 'Sohbet'}
+        <h1 className="text-lg font-bold text-white mb-4 pb-3 border-b border-white/8">
+          {profile?.full_name ?? 'Chat'}
         </h1>
         <ChatClient
           conversationId={id}

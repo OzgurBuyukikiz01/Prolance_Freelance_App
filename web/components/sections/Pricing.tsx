@@ -4,36 +4,36 @@ import { motion } from 'framer-motion';
 
 const plans = [
   {
-    name: 'Ücretsiz',
-    price: '₺0',
-    period: '/ay',
-    description: 'Başlamak için gereken her şey.',
+    name: 'Free',
+    price: '$0',
+    period: '/month',
+    description: 'Everything you need to get started.',
     features: [
-      'Sınırsız iş ilanı görüntüle',
-      '5 teklife kadar gönder',
-      'Temel mesajlaşma',
-      '5 iş ilanı yayınla',
-      '%5 komisyon',
+      'Browse unlimited job listings',
+      'Submit up to 5 proposals',
+      'Basic messaging',
+      'Post up to 5 job listings',
+      '5% platform fee',
     ],
-    cta: 'Hemen Başla',
+    cta: 'Get Started',
     href: '#download',
     highlighted: false,
   },
   {
     name: 'Pro',
-    price: '₺299',
-    period: '/ay',
-    description: "Ciddi freelancer'lar ve işverenler için.",
-    badge: 'Çok Yakında',
+    price: '$29',
+    period: '/month',
+    description: 'For serious freelancers and clients.',
+    badge: 'Coming Soon',
     features: [
-      'Sınırsız teklif gönder',
-      'Sınırsız escrow işlemi',
-      'Öncelikli destek',
-      'Sınırsız iş ilanı yayınla',
-      '%1.5 komisyon',
-      'Öne çıkarılan profil',
+      'Unlimited proposals',
+      'Unlimited escrow transactions',
+      'Priority support',
+      'Unlimited job postings',
+      '1.5% platform fee',
+      'Featured profile placement',
     ],
-    cta: 'Bildirim Al',
+    cta: 'Get Notified',
     href: '#download',
     highlighted: true,
   },
@@ -41,7 +41,7 @@ const plans = [
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="py-24 bg-white">
+    <section id="pricing" className="py-28 section-divider">
       <div className="max-w-5xl mx-auto px-6">
         {/* Header */}
         <motion.div
@@ -51,14 +51,14 @@ export default function Pricing() {
           transition={{ duration: 0.5 }}
           className="text-center mb-14"
         >
-          <span className="inline-block bg-violet-50 text-violet-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-violet-100">
-            Fiyatlandırma
+          <span className="inline-block glass-card-subtle text-slate-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            Pricing
           </span>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">
-            Basit ve şeffaf fiyatlar
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white">
+            Simple, transparent pricing
           </h2>
-          <p className="mt-4 text-slate-500 max-w-lg mx-auto">
-            Gizli ücret yok. Başlamak için kredi kartı gerekmez.
+          <p className="mt-4 text-slate-400 max-w-lg mx-auto">
+            No hidden fees. No credit card required to start.
           </p>
         </motion.div>
 
@@ -71,10 +71,11 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15, duration: 0.55 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
               className={`relative rounded-2xl p-8 flex flex-col gap-6 ${
                 plan.highlighted
-                  ? 'bg-gradient-to-br from-brand via-indigo-600 to-violet-600 text-white shadow-brand'
-                  : 'bg-white border border-slate-200 shadow-card text-slate-900'
+                  ? 'bg-gradient-to-br from-brand/30 via-brand/10 to-indigo-900/20 border border-brand/40 shadow-brand-lg'
+                  : 'bg-dark-surface border border-white/8 shadow-glass'
               }`}
             >
               {plan.badge && (
@@ -84,16 +85,14 @@ export default function Pricing() {
               )}
 
               <div>
-                <div className={`text-sm font-semibold mb-1 ${plan.highlighted ? 'text-indigo-100' : 'text-slate-500'}`}>
+                <div className={`text-sm font-semibold mb-1 ${plan.highlighted ? 'text-brand' : 'text-slate-400'}`}>
                   {plan.name}
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold">{plan.price}</span>
-                  <span className={`text-sm ${plan.highlighted ? 'text-indigo-200' : 'text-slate-400'}`}>{plan.period}</span>
+                  <span className="text-4xl font-display font-bold text-white">{plan.price}</span>
+                  <span className="text-sm text-slate-500">{plan.period}</span>
                 </div>
-                <p className={`text-sm mt-2 ${plan.highlighted ? 'text-indigo-100' : 'text-slate-500'}`}>
-                  {plan.description}
-                </p>
+                <p className="text-sm mt-2 text-slate-400">{plan.description}</p>
               </div>
 
               <ul className="flex flex-col gap-3">
@@ -106,11 +105,11 @@ export default function Pricing() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2.5}
-                      className={plan.highlighted ? 'text-indigo-200' : 'text-brand'}
+                      className={plan.highlighted ? 'text-brand' : 'text-slate-500'}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className={plan.highlighted ? 'text-indigo-50' : 'text-slate-700'}>{f}</span>
+                    <span className="text-slate-300">{f}</span>
                   </li>
                 ))}
               </ul>
@@ -119,8 +118,8 @@ export default function Pricing() {
                 href={plan.href}
                 className={`mt-auto text-center font-semibold text-sm px-6 py-3 rounded-xl transition-all ${
                   plan.highlighted
-                    ? 'bg-white text-brand hover:bg-indigo-50'
-                    : 'bg-brand text-white hover:bg-brand-dark shadow-brand'
+                    ? 'bg-brand text-white hover:bg-brand-dark shadow-brand'
+                    : 'bg-white/8 text-white border border-white/12 hover:bg-white/14'
                 }`}
               >
                 {plan.cta}

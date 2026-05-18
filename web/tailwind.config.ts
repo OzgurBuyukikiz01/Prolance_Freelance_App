@@ -8,6 +8,14 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Dark editorial backgrounds
+        dark: {
+          base:     '#07070E',
+          surface:  '#0D0D1A',
+          elevated: '#13132A',
+          card:     '#111126',
+          border:   'rgba(255,255,255,0.07)',
+        },
         // Primary — Electric Violet (brand)
         primary: {
           50:  '#F3F0FF',
@@ -67,7 +75,7 @@ export default {
           900: '#1E1812',
           950: '#100E0A',
         },
-        // Brand aliases (map to primary violet palette)
+        // Brand aliases
         brand: {
           DEFAULT: '#7248FE',
           light:   '#F3F0FF',
@@ -83,13 +91,13 @@ export default {
           800: '#3C19A0',
           900: '#2E1580',
         },
-        // Glass tokens for admin panel
+        // Glass tokens
         glass: {
           white: 'rgba(255, 255, 255, 0.05)',
           border: 'rgba(255, 255, 255, 0.10)',
           'border-strong': 'rgba(255, 255, 255, 0.18)',
         },
-        // Admin dark backgrounds
+        // Admin dark backgrounds (legacy, kept for admin pages)
         admin: {
           base: '#0A0F1E',
           surface: '#0F1628',
@@ -97,32 +105,45 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
+        sans:    ['var(--font-poppins)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-space)', 'var(--font-poppins)', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'brand-gradient':  'linear-gradient(135deg, #FF5833 0%, #7248FE 100%)',
         'coral-gradient':  'linear-gradient(135deg, #FF5833 0%, #FF8A65 100%)',
         'mint-gradient':   'linear-gradient(135deg, #0EBD90 0%, #2DD5A8 100%)',
         'violet-gradient': 'linear-gradient(135deg, #7248FE 0%, #9075FF 100%)',
-        'hero-gradient':   'linear-gradient(135deg, #FFF4F0 0%, #F3F0FF 50%, #EDFDF8 100%)',
+        // Dark editorial gradient (replaces old pastel hero gradient)
+        'hero-gradient':   'linear-gradient(135deg, #07070E 0%, #0D0D1A 100%)',
         'glass-gradient':  'linear-gradient(135deg, rgba(255,88,51,0.06) 0%, rgba(114,72,254,0.06) 100%)',
+        // Aurora orb gradients
+        'aurora-violet': 'radial-gradient(ellipse at center, rgba(114,72,254,0.55) 0%, transparent 70%)',
+        'aurora-coral':  'radial-gradient(ellipse at center, rgba(255,88,51,0.40) 0%, transparent 70%)',
+        'aurora-indigo': 'radial-gradient(ellipse at center, rgba(79,70,229,0.50) 0%, transparent 70%)',
+        'aurora-cyan':   'radial-gradient(ellipse at center, rgba(6,182,212,0.35) 0%, transparent 70%)',
       },
       boxShadow: {
-        glass:         '0 8px 32px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.10)',
-        'glass-sm':    '0 4px 16px rgba(0, 0, 0, 0.20)',
-        'glow-coral':  '0 0 24px rgba(255, 88, 51, 0.35)',
-        'glow-violet': '0 0 24px rgba(114, 72, 254, 0.35)',
-        'glow-mint':   '0 0 24px rgba(14, 189, 144, 0.35)',
-        card:          '0 2px 16px rgba(30, 24, 18, 0.07)',
-        'card-hover':  '0 8px 32px rgba(30, 24, 18, 0.12)',
-        brand:         '0 4px 24px rgba(114, 72, 254, 0.25)',
+        glass:              '0 8px 32px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+        'glass-sm':         '0 4px 16px rgba(0, 0, 0, 0.40)',
+        'glow-coral':       '0 0 40px rgba(255, 88, 51, 0.40)',
+        'glow-violet':      '0 0 40px rgba(114, 72, 254, 0.45)',
+        'glow-violet-lg':   '0 0 80px rgba(114, 72, 254, 0.30), 0 0 160px rgba(114, 72, 254, 0.15)',
+        'glow-mint':        '0 0 40px rgba(14, 189, 144, 0.40)',
+        card:               '0 2px 16px rgba(0, 0, 0, 0.40)',
+        'card-hover':       '0 8px 40px rgba(0, 0, 0, 0.60)',
+        brand:              '0 4px 24px rgba(114, 72, 254, 0.35)',
+        'brand-lg':         '0 8px 48px rgba(114, 72, 254, 0.45)',
       },
       animation: {
-        'fade-in':  'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        'float':    'float 6s ease-in-out infinite',
-        'shimmer':  'shimmer 2s linear infinite',
+        'fade-in':    'fadeIn 0.3s ease-out',
+        'slide-up':   'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        'float':      'float 6s ease-in-out infinite',
+        'shimmer':    'shimmer 2s linear infinite',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+        'aurora-1':   'aurora1 12s ease-in-out infinite alternate',
+        'aurora-2':   'aurora2 16s ease-in-out infinite alternate',
+        'aurora-3':   'aurora3 10s ease-in-out infinite alternate',
+        'aurora-4':   'aurora4 14s ease-in-out infinite alternate',
       },
       keyframes: {
         fadeIn: {
@@ -144,6 +165,22 @@ export default {
         pulseGlow: {
           '0%, 100%': { opacity: '0.6' },
           '50%':      { opacity: '1.0' },
+        },
+        aurora1: {
+          '0%':   { transform: 'translate(0%, 0%) scale(1)',     opacity: '0.7' },
+          '100%': { transform: 'translate(15%, -10%) scale(1.2)', opacity: '0.9' },
+        },
+        aurora2: {
+          '0%':   { transform: 'translate(0%, 0%) scale(1)',       opacity: '0.6' },
+          '100%': { transform: 'translate(-20%, 15%) scale(1.3)',   opacity: '0.8' },
+        },
+        aurora3: {
+          '0%':   { transform: 'translate(0%, 0%) scale(1)',     opacity: '0.5' },
+          '100%': { transform: 'translate(10%, 20%) scale(0.9)', opacity: '0.7' },
+        },
+        aurora4: {
+          '0%':   { transform: 'translate(0%, 0%) scale(1)',      opacity: '0.4' },
+          '100%': { transform: 'translate(-10%, -15%) scale(1.1)', opacity: '0.6' },
         },
       },
     },

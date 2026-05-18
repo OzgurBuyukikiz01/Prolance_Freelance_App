@@ -11,11 +11,11 @@ export async function submitProposal(formData: FormData) {
   const coverLetter = (formData.get('cover_letter') as string)?.trim() ?? '';
 
   if (!jobId || !Number.isFinite(bid) || bid <= 0 || !Number.isFinite(deliveryDays) || deliveryDays < 1) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Geçerli teklif bilgileri girin.')}`);
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Please enter valid proposal details.')}`);
   }
 
   if (coverLetter.length < 10) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Kapak yazısı en az 10 karakter olmalı.')}`);
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Cover letter must be at least 10 characters.')}`);
   }
 
   const supabase = await createClient();
@@ -61,10 +61,10 @@ export async function acceptProposal(formData: FormData) {
 
   if (error || !data?.ok) {
     const msg = data?.err === 'insufficient_demo_balance'
-      ? 'Demo bakiyeniz yetersiz. Lütfen admin ile iletişime geçin.'
+      ? 'Insufficient demo balance. Please contact admin.'
       : data?.err === 'job_already_accepted'
-      ? 'Bu iş için zaten bir teklif kabul edildi.'
-      : (error?.message ?? data?.err ?? 'Teklif kabul edilemedi.');
+      ? 'A proposal has already been accepted for this job.'
+      : (error?.message ?? data?.err ?? 'Could not accept proposal.');
     redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -100,7 +100,7 @@ export async function rejectProposal(formData: FormData) {
     .single();
 
   if (!job || job.client_id !== user.id) {
-    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Yetkisiz işlem.')}`);
+    redirect(`/portal/jobs/${jobId}?error=${encodeURIComponent('Unauthorized action.')}`);
   }
 
   const { error } = await supabase

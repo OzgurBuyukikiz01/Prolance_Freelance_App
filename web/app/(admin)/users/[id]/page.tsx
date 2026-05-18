@@ -35,8 +35,8 @@ export default async function UserDetailPage({
   if (!profile) {
     return (
       <div className="p-8">
-        <p className="text-red-400">Kullanıcı bulunamadı.</p>
-        <Link href="/users" className="text-primary-400 text-sm mt-2 block">← Kullanıcılara Dön</Link>
+        <p className="text-red-400">User not found.</p>
+        <Link href="/users" className="text-primary-400 text-sm mt-2 block">← Back to Users</Link>
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default async function UserDetailPage({
   return (
     <div className="p-8 max-w-3xl space-y-6">
       <Link href="/users" className="text-slate-400 hover:text-white text-sm block">
-        ← Tüm Kullanıcılar
+        ← All Users
       </Link>
 
       {/* Profile card */}
@@ -63,7 +63,7 @@ export default async function UserDetailPage({
               )}
               {profile.is_banned && (
                 <span className="bg-red-500/15 text-red-400 border border-red-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
-                  Banlı
+                  Banned
                 </span>
               )}
             </div>
@@ -71,7 +71,7 @@ export default async function UserDetailPage({
             <div className="flex items-center gap-4 mt-3 text-sm text-slate-400">
               <span>{profile.role}</span>
               <span>·</span>
-              <span>{profile.completed_jobs} iş</span>
+              <span>{profile.completed_jobs} jobs</span>
               <span>·</span>
               <span>{profile.rating ? `${Number(profile.rating).toFixed(1)}★` : '—'}</span>
             </div>
@@ -92,7 +92,7 @@ export default async function UserDetailPage({
                     : 'bg-red-600 hover:bg-red-500 text-white'
                 }`}
               >
-                {profile.is_banned ? 'Banı Kaldır' : 'Kullanıcıyı Banla'}
+                {profile.is_banned ? 'Unban User' : 'Ban User'}
               </button>
             </form>
           </div>
@@ -102,7 +102,7 @@ export default async function UserDetailPage({
       {/* Jobs */}
       {(jobs ?? []).length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-white font-bold mb-4">İş İlanları ({(jobs ?? []).length})</h2>
+          <h2 className="text-white font-bold mb-4">Job Listings ({(jobs ?? []).length})</h2>
           <div className="flex flex-col gap-2">
             {(jobs ?? []).map((j: Record<string, unknown>) => (
               <div key={j.id as string} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
@@ -117,7 +117,7 @@ export default async function UserDetailPage({
       {/* Tickets */}
       {(tickets ?? []).length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-white font-bold mb-4">Ticketlar ({(tickets ?? []).length})</h2>
+          <h2 className="text-white font-bold mb-4">Support Tickets ({(tickets ?? []).length})</h2>
           <div className="flex flex-col gap-2">
             {(tickets ?? []).map((t: Record<string, unknown>) => (
               <div key={t.id as string} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">

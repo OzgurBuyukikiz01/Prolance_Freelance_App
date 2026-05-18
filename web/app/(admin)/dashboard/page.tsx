@@ -27,7 +27,7 @@ function buildSignupSeries(
   return Array.from(buckets.entries()).map(([iso, signups]) => {
     const d = new Date(`${iso}T12:00:00`);
     return {
-      date: d.toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric' }),
+      date: d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }),
       signups,
     };
   });
@@ -100,42 +100,42 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold text-gradient-brand">Dashboard</h1>
-        <p className="text-white/40 text-sm mt-1.5">Platform genel durumu</p>
+        <p className="text-white/40 text-sm mt-1.5">Platform overview</p>
       </div>
 
       {err && (
         <div className="mb-6 bg-primary-500/10 border border-primary-500/30 text-primary-300 text-sm px-4 py-3 rounded-xl">
-          Metrikler yüklenemedi: {err}. .env.local dosyasını kontrol edin.
+          Failed to load metrics: {err}. Check your .env.local file.
         </div>
       )}
 
       {/* Primary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
         <DashboardStatCard
-          title="Toplam İlan"
+          title="Total Jobs"
           value={metrics.totalJobs}
-          sub={`${metrics.openJobs} aktif`}
+          sub={`${metrics.openJobs} active`}
           href="/jobs"
           accent="text-white"
         />
         <DashboardStatCard
-          title="Bekleyen İlan"
+          title="Pending Jobs"
           value={metrics.pendingJobs}
-          sub="Moderasyon bekliyor"
+          sub="Awaiting moderation"
           href="/jobs"
           accent={metrics.pendingJobs > 0 ? 'text-primary-400' : 'text-white'}
         />
         <DashboardStatCard
-          title="Açık Ticketlar"
+          title="Open Tickets"
           value={metrics.openTickets}
-          sub="Yanıt bekliyor"
+          sub="Awaiting response"
           href="/tickets"
           accent="text-accent-400"
         />
         <DashboardStatCard
-          title="Toplam Kullanıcı"
+          title="Total Users"
           value={metrics.totalUsers}
-          sub={`${metrics.bannedUsers} banlı`}
+          sub={`${metrics.bannedUsers} banned`}
           href="/users"
           accent="text-secondary-400"
         />
@@ -144,20 +144,20 @@ export default async function DashboardPage() {
       {/* Secondary stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <DashboardStatCard
-          title="Escrow Anlaşmazlık"
+          title="Escrow Disputes"
           value={metrics.disputed}
-          sub="DISPUTED durumunda"
+          sub="In DISPUTED status"
           href="/disputes"
           accent={metrics.disputed > 0 ? 'text-red-400' : 'text-white/40'}
         />
         <DashboardStatCard
-          title="Banlı Kullanıcı"
+          title="Banned Users"
           value={metrics.bannedUsers}
           href="/users"
           accent={metrics.bannedUsers > 0 ? 'text-red-400' : 'text-white/40'}
         />
         <DashboardStatCard
-          title="Audit Log Girişi"
+          title="Audit Log Entries"
           value={metrics.recentAudit}
           href="/audit"
           accent="text-accent-400"
@@ -172,14 +172,14 @@ export default async function DashboardPage() {
       {/* Quick access */}
       <div>
         <h2 className="text-white/40 text-xs font-semibold mb-3 uppercase tracking-widest">
-          Hızlı Erişim
+          Quick Access
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { href: '/jobs',     label: 'İlan Moderasyonu' },
-            { href: '/tickets',  label: 'Ticketları Yönet' },
-            { href: '/disputes', label: 'Anlaşmazlıklar' },
-            { href: '/users',    label: 'Kullanıcılar' },
+            { href: '/jobs',     label: 'Job Moderation' },
+            { href: '/tickets',  label: 'Manage Tickets' },
+            { href: '/disputes', label: 'Disputes' },
+            { href: '/users',    label: 'Users' },
             { href: '/audit',    label: 'Audit Log' },
           ].map((q) => (
             <Link

@@ -90,7 +90,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
   return (
     <div className="space-y-6">
       <Link href="/portal/jobs" className="text-sm font-medium text-brand hover:text-brand-dark">
-        ← İlanlara dön
+        ← Back to Jobs
       </Link>
 
       {query.error && (
@@ -99,20 +99,20 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
         </div>
       )}
       {query.submitted === '1' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Teklifiniz gönderildi.
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Your proposal has been submitted.
         </div>
       )}
       {query.accepted === '1' && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Teklif kabul edildi ve escrow kaydı oluşturuldu.
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+          Proposal accepted and escrow record created.
         </div>
       )}
 
       <MagicCard innerClassName="p-6">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-slate-900">{job.title}</h1>
+            <h1 className="text-2xl font-extrabold text-white">{job.title}</h1>
             <p className="text-sm text-slate-500 mt-1">
               {job.client_name} · {formatRelativeTime(job.posted_date)} · {job.category}
             </p>
@@ -121,7 +121,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
             {formatBudget(job.budget_min, job.budget_max, job.budget_type)}
           </span>
         </div>
-        <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{job.description}</p>
+        <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{job.description}</p>
         {skills.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
             {skills.map((skill) => (
@@ -134,14 +134,14 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
             ))}
           </div>
         )}
-        <p className="text-xs text-slate-400 mt-4">{job.proposal_count} teklif · {job.duration}</p>
+        <p className="text-xs text-slate-400 mt-4">{job.proposal_count} proposals · {job.duration}</p>
       </MagicCard>
 
       {isOwner && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Gelen teklifler</h2>
+          <h2 className="text-lg font-bold text-white mb-4">Received Proposals</h2>
           {!proposalRows.length ? (
-            <p className="text-sm text-slate-500">Henüz teklif yok.</p>
+            <p className="text-sm text-slate-400">No proposals yet.</p>
           ) : (
             <ul className="space-y-4">
               {proposalRows.map((p) => {
@@ -149,11 +149,11 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
                 return (
                   <li
                     key={p.id}
-                    className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50"
+                    className="border border-white/8 rounded-2xl p-4 bg-white/4"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                       <div>
-                        <p className="font-semibold text-slate-900">{p.freelancerName}</p>
+                        <p className="font-semibold text-white">{p.freelancerName}</p>
                         {p.freelancerTitle && (
                           <p className="text-xs text-slate-500">{p.freelancerTitle}</p>
                         )}
@@ -165,9 +165,9 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
                       </span>
                     </div>
                     <p className="text-sm font-bold text-brand mb-2">₺{p.bid.toLocaleString('tr-TR')}</p>
-                    <p className="text-sm text-slate-600 whitespace-pre-wrap mb-3">{p.cover_letter}</p>
-                    <p className="text-xs text-slate-400 mb-3">
-                      {p.delivery_days} gün · {formatRelativeTime(p.created_at)}
+                    <p className="text-sm text-slate-400 whitespace-pre-wrap mb-3">{p.cover_letter}</p>
+                    <p className="text-xs text-slate-500 mb-3">
+                      {p.delivery_days} days · {formatRelativeTime(p.created_at)}
                     </p>
                     {p.status === 'pending' && (
                       <div className="flex gap-2">
@@ -180,7 +180,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
                             type="submit"
                             className="text-sm font-semibold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
                           >
-                            Kabul et
+                            Accept
                           </button>
                         </form>
                         <form action={rejectProposal}>
@@ -190,7 +190,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
                             type="submit"
                             className="text-sm font-semibold px-4 py-2 rounded-xl border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-600"
                           >
-                            Reddet
+                            Decline
                           </button>
                         </form>
                       </div>
@@ -205,10 +205,10 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
 
       {isFreelancer && !isOwner && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Teklif ver</h2>
+          <h2 className="text-lg font-bold text-white mb-4">Submit a Proposal</h2>
           {existingProposal ? (
-            <p className="text-sm text-slate-600">
-              Bu ilana zaten teklif verdiniz (
+            <p className="text-sm text-slate-400">
+              You&apos;ve already submitted a proposal for this job (
               {PROPOSAL_STATUS_LABELS[existingProposal.status]?.label ?? existingProposal.status}
               ).
             </p>
@@ -218,7 +218,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
               defaultBid={Math.round((job.budget_min + job.budget_max) / 2)}
             />
           ) : (
-            <p className="text-sm text-slate-500">Bu ilan artık teklif kabul etmiyor.</p>
+            <p className="text-sm text-slate-400">This job is no longer accepting proposals.</p>
           )}
         </MagicCard>
       )}

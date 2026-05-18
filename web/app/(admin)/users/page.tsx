@@ -34,8 +34,8 @@ export default async function UsersPage({
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Kullanıcılar</h1>
-          <p className="text-slate-400 text-sm mt-1">Platform kullanıcılarını yönetin</p>
+          <h1 className="text-2xl font-extrabold text-white">Users</h1>
+          <p className="text-slate-400 text-sm mt-1">Manage platform users</p>
         </div>
       </div>
 
@@ -49,7 +49,7 @@ export default async function UsersPage({
               : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
           }`}
         >
-          Tümü
+          All
         </Link>
         <Link
           href="/users?banned=1"
@@ -59,7 +59,7 @@ export default async function UsersPage({
               : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
           }`}
         >
-          Banlı
+          Banned
         </Link>
         <Link
           href="/users?role=FREELANCER"
@@ -79,7 +79,7 @@ export default async function UsersPage({
               : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
           }`}
         >
-          İşveren
+          Client
         </Link>
 
         <form className="ml-auto">
@@ -87,7 +87,7 @@ export default async function UsersPage({
             name="q"
             type="search"
             defaultValue={params.q}
-            placeholder="İsim veya e-posta ara..."
+            placeholder="Search name or email..."
             className="bg-slate-800 border border-slate-700 text-white text-sm rounded-xl px-4 py-1.5 w-56 focus:outline-none focus:ring-2 focus:ring-primary-500/40 placeholder:text-slate-500"
           />
         </form>
@@ -103,11 +103,11 @@ export default async function UsersPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 text-left">
-              <th className="px-4 py-3 font-medium">Kullanıcı</th>
-              <th className="px-4 py-3 font-medium">Rol</th>
-              <th className="px-4 py-3 font-medium">İş</th>
-              <th className="px-4 py-3 font-medium">Durum</th>
-              <th className="px-4 py-3 font-medium">Katılım</th>
+              <th className="px-4 py-3 font-medium">User</th>
+              <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">Jobs</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Joined</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -140,23 +140,23 @@ export default async function UsersPage({
                 <td className="px-4 py-3">
                   {u.is_banned ? (
                     <span className="text-xs font-semibold px-2 py-1 rounded-full border bg-red-500/15 text-red-400 border-red-500/30">
-                      Banlı
+                      Banned
                     </span>
                   ) : (
                     <span className="text-xs font-semibold px-2 py-1 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
-                      Aktif
+                      Active
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-slate-500 text-xs">
-                  {new Date(u.created_at as string).toLocaleDateString('tr-TR')}
+                  {new Date(u.created_at as string).toLocaleDateString('en-US')}
                 </td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/users/${u.id}`}
                     className="text-primary-400 hover:text-primary-300 text-xs font-semibold transition-colors"
                   >
-                    Detay →
+                    Details →
                   </Link>
                 </td>
               </tr>
@@ -164,7 +164,7 @@ export default async function UsersPage({
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
-                  Kullanıcı bulunamadı.
+                  No users found.
                 </td>
               </tr>
             )}

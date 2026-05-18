@@ -43,8 +43,8 @@ export default async function TicketsPage({
     <div className="p-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Ticketlar</h1>
-          <p className="text-slate-400 text-sm mt-1">Kullanıcıların açtığı destek talepleri</p>
+          <h1 className="text-2xl font-extrabold text-white">Support Tickets</h1>
+          <p className="text-slate-400 text-sm mt-1">Support requests submitted by users</p>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export default async function TicketsPage({
                 : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
             }`}
           >
-            {s || 'Tümü'}
+            {s || 'All'}
           </Link>
         ))}
         <span className="text-slate-700 mx-1">|</span>
@@ -74,7 +74,7 @@ export default async function TicketsPage({
                 : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
             }`}
           >
-            {p || 'Öncelik'}
+            {p || 'Priority'}
           </Link>
         ))}
       </div>
@@ -90,11 +90,11 @@ export default async function TicketsPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 text-left">
-              <th className="px-4 py-3 font-medium">Konu</th>
-              <th className="px-4 py-3 font-medium">Kullanıcı</th>
-              <th className="px-4 py-3 font-medium">Durum</th>
-              <th className="px-4 py-3 font-medium">Öncelik</th>
-              <th className="px-4 py-3 font-medium">Tarih</th>
+              <th className="px-4 py-3 font-medium">Subject</th>
+              <th className="px-4 py-3 font-medium">User</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Priority</th>
+              <th className="px-4 py-3 font-medium">Date</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
           </thead>
@@ -131,14 +131,14 @@ export default async function TicketsPage({
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-500 text-xs">
-                    {new Date(t.created_at as string).toLocaleDateString('tr-TR')}
+                    {new Date(t.created_at as string).toLocaleDateString('en-US')}
                   </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/tickets/${t.id}`}
                       className="text-primary-400 hover:text-primary-300 text-xs font-semibold transition-colors"
                     >
-                      İncele →
+                      View →
                     </Link>
                   </td>
                 </tr>
@@ -147,7 +147,7 @@ export default async function TicketsPage({
             {(tickets ?? []).length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
-                  Ticket bulunamadı.
+                  No tickets found.
                 </td>
               </tr>
             )}

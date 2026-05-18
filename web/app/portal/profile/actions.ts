@@ -61,7 +61,7 @@ export async function uploadAvatar(formData: FormData) {
 
   const file = formData.get('avatar') as File | null;
   if (!file || file.size === 0) {
-    redirect('/portal/profile?error=' + encodeURIComponent('Dosya seçin.'));
+    redirect('/portal/profile?error=' + encodeURIComponent('Please select a file.'));
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';

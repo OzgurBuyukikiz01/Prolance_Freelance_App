@@ -19,9 +19,9 @@ export default async function JobsModerationPage() {
   return (
     <div className="p-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-white">İlan Moderasyonu</h1>
+        <h1 className="text-2xl font-extrabold text-white">Job Moderation</h1>
         <p className="text-slate-400 text-sm mt-1">
-          İnceleme bekleyen kullanıcı ilanları ({(jobs ?? []).length})
+          Listings pending review ({(jobs ?? []).length})
         </p>
       </div>
 
@@ -35,12 +35,12 @@ export default async function JobsModerationPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 text-left">
-              <th className="px-4 py-3 font-medium">Başlık</th>
-              <th className="px-4 py-3 font-medium">Kategori</th>
-              <th className="px-4 py-3 font-medium">İşveren</th>
-              <th className="px-4 py-3 font-medium">Bütçe</th>
-              <th className="px-4 py-3 font-medium">Tarih</th>
-              <th className="px-4 py-3 font-medium">İşlem</th>
+              <th className="px-4 py-3 font-medium">Title</th>
+              <th className="px-4 py-3 font-medium">Category</th>
+              <th className="px-4 py-3 font-medium">Client</th>
+              <th className="px-4 py-3 font-medium">Budget</th>
+              <th className="px-4 py-3 font-medium">Date</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -59,7 +59,7 @@ export default async function JobsModerationPage() {
                   {Number(job.budget_max).toLocaleString()}
                 </td>
                 <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                  {new Date(job.posted_date as string).toLocaleDateString('tr-TR')}
+                  {new Date(job.posted_date as string).toLocaleDateString('en-US')}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-2 items-start">
@@ -69,7 +69,7 @@ export default async function JobsModerationPage() {
                         type="submit"
                         className="text-emerald-400 hover:text-emerald-300 text-xs font-semibold transition-colors"
                       >
-                        Onayla
+                        Approve
                       </button>
                     </form>
                     <JobRejectForm jobId={job.id as string} />
@@ -80,7 +80,7 @@ export default async function JobsModerationPage() {
             {(jobs ?? []).length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">
-                  Bekleyen ilan yok.
+                  No pending jobs.
                 </td>
               </tr>
             )}

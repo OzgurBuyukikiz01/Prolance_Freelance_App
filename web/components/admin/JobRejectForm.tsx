@@ -15,14 +15,14 @@ export function JobRejectForm({ jobId }: { jobId: string }) {
         onClick={() => setOpen(true)}
         className="text-red-400 hover:text-red-300 text-xs font-semibold transition-colors"
       >
-        Reddet
+        Reject
       </button>
 
       <AdminModal
         open={open}
         onOpenChange={setOpen}
-        title="İlanı reddet"
-        description="Red sebebini yazın. İşverene bildirim gidecektir."
+        title="Reject Job"
+        description="Provide a reason. The client will be notified."
       >
         <form
           action={async (fd) => {
@@ -37,7 +37,7 @@ export function JobRejectForm({ jobId }: { jobId: string }) {
             name="rejection_reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Red sebebi (zorunlu)"
+            placeholder="Rejection reason (required)"
             required
             rows={3}
             className="w-full rounded-lg bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 resize-none"
@@ -51,13 +51,13 @@ export function JobRejectForm({ jobId }: { jobId: string }) {
               }}
               className="px-4 py-2 rounded-lg text-slate-400 text-sm hover:text-white"
             >
-              İptal
+              Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-sm font-semibold hover:bg-red-500/30"
             >
-              Reddet
+              Reject
             </button>
           </div>
         </form>
