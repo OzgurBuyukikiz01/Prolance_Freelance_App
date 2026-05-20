@@ -8,11 +8,26 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/supabase_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/support_email_service.dart';
 import '../../../core/state/app_state.dart';
+import '../../../core/widgets/overlays/prolance_dialog.dart';
 import '../../../core/widgets/overlays/prolance_messenger.dart';
+import 'faq_screen.dart';
 
 class SupportTicketScreen extends StatefulWidget {
-  const SupportTicketScreen({super.key});
+  const SupportTicketScreen({
+    super.key,
+    this.prefillSubject,
+    this.prefillBody,
+    this.emailSource = 'support_ticket',
+  });
+
+  /// Optional subject/body (e.g. from “Report an issue” on a proposal).
+  final String? prefillSubject;
+  final String? prefillBody;
+
+  /// Passed to the Edge Function for routing / analytics.
+  final String emailSource;
 
   @override
   State<SupportTicketScreen> createState() => _SupportTicketScreenState();
@@ -20,6 +35,7 @@ class SupportTicketScreen extends StatefulWidget {
 
 class _SupportTicketScreenState extends State<SupportTicketScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _contactEmailController = TextEditingController();
   final _subjectController = TextEditingController();
   final _bodyController = TextEditingController();
   String _priority = 'NORMAL';
@@ -27,6 +43,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
   bool _isSuccess = false;
 
   static const _priorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
   static const _priorityLabels = {
     'LOW': 'Low',
     'NORMAL': 'Normal',
@@ -41,43 +58,128 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    final s = widget.prefillSubject?.trim();
+    final b = widget.prefillBody?.trim();
+    if (s != null && s.isNotEmpty) _subjectController.text = s;
+    if (b != null && b.isNotEmpty) _bodyController.text = b;
+  }
+
+  @override
   void dispose() {
+    _contactEmailController.dispose();
     _subjectController.dispose();
     _bodyController.dispose();
     super.dispose();
   }
 
+  void _showFaqSuggestionDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          prolanceT(ctx, 'Did you check the FAQ?', 'S.S.S.’ye baktınız mı?'),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          prolanceT(
+            ctx,
+            'Many answers about proposals, delivery, and payouts are in the FAQ. Open it now or close this dialog.',
+            'Teklifler, teslim ve ödemelerle ilgili birçok yanıt S.S.S.’dedir. Şimdi açabilir veya bu pencereyi kapatabilirsiniz.',
+          ),
+          style: GoogleFonts.poppins(height: 1.4, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(prolanceT(ctx, 'Close', 'Kapat')),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const FaqScreen()),
+              );
+            },
+            child: Text(prolanceT(ctx, 'Open FAQ', 'S.S.S. aç')),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
+    var emailOk = true;
 
     try {
       if (SupabaseConfig.isEnabled) {
         final client = Supabase.instance.client;
         final uid = client.auth.currentUser?.id;
-        if (uid != null) {
-          await client.from('tickets').insert({
-            'author_id': uid,
-            'subject': _subjectController.text.trim(),
-            'body': _bodyController.text.trim(),
-            'priority': _priority,
-            'status': 'OPEN',
-          });
+        if (uid == null) {
+          if (mounted) {
+            ProlanceMessenger.error(
+              context,
+              prolanceT(
+                context,
+                'Please sign in to submit a ticket.',
+                'Destek talebi için giriş yapın.',
+              ),
+            );
+            setState(() => _isLoading = false);
+          }
+          return;
         }
+        await client.from('tickets').insert({
+          'author_id': uid,
+          'subject': _subjectController.text.trim(),
+          'body': _bodyController.text.trim(),
+          'priority': _priority,
+          'status': 'OPEN',
+        });
+        emailOk = await SupportEmailService.sendSupportEmail(
+          subject: _subjectController.text.trim(),
+          body: _bodyController.text.trim(),
+          priority: _priority,
+          contactEmail: _contactEmailController.text.trim(),
+          source: widget.emailSource,
+        );
       } else {
-        // Demo build: simulate network delay.
         await Future.delayed(const Duration(milliseconds: 800));
       }
-      if (mounted) setState(() => _isSuccess = true);
+      if (!mounted) return;
+      setState(() {
+        _isSuccess = true;
+        _isLoading = false;
+      });
+      if (!emailOk && mounted) {
+        ProlanceMessenger.info(
+          context,
+          prolanceT(
+            context,
+            'Ticket saved. Email delivery failed — configure Resend secrets for send-support-email.',
+            'Talep kaydedildi. E-posta gönderilemedi — send-support-email için Resend sırlarını yapılandırın.',
+          ),
+        );
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showFaqSuggestionDialog();
+      });
     } catch (e) {
       if (mounted) {
         ProlanceMessenger.error(
           context,
-          context.read<AppState>().t('An error occurred: $e', 'Hata oluştu: $e'),
+          context.read<AppState>().t(
+            'An error occurred: $e',
+            'Hata oluştu: $e',
+          ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && !_isSuccess) setState(() => _isLoading = false);
     }
   }
 
@@ -123,13 +225,11 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 color: Colors.green,
                 size: 44,
               ),
-            )
-                .animate()
-                .scale(
-                  begin: const Offset(0.5, 0.5),
-                  duration: 500.ms,
-                  curve: Curves.elasticOut,
-                ),
+            ).animate().scale(
+              begin: const Offset(0.5, 0.5),
+              duration: 500.ms,
+              curve: Curves.elasticOut,
+            ),
             const SizedBox(height: 24),
             Text(
               'Request received!',
@@ -201,6 +301,62 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
 
             const SizedBox(height: 24),
 
+            if (SupabaseConfig.isEnabled) ...[
+              Text(
+                prolanceT(
+                  context,
+                  'Your email (we will reply to this address)',
+                  'E-postanız (yanıt bu adrese gider)',
+                ),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _contactEmailController,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autocorrect: false,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: scheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  hintText: prolanceT(
+                    context,
+                    'you@example.com',
+                    'ornek@mail.com',
+                  ),
+                  prefixIcon: const Icon(Iconsax.sms, size: 18),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                  ),
+                ),
+                validator: (v) {
+                  final t = v?.trim() ?? '';
+                  if (t.isEmpty) {
+                    return prolanceT(
+                      context,
+                      'Email required',
+                      'E-posta gerekli',
+                    );
+                  }
+                  if (!_emailRe.hasMatch(t)) {
+                    return prolanceT(
+                      context,
+                      'Enter a valid email',
+                      'Geçerli bir e-posta girin',
+                    );
+                  }
+                  return null;
+                },
+              ).animate().fadeIn(delay: 50.ms),
+              const SizedBox(height: 20),
+            ],
+
             // Subject
             Text(
               'Subject',
@@ -227,7 +383,9 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 ),
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Subject cannot be empty';
+                if (v == null || v.trim().isEmpty) {
+                  return 'Subject cannot be empty';
+                }
                 if (v.trim().length < 5) return 'Enter at least 5 characters';
                 return null;
               },
@@ -296,7 +454,9 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
                 alignLabelWithHint: true,
               ),
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Description cannot be empty';
+                if (v == null || v.trim().isEmpty) {
+                  return 'Description cannot be empty';
+                }
                 if (v.trim().length < 20) {
                   return 'Enter at least 20 characters';
                 }

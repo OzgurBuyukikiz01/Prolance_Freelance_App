@@ -101,6 +101,13 @@ class NotificationRepository extends ChangeNotifier {
       (t) => t.name == typeStr,
       orElse: () => FeedNotificationType.system,
     );
+    final rawPayload = row['payload'];
+    Map<String, dynamic> payload = const {};
+    if (rawPayload is Map<String, dynamic>) {
+      payload = rawPayload;
+    } else if (rawPayload is Map) {
+      payload = Map<String, dynamic>.from(rawPayload);
+    }
     return FeedNotificationItem(
       id: '${row['id']}',
       title: '${row['title'] ?? ''}',
@@ -108,6 +115,7 @@ class NotificationRepository extends ChangeNotifier {
       createdAt: DateTime.tryParse('${row['created_at']}') ?? DateTime.now(),
       type: type,
       isRead: row['read_at'] != null,
+      payload: payload,
     );
   }
 
@@ -162,6 +170,7 @@ class NotificationRepository extends ChangeNotifier {
           description: body,
           createdAt: DateTime.now(),
           type: type,
+          payload: const {},
         ),
       );
       return;
@@ -183,6 +192,7 @@ class NotificationRepository extends ChangeNotifier {
           description: body,
           createdAt: DateTime.now(),
           type: type,
+          payload: const {},
         ),
       );
     }

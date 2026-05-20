@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
@@ -14,9 +16,15 @@ import '../../../core/widgets/overlays/prolance_messenger.dart';
 
 /// Client-only: download deliverables, accept/decline delivery, then 24h dispute.
 class ClientDeliveryReviewScreen extends StatefulWidget {
-  const ClientDeliveryReviewScreen({super.key, required this.proposalId});
+  const ClientDeliveryReviewScreen({
+    super.key,
+    required this.proposalId,
+    this.openDisputeOnLoad = false,
+  });
 
   final String proposalId;
+  /// When true (e.g. `?dispute=1` from My proposals), opens the dispute dialog once if allowed.
+  final bool openDisputeOnLoad;
 
   @override
   State<ClientDeliveryReviewScreen> createState() =>
@@ -33,11 +41,30 @@ class _ClientDeliveryReviewScreenState
   bool _payoutFinalized = false;
   List<ProposalDeliveryRow> _files = [];
   bool _acting = false;
+  bool _autoDisputePromptShown = false;
+  ProposalRepository? _repo;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _repo = context.read<ProposalRepository>();
+      _repo!.addListener(_onProposalRepoChanged);
+    });
     _reload();
+  }
+
+  void _onProposalRepoChanged() {
+    if (mounted) {
+      unawaited(_reload());
+    }
+  }
+
+  @override
+  void dispose() {
+    _repo?.removeListener(_onProposalRepoChanged);
+    super.dispose();
   }
 
   Future<void> _reload() async {
@@ -104,6 +131,19 @@ class _ClientDeliveryReviewScreenState
         _files = deliveries;
         _loading = false;
       });
+
+      if (widget.openDisputeOnLoad &&
+          !_autoDisputePromptShown &&
+          mounted &&
+          _lifecycle == ProposalLifecycle.payoutPending &&
+          !_payoutFinalized &&
+          _deadline != null &&
+          DateTime.now().isBefore(_deadline!)) {
+        _autoDisputePromptShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_onReportIssue());
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -388,8 +428,8 @@ class _ClientDeliveryReviewScreenState
             if (timeLeft != null) ...[
               Text(
                 app.t(
-                  'Time left: ${_formatDuration(timeLeft!)}',
-                  'Kalan süre: ${_formatDuration(timeLeft!)}',
+                  'Time left: ${_formatDuration(timeLeft)}',
+                  'Kalan süre: ${_formatDuration(timeLeft)}',
                 ),
               ),
               const SizedBox(height: 12),

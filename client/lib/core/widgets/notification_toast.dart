@@ -39,6 +39,52 @@ class _NotificationToastHostState extends State<NotificationToastHost>
   }
 
   void _showToast(FeedNotificationItem item) {
+    final useDialog = item.type == FeedNotificationType.proposal &&
+        item.payload['ui'] == 'dialog';
+
+    if (useDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog<void>(
+          context: context,
+          barrierDismissible: true,
+          builder: (ctx) {
+            final scheme = Theme.of(ctx).colorScheme;
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+              ),
+              title: Text(
+                item.title,
+                style: GoogleFonts.poppins(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              content: Text(
+                item.description,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  height: 1.35,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: Text(
+                    'OK',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      });
+      return;
+    }
+
     _dismissTimer?.cancel();
     _overlayEntry?.remove();
     _overlayEntry = null;

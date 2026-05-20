@@ -32,13 +32,21 @@ npm run dev
 - Admin login: `/admin/login`
 - Admin dashboard: `/dashboard`
 
-### Supabase
+### Supabase (DB + RPC)
 
-Project ref: `cgxzpdhcaxiopdylwstr`
+Project ref (hosted demo): `cgxzpdhcaxiopdylwstr`
 
 ```bash
 make deploy-supabase
 ```
+
+If the app shows **"Could not find the function … rpc_delete_proposal_delivery"**, migrations are missing on the project. Apply them:
+
+```bash
+cd supabase && supabase link --project-ref <your-ref> && supabase db push
+```
+
+Or run the SQL from `supabase/migrations/` in the Supabase SQL Editor (especially `20250520140000_*` and `20250520150000_*` for deliverable delete).
 
 ## Makefile
 

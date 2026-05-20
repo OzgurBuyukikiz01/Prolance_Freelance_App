@@ -12,6 +12,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/models/job_browse_filters.dart';
 import '../../../core/models/job_model.dart';
 import '../../../core/repositories/notification_repository.dart';
+import '../../../core/repositories/proposal_repository.dart';
 import '../../../core/services/skills_catalog_service.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/state/jobs_provider.dart';
@@ -186,6 +187,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ..sort((a, b) => b.postedDate.compareTo(a.postedDate));
     final recentJobs = [...userPosted, ...rest].take(6).toList();
 
+    final proposalAttention = context.select<ProposalRepository, int>(
+      (r) => r.clientProposalAttentionCount,
+    );
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
@@ -199,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
             userName: appState.currentUser.name,
             unreadNotifications:
                 context.watch<NotificationRepository>().unreadCount,
+            proposalAttentionCount: proposalAttention,
             onProposals: () => context.push('/my-proposals'),
             onFavorites: () => context.push('/favorites'),
             onNotifications: () => context.push('/notifications'),
@@ -562,6 +568,7 @@ class _HomeHeader extends StatelessWidget {
     required this.onFavorites,
     required this.onNotifications,
     this.unreadNotifications = 0,
+    this.proposalAttentionCount = 0,
   });
 
   final String userName;
@@ -569,6 +576,7 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback onFavorites;
   final VoidCallback onNotifications;
   final int unreadNotifications;
+  final int proposalAttentionCount;
 
   @override
   Widget build(BuildContext context) {
@@ -621,11 +629,34 @@ class _HomeHeader extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: onProposals,
-                    icon: const Icon(Iconsax.briefcase,
-                        color: Colors.white, size: 22),
-                    tooltip: 'My proposals',
+                  badges.Badge(
+                    showBadge: proposalAttentionCount > 0,
+                    badgeContent: Text(
+                      proposalAttentionCount > 99
+                          ? '99+'
+                          : '$proposalAttentionCount',
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    badgeStyle: const badges.BadgeStyle(
+                      badgeColor: AppColors.primary,
+                      padding: EdgeInsets.all(4),
+                    ),
+                    badgeAnimation: const badges.BadgeAnimation.scale(
+                      animationDuration: Duration(milliseconds: 200),
+                    ),
+                    child: IconButton(
+                      onPressed: onProposals,
+                      icon: const Icon(
+                        Iconsax.briefcase,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      tooltip: 'My proposals',
+                    ),
                   ),
                   IconButton(
                     onPressed: onFavorites,

@@ -55,3 +55,8 @@ packages/
 # Env
 .env
 .env.local
+supabase/.env
+supabase/.temp/
+
+# Flutter web / local build output
+client/build/

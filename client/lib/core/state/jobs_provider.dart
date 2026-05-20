@@ -46,7 +46,11 @@ class JobsProvider extends ChangeNotifier {
 
   List<JobModel> _jobs = JobModel.dummyList();
 
-  RealtimeChannel? _ownJobsChannel;
+  RealtimeChannel? _jobsRealtimeChannel;
+
+  StreamSubscription<AuthState>? _jobsAuthSub;
+
+  Timer? _jobsRealtimeDebounce;
 
   final Set<String> _jobIdsHeldUntilApprovalDismiss = {};
 
@@ -122,7 +126,7 @@ class JobsProvider extends ChangeNotifier {
 
     await _refreshJobsFromSources();
 
-    _subscribeToOwnJobModerationUpdates();
+    _subscribeJobsRealtime();
 
     notifyListeners();
 
@@ -208,113 +212,181 @@ class JobsProvider extends ChangeNotifier {
 
 
 
-  void _subscribeToOwnJobModerationUpdates() {
+  bool _isSupabaseClientReady() {
 
-    _ownJobsChannel?.unsubscribe();
+    if (!SupabaseConfig.isEnabled) return false;
 
-    _ownJobsChannel = null;
+    try {
 
+      Supabase.instance.client;
 
+      return true;
 
-    if (!SupabaseConfig.isEnabled) return;
+    } catch (_) {
 
+      return false;
 
-
-    final client = Supabase.instance.client;
-
-    final uid = client.auth.currentUser?.id;
-
-    if (uid == null) return;
-
-
-
-    _ownJobsChannel = client
-
-        .channel('own-jobs-moderation-$uid')
-
-        .onPostgresChanges(
-
-          event: PostgresChangeEvent.update,
-
-          schema: 'public',
-
-          table: 'jobs',
-
-          filter: PostgresChangeFilter(
-
-            type: PostgresChangeFilterType.eq,
-
-            column: 'client_id',
-
-            value: uid,
-
-          ),
-
-          callback: (payload) => unawaited(_onOwnJobUpdated(payload)),
-
-        )
-
-        .subscribe();
+    }
 
   }
 
 
 
-  Future<void> _onOwnJobUpdated(PostgresChangePayload payload) async {
+  /// Inserts/updates/deletes on [jobs] (RLS: rows the user can SELECT).
 
-    final newRow = payload.newRecord;
+  void _subscribeJobsRealtime() {
 
-    final oldRow = payload.oldRecord;
+    if (!_isSupabaseClientReady()) return;
 
-    if (newRow.isEmpty) return;
+    final client = Supabase.instance.client;
 
+    _jobsAuthSub ??= client.auth.onAuthStateChange.listen((_) {
 
+      _attachJobsRealtimeChannel();
 
-    final jobId = '${newRow['id']}';
+    });
 
-    final newStatus = '${newRow['status']}';
+    _attachJobsRealtimeChannel();
 
-    final oldStatus = oldRow.isNotEmpty ? '${oldRow['status']}' : null;
-
-    final rejectionReason = newRow['rejection_reason'] as String?;
-
-
-
-    final i = _jobs.indexWhere((j) => j.id == jobId);
-
-    if (i < 0) return;
+  }
 
 
 
-    final previous = _jobs[i];
+  void _attachJobsRealtimeChannel() {
 
-    _jobs[i] = previous.copyWith(
+    _jobsRealtimeDebounce?.cancel();
 
-      status: newStatus,
+    _jobsRealtimeDebounce = null;
 
-      rejectionReason: rejectionReason,
+    _jobsRealtimeChannel?.unsubscribe();
 
-    );
-
-    await _persistJobs();
+    _jobsRealtimeChannel = null;
 
 
 
-    if (oldStatus == 'pending_review' && newStatus == 'open') {
+    if (!SupabaseConfig.isEnabled) return;
 
-      _jobIdsHeldUntilApprovalDismiss.add(jobId);
+    if (!_isSupabaseClientReady()) return;
 
-      _approvalPopupQueue.add(
+    try {
 
-        PendingApprovalJob(jobId: jobId, title: previous.title),
+      final client = Supabase.instance.client;
 
-      );
+      final uid = client.auth.currentUser?.id;
+
+      if (uid == null) return;
+
+
+
+      _jobsRealtimeChannel = client
+
+          .channel('public:jobs:$uid')
+
+          .onPostgresChanges(
+
+            event: PostgresChangeEvent.all,
+
+            schema: 'public',
+
+            table: 'jobs',
+
+            callback: (_) => _debouncedReloadJobsFromRemote(),
+
+          )
+
+          .subscribe();
+
+    } catch (e) {
+
+      debugPrint('[JobsProvider] jobs realtime subscribe: $e');
 
     }
 
+  }
 
 
-    notifyListeners();
+
+  void _debouncedReloadJobsFromRemote() {
+
+    _jobsRealtimeDebounce?.cancel();
+
+    _jobsRealtimeDebounce =
+
+        Timer(const Duration(milliseconds: 400), () async {
+
+      await _pullRemoteJobsWithModerationDetection();
+
+    });
+
+  }
+
+
+
+  /// Full job list from Supabase; detects pending_review → open for the job owner.
+
+  Future<void> _pullRemoteJobsWithModerationDetection() async {
+
+    if (!SupabaseConfig.isEnabled) return;
+
+    try {
+
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+
+
+
+      final remote = await SupabaseJobRepository.fetchAll();
+
+      final prevById = {for (final j in _jobs) j.id: j};
+
+
+
+      if (remote.isNotEmpty) {
+
+        if (uid != null) {
+
+          for (final j in remote) {
+
+            final prev = prevById[j.id];
+
+            if (prev != null &&
+
+                prev.status == 'pending_review' &&
+
+                j.status == 'open' &&
+
+                j.clientId == uid) {
+
+              _jobIdsHeldUntilApprovalDismiss.add(j.id);
+
+              _approvalPopupQueue.add(
+
+                PendingApprovalJob(jobId: j.id, title: j.title),
+
+              );
+
+            }
+
+          }
+
+        }
+
+        _jobs = remote;
+
+      } else {
+
+        _jobs = [];
+
+      }
+
+      await _persistJobs();
+
+      notifyListeners();
+
+    } catch (e) {
+
+      debugPrint('[JobsProvider] realtime jobs reload: $e');
+
+    }
 
   }
 
@@ -513,9 +585,17 @@ class JobsProvider extends ChangeNotifier {
 
   void dispose() {
 
-    _ownJobsChannel?.unsubscribe();
+    _jobsAuthSub?.cancel();
 
-    _ownJobsChannel = null;
+    _jobsAuthSub = null;
+
+    _jobsRealtimeDebounce?.cancel();
+
+    _jobsRealtimeDebounce = null;
+
+    _jobsRealtimeChannel?.unsubscribe();
+
+    _jobsRealtimeChannel = null;
 
     super.dispose();
 

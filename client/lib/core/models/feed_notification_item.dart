@@ -8,6 +8,7 @@ class FeedNotificationItem {
     required this.createdAt,
     required this.type,
     this.isRead = false,
+    this.payload = const {},
   });
 
   final String id;
@@ -16,6 +17,8 @@ class FeedNotificationItem {
   final DateTime createdAt;
   final FeedNotificationType type;
   final bool isRead;
+  /// Optional server JSON (e.g. `{"ui":"dialog","event":"..."}` from triggers).
+  final Map<String, dynamic> payload;
 
   FeedNotificationItem copyWith({
     String? id,
@@ -24,6 +27,7 @@ class FeedNotificationItem {
     DateTime? createdAt,
     FeedNotificationType? type,
     bool? isRead,
+    Map<String, dynamic>? payload,
   }) {
     return FeedNotificationItem(
       id: id ?? this.id,
@@ -32,6 +36,7 @@ class FeedNotificationItem {
       createdAt: createdAt ?? this.createdAt,
       type: type ?? this.type,
       isRead: isRead ?? this.isRead,
+      payload: payload ?? this.payload,
     );
   }
 }

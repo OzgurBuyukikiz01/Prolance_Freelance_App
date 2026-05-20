@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -19,6 +20,11 @@ class ProposalRepository extends ChangeNotifier {
   final Set<String> _swipeHiddenIds = {};
   final List<ClientIncomingProposal> _clientIncoming = [];
 
+  RealtimeChannel? _proposalsRealtimeChannel;
+  StreamSubscription<AuthState>? _proposalsAuthSub;
+  Timer? _proposalsRealtimeDebounce;
+  String? _proposalsRealtimeUserId;
+
   /// Last `rpc_accept_proposal` error code (e.g. `insufficient_demo_balance`).
   String? lastAcceptErrorCode;
 
@@ -26,6 +32,22 @@ class ProposalRepository extends ChangeNotifier {
 
   List<ClientIncomingProposal> get clientIncoming =>
       List.unmodifiable(_clientIncoming);
+
+  /// Client home badge: pending proposals on owned jobs + accepted contracts
+  /// waiting for delivery review.
+  int get clientProposalAttentionCount {
+    var n = 0;
+    for (final p in _clientIncoming) {
+      if (p.status == 'pending') {
+        n++;
+      } else if (p.status == 'accepted' &&
+          (p.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
+              p.lifecyclePhase == ProposalLifecycle.delivered)) {
+        n++;
+      }
+    }
+    return n;
+  }
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
@@ -58,6 +80,9 @@ class ProposalRepository extends ChangeNotifier {
       await _loadFromSupabase();
       await finalizePayoutsIfDue();
       await _loadIncomingForClient();
+      if (_isSupabaseClientReady()) {
+        _attachProposalsRealtime();
+      }
     }
 
     notifyListeners();
@@ -147,7 +172,10 @@ class ProposalRepository extends ChangeNotifier {
               [],
           submittedAt:
               DateTime.tryParse('${map['created_at']}') ?? DateTime.now(),
-          status: _parseStatus('${map['status']}'),
+          status: _freelancerRowStatus(
+            '${map['status']}',
+            '${map['lifecycle_phase'] ?? ProposalLifecycle.submitted}',
+          ),
           lifecyclePhase:
               '${map['lifecycle_phase'] ?? ProposalLifecycle.submitted}',
           fundedAmountCents: (map['funded_amount_cents'] as num?)?.toInt(),
@@ -283,8 +311,14 @@ class ProposalRepository extends ChangeNotifier {
     return null;
   }
 
-  static SubmittedProposalStatus _parseStatus(String s) {
-    switch (s) {
+  /// Maps DB `proposals.status` + `lifecycle_phase` to freelancer list UI status.
+  /// If `status` lags as `pending` while the contract is already funded, we
+  /// still treat advanced lifecycle phases as [SubmittedProposalStatus.accepted].
+  static SubmittedProposalStatus _freelancerRowStatus(
+    String dbStatus,
+    String lifecyclePhase,
+  ) {
+    switch (dbStatus) {
       case 'accepted':
         return SubmittedProposalStatus.accepted;
       case 'rejected':
@@ -292,8 +326,17 @@ class ProposalRepository extends ChangeNotifier {
       case 'cancelled':
         return SubmittedProposalStatus.cancelled;
       default:
-        return SubmittedProposalStatus.awaitingResponse;
+        break;
     }
+    if (lifecyclePhase == ProposalLifecycle.escrowFunded ||
+        lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
+        lifecyclePhase == ProposalLifecycle.delivered ||
+        lifecyclePhase == ProposalLifecycle.payoutPending ||
+        lifecyclePhase == ProposalLifecycle.closed ||
+        lifecyclePhase == ProposalLifecycle.disputed) {
+      return SubmittedProposalStatus.accepted;
+    }
+    return SubmittedProposalStatus.awaitingResponse;
   }
 
   Future<void> _persist() async {
@@ -581,6 +624,56 @@ class ProposalRepository extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> deleteProposalDelivery(String deliveryId) async {
+    if (!SupabaseConfig.isEnabled) return {'ok': false};
+    try {
+      final client = Supabase.instance.client;
+      final raw = await client.rpc(
+        'rpc_delete_proposal_delivery',
+        params: {'p_delivery_id': deliveryId},
+      );
+      final m = _asJsonMap(raw) ?? {};
+      final ok = m['ok'] == true || m['ok'] == 'true';
+      if (ok) {
+        final path = m['storage_path'];
+        if (path != null && '$path'.isNotEmpty) {
+          try {
+            await client.storage.from('deliverables').remove(['$path']);
+          } catch (e) {
+            debugPrint('[ProposalRepository] storage remove after delete: $e');
+            return {
+              'ok': false,
+              'err': 'storage_remove_failed',
+              'detail': '$e',
+            };
+          }
+        }
+      }
+      return m;
+    } on PostgrestException catch (e) {
+      final m = e.message.toLowerCase();
+      debugPrint(
+        '[ProposalRepository] deleteProposalDelivery Postgrest: ${e.message}',
+      );
+      if (m.contains('could not find the function') ||
+          m.contains('schema cache')) {
+        return {
+          'ok': false,
+          'err': 'rpc_not_deployed',
+          'detail': e.message,
+        };
+      }
+      return {
+        'ok': false,
+        'err': 'rpc_failed',
+        'detail': e.message,
+      };
+    } catch (e) {
+      debugPrint('[ProposalRepository] deleteProposalDelivery: $e');
+      return {'ok': false, 'err': 'unknown', 'detail': '$e'};
+    }
+  }
+
   Future<bool> rejectProposal(String proposalId) async {
     if (!SupabaseConfig.isEnabled) return false;
     try {
@@ -616,7 +709,10 @@ class ProposalRepository extends ChangeNotifier {
         params: {'p_proposal_id': proposalId},
       );
       final m = _asJsonMap(raw);
-      if (m != null && m['ok'] == true) return true;
+      if (m != null && m['ok'] == true) {
+        unawaited(reloadFromRemote());
+        return true;
+      }
       if (m != null) lastAcceptErrorCode = m['err'] as String?;
       return false;
     } on PostgrestException catch (e) {
@@ -628,6 +724,95 @@ class ProposalRepository extends ChangeNotifier {
       debugPrint('[ProposalRepository] acceptProposal: $e');
       return false;
     }
+  }
+
+  void _attachProposalsRealtime() {
+    if (!SupabaseConfig.isEnabled) return;
+    if (!_isSupabaseClientReady()) return;
+    try {
+      final client = Supabase.instance.client;
+      _proposalsAuthSub ??= client.auth.onAuthStateChange.listen((data) {
+        final nextUid = data.session?.user.id;
+        final prevUid = _proposalsRealtimeUserId;
+        _proposalsRealtimeUserId = nextUid;
+        _resubscribeProposalsRealtime();
+        if (nextUid != null && nextUid != prevUid) {
+          unawaited(reloadFromRemote());
+        }
+      });
+      _resubscribeProposalsRealtime();
+    } catch (e) {
+      debugPrint('[ProposalRepository] _attachProposalsRealtime: $e');
+    }
+  }
+
+  void _resubscribeProposalsRealtime() {
+    _proposalsRealtimeDebounce?.cancel();
+    _proposalsRealtimeDebounce = null;
+    _proposalsRealtimeChannel?.unsubscribe();
+    _proposalsRealtimeChannel = null;
+
+    if (!SupabaseConfig.isEnabled) return;
+    if (!_isSupabaseClientReady()) return;
+    try {
+      final client = Supabase.instance.client;
+      if (client.auth.currentUser?.id == null) return;
+
+      // RLS limits events to rows the user can SELECT (freelancer's own + client's jobs).
+      final uid = client.auth.currentUser!.id;
+      // proposals: accept / lifecycle / status for freelancer + client
+      // proposal_deliveries: file uploads do not always UPDATE proposals — listen here too
+      _proposalsRealtimeChannel = client
+          .channel('public:proposals-deliveries:$uid')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'proposals',
+            callback: (_) => _debouncedReloadProposalsFromRemote(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'proposal_deliveries',
+            callback: (_) => _debouncedReloadProposalsFromRemote(),
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint('[ProposalRepository] proposals realtime subscribe: $e');
+    }
+  }
+
+  /// True when [Supabase.instance] is initialized (avoids errors in widget tests).
+  bool _isSupabaseClientReady() {
+    try {
+      Supabase.instance.client;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _debouncedReloadProposalsFromRemote() {
+    _proposalsRealtimeDebounce?.cancel();
+    _proposalsRealtimeDebounce =
+        Timer(const Duration(milliseconds: 280), () async {
+      try {
+        await finalizePayoutsIfDue();
+        await _loadFromSupabase();
+        await _loadIncomingForClient();
+        notifyListeners();
+      } catch (e) {
+        debugPrint('[ProposalRepository] realtime reload: $e');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _proposalsAuthSub?.cancel();
+    _proposalsRealtimeDebounce?.cancel();
+    _proposalsRealtimeChannel?.unsubscribe();
+    super.dispose();
   }
 }
 

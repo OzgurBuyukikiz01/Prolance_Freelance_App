@@ -13,6 +13,7 @@ import 'package:percent_indicator/percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/config/supabase_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/portfolio_item.dart';
@@ -123,6 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               duration: const Duration(milliseconds: 400),
               delay: const Duration(milliseconds: 120),
               child: _buildWalletRow(
+                context,
                 user,
                 scheme,
                 pendingCents: context
@@ -339,7 +341,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildWalletRow(UserModel user, ColorScheme scheme, {int pendingCents = 0}) {
+  Widget _buildWalletRow(
+    BuildContext context,
+    UserModel user,
+    ColorScheme scheme, {
+    int pendingCents = 0,
+  }) {
     final demo = (user.demoBalanceCents / 100).toStringAsFixed(2);
     final avail = (user.earningsAvailableCents / 100).toStringAsFixed(2);
     final pending = (pendingCents / 100).toStringAsFixed(2);
@@ -360,13 +367,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Demo wallet',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Demo wallet',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        if (SupabaseConfig.isEnabled)
+                          TextButton.icon(
+                            onPressed: () => context.push('/iyzico-topup'),
+                            icon: Icon(
+                              Iconsax.wallet_add,
+                              size: 16,
+                              color: scheme.primary,
+                            ),
+                            label: Text(
+                              'Bakiye ekle',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.primary,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(

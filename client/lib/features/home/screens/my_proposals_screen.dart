@@ -184,10 +184,23 @@ class MyProposalsScreen extends StatelessWidget {
         ? '${preview.substring(0, 120)}…'
         : preview;
 
-    final canReview = p.status == 'accepted' &&
+    final canAcceptDelivery = p.status == 'accepted' &&
         (p.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
-            p.lifecyclePhase == ProposalLifecycle.delivered ||
-            p.lifecyclePhase == ProposalLifecycle.payoutPending);
+            p.lifecyclePhase == ProposalLifecycle.delivered);
+
+    final completedDeliveryAsClient = p.status == 'accepted' &&
+        p.lifecyclePhase != ProposalLifecycle.disputed &&
+        (p.lifecyclePhase == ProposalLifecycle.payoutPending ||
+            p.lifecyclePhase == ProposalLifecycle.closed);
+
+    final deliveryDeadline = p.deliveryDisputeDeadline;
+    final within24hDisputeWindow = deliveryDeadline != null &&
+        DateTime.now().isBefore(deliveryDeadline) &&
+        p.lifecyclePhase == ProposalLifecycle.payoutPending &&
+        !p.payoutFinalized;
+
+    final showReportWithPreview =
+        completedDeliveryAsClient && within24hDisputeWindow;
 
     return Material(
       color: scheme.surfaceContainerHigh,
@@ -260,17 +273,52 @@ class MyProposalsScreen extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-            if (canReview) ...[
+            if (canAcceptDelivery) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () => context.push('/review-delivery/${p.proposalId}'),
+                  onPressed: () =>
+                      context.push('/review-delivery/${p.proposalId}'),
                   icon: const Icon(Iconsax.tick_square, size: 20),
                   label: Text(
                     app.t('Accept delivery', 'Teslimi kabul et'),
                   ),
                 ),
+              ),
+            ],
+            if (completedDeliveryAsClient) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          context.push('/review-delivery/${p.proposalId}'),
+                      child: Text(app.t('Preview', 'Önizle')),
+                    ),
+                  ),
+                  if (showReportWithPreview) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push(
+                          '/report-delivery-issue/${p.proposalId}',
+                        ),
+                        icon: Icon(
+                          Iconsax.warning_2,
+                          size: 18,
+                          color: scheme.error,
+                        ),
+                        label: Text(
+                          app.t('Report an issue', 'Sorun bildir'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ],

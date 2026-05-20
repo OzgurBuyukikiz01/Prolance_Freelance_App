@@ -14,7 +14,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [db.seed]
 enabled = true
@@ -86,4 +86,13 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-push]
+verify_jwt = false
+
+[functions.send-support-email]
+verify_jwt = true
+
+[functions.iyzico-init-checkout]
+verify_jwt = true
+
+[functions.iyzico-checkout-callback]
 verify_jwt = false

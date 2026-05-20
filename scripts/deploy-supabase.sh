@@ -18,6 +18,8 @@ supabase link --project-ref "$PROJECT_REF"
 supabase db push
 supabase functions deploy agora-token
 supabase functions deploy send-push
+supabase functions deploy iyzico-init-checkout
+supabase functions deploy iyzico-checkout-callback --no-verify-jwt
 
 echo ""
 echo "Deploy complete."

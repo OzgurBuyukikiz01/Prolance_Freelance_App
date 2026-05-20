@@ -11,6 +11,7 @@ import '../../../core/theme/theme_preference.dart';
 import '../../../core/widgets/overlays/prolance_dialog.dart';
 import '../../../core/widgets/overlays/prolance_messenger.dart';
 
+import '../../support/screens/faq_screen.dart';
 import '../../support/screens/support_ticket_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -68,7 +69,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // Account section
             _buildSectionHeader(context, app.t('Account', 'Hesap')),
-            _buildSettingsCard(context,
+            _buildSettingsCard(
+              context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.user_edit,
@@ -99,7 +101,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // Preferences section
             _buildSectionHeader(context, app.t('Preferences', 'Tercihler')),
-            _buildSettingsCard(context,
+            _buildSettingsCard(
+              context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.global,
@@ -147,26 +150,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         segments: [
                           ButtonSegment<ThemePreference>(
                             value: ThemePreference.light,
-                            icon: const Icon(Icons.light_mode_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.light_mode_outlined,
+                              size: 18,
+                            ),
                             label: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(app.t('Light', 'Acik')),
                             ),
                           ),
                           ButtonSegment<ThemePreference>(
                             value: ThemePreference.dark,
-                            icon: const Icon(Icons.dark_mode_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.dark_mode_outlined,
+                              size: 18,
+                            ),
                             label: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(app.t('Dark', 'Karanlik')),
                             ),
                           ),
                           ButtonSegment<ThemePreference>(
                             value: ThemePreference.system,
-                            icon:
-                                const Icon(Icons.brightness_auto_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.brightness_auto_outlined,
+                              size: 18,
+                            ),
                             label: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(app.t('System', 'Sistem')),
                             ),
                           ),
@@ -176,9 +193,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         showSelectedIcon: false,
                         onSelectionChanged: (Set<ThemePreference> selected) {
                           if (selected.isEmpty) return;
-                          context
-                              .read<AppState>()
-                              .setThemePreference(selected.first);
+                          context.read<AppState>().setThemePreference(
+                            selected.first,
+                          );
                         },
                       ),
                     ],
@@ -189,19 +206,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppConstants.paddingLg),
 
             // Support section
-            _buildSectionHeader(context, app.t('Support', 'Destek')),
-            _buildSettingsCard(context,
+            _buildSectionHeader(
+              context,
+              app.t('Support & feedback', 'Destek ve geri bildirim'),
+            ),
+            _buildSettingsCard(
+              context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.message_question,
-                  title: app.t('Help Center', 'Yardim Merkezi'),
-                  onTap: _openHelpCenter,
+                  title: app.t('F.A.Q.', 'S.S.S.'),
+                  subtitle: app.t(
+                    'Common questions about proposals and payouts',
+                    'Teklifler ve odemeler hakkinda sik sorulanlar',
+                  ),
+                  onTap: _openFaq,
                 ),
                 _buildDivider(context),
                 _buildSettingsTile(
                   icon: Iconsax.message_text,
-                  title: app.t('Support Ticket', 'Destek Talebi'),
-                  onTap: _openReportProblem,
+                  title: app.t('Contact & ticket', 'Iletisim ve destek talebi'),
+                  subtitle: app.t(
+                    'Email to our team (Resend)',
+                    'Ekibimize e-posta (Resend)',
+                  ),
+                  onTap: _openSupportTicket,
                 ),
                 _buildDivider(context),
                 _buildSettingsTile(
@@ -228,8 +257,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: AppConstants.paddingLg),
 
             // Danger Zone section
-            _buildSectionHeader(context, app.t('Danger Zone', 'Tehlikeli Alan')),
-            _buildSettingsCard(context,
+            _buildSectionHeader(
+              context,
+              app.t('Danger Zone', 'Tehlikeli Alan'),
+            ),
+            _buildSettingsCard(
+              context,
               children: [
                 _buildSettingsTile(
                   icon: Iconsax.logout,
@@ -274,7 +307,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, {required List<Widget> children}) {
+  Widget _buildSettingsCard(
+    BuildContext context, {
+    required List<Widget> children,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -291,6 +327,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSettingsTile({
     required IconData icon,
     required String title,
+    String? subtitle,
     VoidCallback? onTap,
     Widget? trailing,
     Color? titleColor,
@@ -310,20 +347,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 22,
-              color: effectiveIconColor,
-            ),
+            Icon(icon, size: 22, color: effectiveIconColor),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: effectiveTitleColor,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: effectiveTitleColor,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: scheme.onSurfaceVariant,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             trailing ??
@@ -371,19 +421,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _openHelpCenter() {
+  void _openFaq() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const _SimpleAssistantPage(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const FaqScreen()),
     );
   }
 
-  void _openReportProblem() {
+  void _openSupportTicket() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const SupportTicketScreen()),
+      MaterialPageRoute<void>(builder: (_) => const SupportTicketScreen()),
     );
   }
 
@@ -403,123 +451,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appState.t(
         'Admin account cannot be deleted.',
         'Yönetici hesabı silinemez.',
-      ),
-    );
-  }
-}
-
-class _SimpleAssistantPage extends StatefulWidget {
-  const _SimpleAssistantPage();
-
-  @override
-  State<_SimpleAssistantPage> createState() => _SimpleAssistantPageState();
-}
-
-class _SimpleAssistantPageState extends State<_SimpleAssistantPage> {
-  final _controller = TextEditingController();
-  final List<String> _messages = ['Hi! How can I help you today?'];
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: scheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Help Center Assistant',
-          style: TextStyle(color: scheme.onSurface),
-        ),
-        iconTheme: IconThemeData(color: scheme.onSurface),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: _messages.length,
-              itemBuilder: (_, i) {
-                final isAssistant = i.isEven;
-                return Align(
-                  alignment: isAssistant
-                      ? Alignment.centerLeft
-                      : Alignment.centerRight,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isAssistant
-                          ? scheme.surfaceContainerHighest
-                          : scheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Text(
-                      _messages[i],
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        height: 1.35,
-                        color: isAssistant
-                            ? scheme.onSurface
-                            : scheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: scheme.onSurface,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Type your question…',
-                        hintStyle: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                        filled: true,
-                        fillColor: scheme.surfaceContainerHighest,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      final q = _controller.text.trim();
-                      if (q.isEmpty) return;
-                      setState(() {
-                        _messages.add(q);
-                        _messages.add(
-                          'Thanks! We received your question and will guide you shortly.',
-                        );
-                      });
-                      _controller.clear();
-                    },
-                    icon: Icon(Icons.send, color: scheme.primary),
-                  ),
-                ],
-              ),
-            ),
-          )
-        ],
       ),
     );
   }
@@ -545,13 +476,23 @@ class _ChangePasswordPageState extends State<_ChangePasswordPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: _current, decoration: const InputDecoration(labelText: 'Current Password')),
-            TextField(controller: _next, decoration: const InputDecoration(labelText: 'New Password')),
-            TextField(controller: _confirm, decoration: const InputDecoration(labelText: 'Confirm Password')),
+            TextField(
+              controller: _current,
+              decoration: const InputDecoration(labelText: 'Current Password'),
+            ),
+            TextField(
+              controller: _next,
+              decoration: const InputDecoration(labelText: 'New Password'),
+            ),
+            TextField(
+              controller: _confirm,
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () async {
-                if (_next.text.trim().length < 4 || _next.text != _confirm.text) return;
+                if (_next.text.trim().length < 4 || _next.text != _confirm.text)
+                  return;
                 final navigator = Navigator.of(context);
                 final appState = context.read<AppState>();
                 await appState.changePassword(_next.text.trim());
@@ -586,10 +527,22 @@ class _PaymentMethodPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: holder, decoration: const InputDecoration(labelText: 'Card Holder')),
-            TextField(controller: number, decoration: const InputDecoration(labelText: 'Card Number')),
-            TextField(controller: date, decoration: const InputDecoration(labelText: 'MM/YY')),
-            TextField(controller: cvv, decoration: const InputDecoration(labelText: 'CVV')),
+            TextField(
+              controller: holder,
+              decoration: const InputDecoration(labelText: 'Card Holder'),
+            ),
+            TextField(
+              controller: number,
+              decoration: const InputDecoration(labelText: 'Card Number'),
+            ),
+            TextField(
+              controller: date,
+              decoration: const InputDecoration(labelText: 'MM/YY'),
+            ),
+            TextField(
+              controller: cvv,
+              decoration: const InputDecoration(labelText: 'CVV'),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
@@ -632,19 +585,25 @@ class _VerificationPageState extends State<_VerificationPage> {
           children: [
             TextField(
               controller: tc,
-              decoration: const InputDecoration(labelText: 'National ID (11 digits)'),
+              decoration: const InputDecoration(
+                labelText: 'National ID (11 digits)',
+              ),
               keyboardType: TextInputType.number,
             ),
             TextField(
               controller: pass,
-              decoration: const InputDecoration(labelText: 'Passport No (6-9 alphanumeric)'),
+              decoration: const InputDecoration(
+                labelText: 'Passport No (6-9 alphanumeric)',
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
                 final tcOk = RegExp(r'^\d{11}$').hasMatch(tc.text.trim());
-                final passOk =
-                    RegExp(r'^[A-Z0-9]{6,9}$', caseSensitive: false).hasMatch(pass.text.trim());
+                final passOk = RegExp(
+                  r'^[A-Z0-9]{6,9}$',
+                  caseSensitive: false,
+                ).hasMatch(pass.text.trim());
                 if (!tcOk && !passOk) {
                   ProlanceMessenger.error(
                     context,
@@ -666,44 +625,6 @@ class _VerificationPageState extends State<_VerificationPage> {
                 );
               },
               child: const Text('Submit'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportProblemPage extends StatelessWidget {
-  const _ReportProblemPage();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = TextEditingController();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Report a Problem')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: c,
-              maxLines: 5,
-              decoration: const InputDecoration(hintText: 'Describe the issue...'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ProlanceMessenger.success(
-                  context,
-                  prolanceT(
-                    context,
-                    'Ticket sent to support mail (demo).',
-                    'Destek e-postasına bilet gönderildi (demo).',
-                  ),
-                );
-              },
-              child: const Text('Send Ticket'),
             ),
           ],
         ),

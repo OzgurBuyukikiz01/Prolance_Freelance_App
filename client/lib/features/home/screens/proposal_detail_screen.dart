@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,15 +19,45 @@ import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/overlays/prolance_dialog.dart';
 import '../../../core/widgets/overlays/prolance_messenger.dart';
 import '../../../core/utils/project_duration_ymd.dart';
+import '../../support/screens/support_ticket_screen.dart';
 
-class ProposalDetailScreen extends StatelessWidget {
+class ProposalDetailScreen extends StatefulWidget {
   const ProposalDetailScreen({super.key, required this.proposal});
 
   final SubmittedProposal proposal;
 
+  @override
+  State<ProposalDetailScreen> createState() => _ProposalDetailScreenState();
+}
+
+class _ProposalDetailScreenState extends State<ProposalDetailScreen> {
+  bool _syncBusy = false;
+  bool _didOneEntrySync = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_oneTimeEntrySync());
+    });
+  }
+
+  /// Pull fresh proposal row once when this screen is first opened (e.g. after client
+  /// accepted on another device). No repeat on app resume — user can still pull-to-refresh.
+  Future<void> _oneTimeEntrySync() async {
+    if (_didOneEntrySync || !SupabaseConfig.isEnabled) return;
+    _didOneEntrySync = true;
+    setState(() => _syncBusy = true);
+    try {
+      await context.read<ProposalRepository>().reloadFromRemote();
+    } finally {
+      if (mounted) setState(() => _syncBusy = false);
+    }
+  }
+
   JobModel? _resolveJob(JobsProvider jobs) {
     for (final j in jobs.jobs) {
-      if (j.id == proposal.jobId) return j;
+      if (j.id == widget.proposal.jobId) return j;
     }
     return null;
   }
@@ -49,16 +81,15 @@ class ProposalDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repo = context.watch<ProposalRepository>();
-    var current = proposal;
+    var current = widget.proposal;
     for (final x in repo.myProposals) {
-      if (x.id == proposal.id) {
+      if (x.id == widget.proposal.id) {
         current = x;
         break;
       }
     }
     final job = _resolveJob(context.watch<JobsProvider>());
-    final submitted =
-        DateFormat.yMMMd().add_jm().format(current.submittedAt);
+    final submitted = DateFormat.yMMMd().add_jm().format(current.submittedAt);
 
     final active = current.status == SubmittedProposalStatus.awaitingResponse;
     final scheme = Theme.of(context).colorScheme;
@@ -66,14 +97,25 @@ class ProposalDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Proposal details'),
+        bottom: _syncBusy
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(3),
+                child: LinearProgressIndicator(
+                  minHeight: 3,
+                  color: AppColors.primary,
+                  backgroundColor:
+                      scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                ),
+              )
+            : null,
       ),
-      body: ListView(
+      body: RefreshIndicator(
+        onRefresh: () => context.read<ProposalRepository>().reloadFromRemote(),
+        child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppConstants.paddingMd),
         children: [
-          Text(
-            'Job',
-            style: AppTextStyles.heading6,
-          ),
+          Text('Job', style: AppTextStyles.heading6),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
@@ -141,10 +183,7 @@ class ProposalDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.paddingLg),
-          Text(
-            'Your proposal',
-            style: AppTextStyles.heading6,
-          ),
+          Text('Your proposal', style: AppTextStyles.heading6),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
@@ -179,8 +218,11 @@ class ProposalDetailScreen extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Iconsax.calendar,
-                          size: 18, color: scheme.onSurfaceVariant),
+                      Icon(
+                        Iconsax.calendar,
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -220,8 +262,11 @@ class ProposalDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
                           children: [
-                            Icon(Iconsax.document,
-                                size: 16, color: scheme.onSurfaceVariant),
+                            Icon(
+                              Iconsax.document,
+                              size: 16,
+                              color: scheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(child: Text(n)),
                           ],
@@ -234,22 +279,51 @@ class ProposalDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.paddingLg),
-          Text(
-            'Progress',
-            style: AppTextStyles.heading6,
-          ),
+          Text('Progress', style: AppTextStyles.heading6),
           const SizedBox(height: 12),
           _ProgressTimeline(proposal: current),
+          const SizedBox(height: AppConstants.paddingMd),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SupportTicketScreen(
+                      prefillSubject: 'Proposal: ${current.jobTitle}',
+                      prefillBody:
+                          'Proposal ID: ${current.id}\nJob ID: ${current.jobId}\n'
+                          'Status: ${current.status.name}\n'
+                          'Lifecycle: ${current.lifecyclePhase}\n\n'
+                          'Describe the issue in detail below.\n',
+                      emailSource: 'proposal_detail',
+                    ),
+                  ),
+                );
+              },
+              icon: Icon(
+                Iconsax.warning_2,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
+              label: Text(
+                prolanceT(context, 'Report an issue', 'Sorun bildir'),
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: scheme.primary,
+                ),
+              ),
+            ),
+          ),
           if (SupabaseConfig.isEnabled &&
               current.status == SubmittedProposalStatus.accepted &&
               (current.lifecyclePhase == ProposalLifecycle.escrowFunded ||
-                  current.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
+                  current.lifecyclePhase ==
+                      ProposalLifecycle.awaitingClientReview ||
                   current.lifecyclePhase == ProposalLifecycle.delivered)) ...[
             const SizedBox(height: AppConstants.paddingLg),
-            Text(
-              'Deliverables',
-              style: AppTextStyles.heading6,
-            ),
+            Text('Deliverables', style: AppTextStyles.heading6),
             const SizedBox(height: 8),
             _FreelancerDeliveriesPanel(
               proposalId: current.id,
@@ -263,9 +337,13 @@ class ProposalDetailScreen extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () async {
                   final appState = context.read<AppState>();
-                  final ok = await showProlanceDestructiveDialog(
+                  final ok =
+                      await showProlanceDestructiveDialog(
                         context,
-                        title: appState.t('Cancel proposal', 'Teklifi iptal et'),
+                        title: appState.t(
+                          'Cancel proposal',
+                          'Teklifi iptal et',
+                        ),
                         message: appState.t(
                           'Withdraw this proposal? The client will no longer see it.',
                           'Bu teklifi geri çekmek istiyor musunuz? İşveren artık göremeyecek.',
@@ -288,7 +366,9 @@ class ProposalDetailScreen extends StatelessWidget {
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,
-                  side: BorderSide(color: AppColors.error.withValues(alpha: 0.6)),
+                  side: BorderSide(
+                    color: AppColors.error.withValues(alpha: 0.6),
+                  ),
                   padding: const EdgeInsets.symmetric(
                     vertical: AppConstants.paddingMd,
                   ),
@@ -296,6 +376,7 @@ class ProposalDetailScreen extends StatelessWidget {
               ),
             ),
         ],
+        ),
       ),
     );
   }
@@ -575,16 +656,40 @@ class _FreelancerDeliveriesPanel extends StatefulWidget {
       _FreelancerDeliveriesPanelState();
 }
 
-class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> {
+class _FreelancerDeliveriesPanelState
+    extends State<_FreelancerDeliveriesPanel> {
   List<ProposalDeliveryRow> _rows = [];
   bool _loading = true;
   bool _uploading = false;
   bool _submitting = false;
+  ProposalRepository? _repo;
+  Timer? _repoNotifyDebounce;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _repo = context.read<ProposalRepository>();
+      _repo!.addListener(_onProposalRepoChanged);
+    });
     _load();
+  }
+
+  void _onProposalRepoChanged() {
+    _repoNotifyDebounce?.cancel();
+    _repoNotifyDebounce = Timer(const Duration(milliseconds: 320), () {
+      if (mounted) {
+        unawaited(_load());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _repoNotifyDebounce?.cancel();
+    _repo?.removeListener(_onProposalRepoChanged);
+    super.dispose();
   }
 
   @override
@@ -614,6 +719,64 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
       widget.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
       widget.lifecyclePhase == ProposalLifecycle.delivered;
 
+  bool get _canRemoveDeliveries => _canUpload || _awaitingClient;
+
+  String? _deletingId;
+
+  Future<void> _confirmDelete(ProposalDeliveryRow row) async {
+    final app = context.read<AppState>();
+    final ok = await showProlanceDestructiveDialog(
+          context,
+          title: app.t('Remove file?', 'Dosyayı kaldır?'),
+          message: app.t(
+            'This removes the file from your deliverables list.',
+            'Dosya teslim listesinden kaldırılacak.',
+          ),
+          destructiveLabel: app.t('Remove', 'Kaldır'),
+          cancelLabel: app.t('Cancel', 'İptal'),
+          icon: Iconsax.trash,
+        ) ??
+        false;
+    if (!ok || !mounted) return;
+
+    setState(() => _deletingId = row.id);
+    final repo = context.read<ProposalRepository>();
+    final out = await repo.deleteProposalDelivery(row.id);
+    if (!mounted) return;
+    setState(() => _deletingId = null);
+    if (out['ok'] == true) {
+      await repo.reloadFromRemote();
+      await _load();
+      if (!mounted) return;
+      ProlanceMessenger.success(
+        context,
+        app.t('File removed.', 'Dosya kaldırıldı.'),
+      );
+    } else {
+      final err = '${out['err'] ?? ''}';
+      final detail = '${out['detail'] ?? ''}';
+      final msg = err == 'invalid_phase'
+          ? app.t(
+              'You can’t remove files in this phase.',
+              'Bu aşamada dosya kaldırılamaz.',
+            )
+          : err == 'rpc_not_deployed'
+              ? app.t(
+                  'Delete API is not on the server yet. Run: supabase db push (or apply migrations in Dashboard SQL).',
+                  'Silme API’si sunucuda yok. Çalıştırın: supabase db push (veya Dashboard SQL ile migration uygulayın).',
+                )
+          : err == 'storage_remove_failed'
+              ? app.t(
+                  'Database updated but file removal failed. Try again or contact support.',
+                  'Kayıt silindi ancak depodan dosya kaldırılamadı. Tekrar deneyin.',
+                )
+              : err == 'rpc_failed' && detail.isNotEmpty
+                  ? '${app.t('Could not remove file.', 'Dosya kaldırılamadı.')} ($detail)'
+                  : app.t('Could not remove file.', 'Dosya kaldırılamadı.');
+      ProlanceMessenger.error(context, msg);
+    }
+  }
+
   Future<void> _pickUpload() async {
     final repo = context.read<ProposalRepository>();
     final app = context.read<AppState>();
@@ -625,7 +788,6 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
     final bytes = file?.bytes;
     if (bytes == null || file == null) return;
 
-    final phaseBefore = widget.lifecyclePhase;
     setState(() => _uploading = true);
     final out = await repo.uploadDeliveryAndRegister(
       proposalId: widget.proposalId,
@@ -638,15 +800,10 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
       await repo.reloadFromRemote();
       await _load();
       if (!mounted) return;
-      // First upload from escrow also notifies the client (same as "Accept delivery").
-      if (phaseBefore == ProposalLifecycle.escrowFunded) {
-        await _confirmSubmitToClient();
-      } else {
-        ProlanceMessenger.success(
-          context,
-          app.t('File uploaded.', 'Dosya yüklendi.'),
-        );
-      }
+      ProlanceMessenger.success(
+        context,
+        app.t('File uploaded.', 'Dosya yüklendi.'),
+      );
     } else {
       ProlanceMessenger.error(
         context,
@@ -659,7 +816,9 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
     final repo = context.read<ProposalRepository>();
     final app = context.read<AppState>();
     setState(() => _submitting = true);
-    final out = await repo.confirmFreelancerDeliverySubmission(widget.proposalId);
+    final out = await repo.confirmFreelancerDeliverySubmission(
+      widget.proposalId,
+    );
     if (!mounted) return;
     setState(() => _submitting = false);
     if (out['ok'] == true) {
@@ -675,7 +834,10 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
     } else {
       final err = '${out['err'] ?? ''}';
       final msg = err == 'no_deliverables'
-          ? app.t('Upload at least one file first.', 'Önce en az bir dosya yükleyin.')
+          ? app.t(
+              'Upload at least one file first.',
+              'Önce en az bir dosya yükleyin.',
+            )
           : app.t('Could not submit.', 'Gönderilemedi.');
       ProlanceMessenger.error(context, msg);
     }
@@ -715,8 +877,8 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
             if (_canUpload) const SizedBox(height: 12),
             Text(
               app.t(
-                'Upload your files: the first upload from escrow is sent to the client automatically for download and approval. You can add more files while the client reviews.',
-                'Dosyalarınızı yükleyin: eskrowdan ilk yükleme işverene indirip onaylaması için otomatik gider. İşveren incelerken ek dosya ekleyebilirsiniz.',
+                'Upload your files, then tap Submit for client review when you are ready. You can add more files while still in escrow; after submitting, you can add files while the client reviews.',
+                'Dosyalarınızı yükleyin; hazır olduğunuzda «İşverene gönder» ile incelemeye iletin. Eskrowdayken ek dosya ekleyebilirsiniz; gönderdikten sonra işveren incelerken de ek dosya eklenebilir.',
               ),
               style: AppTextStyles.caption.copyWith(
                 color: scheme.onSurfaceVariant,
@@ -748,6 +910,27 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
                       ),
                       const SizedBox(width: 8),
                       Expanded(child: Text(e.fileName)),
+                      if (_canRemoveDeliveries)
+                        _deletingId == e.id
+                            ? const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: Padding(
+                                  padding: EdgeInsets.all(4),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                tooltip: app.t('Remove file', 'Dosyayı kaldır'),
+                                icon: Icon(
+                                  Iconsax.trash,
+                                  size: 18,
+                                  color: scheme.error,
+                                ),
+                                onPressed: () => unawaited(_confirmDelete(e)),
+                              ),
                     ],
                   ),
                 ),
@@ -777,7 +960,9 @@ class _FreelancerDeliveriesPanelState extends State<_FreelancerDeliveriesPanel> 
                           height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(app.t('Accept delivery', 'Accept delivery')),
+                      : Text(
+                          app.t('Submit for client review', 'İşverene gönder'),
+                        ),
                 ),
               ),
             ],
