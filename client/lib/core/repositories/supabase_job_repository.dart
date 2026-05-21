@@ -36,8 +36,7 @@ class SupabaseJobRepository {
         : <String>[];
 
     final clientIdRaw = row['client_id'];
-    final clientId =
-        clientIdRaw != null ? '${row['client_id']}' : null;
+    final clientId = clientIdRaw != null ? '${row['client_id']}' : null;
 
     return JobModel(
       id: id,
@@ -105,8 +104,11 @@ class SupabaseJobRepository {
     final c = _c;
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) return null;
-    final row =
-        await c.from('jobs').insert(_jobToInsert(job, uid)).select().single();
+    final row = await c
+        .from('jobs')
+        .insert(_jobToInsert(job, uid))
+        .select()
+        .single();
     final saved = await _savedJobIds(uid);
     return _rowToJob(Map<String, dynamic>.from(row as Map), saved.toSet());
   }
@@ -116,15 +118,28 @@ class SupabaseJobRepository {
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) return;
     if (saved) {
-      await c.from('job_saves').upsert({
-        'profile_id': uid,
-        'job_id': jobId,
-      });
+      await c.from('job_saves').upsert({'profile_id': uid, 'job_id': jobId});
     } else {
       await c.from('job_saves').delete().match({
         'profile_id': uid,
         'job_id': jobId,
       });
     }
+  }
+
+  static Future<JobModel?> updateAndMap(JobModel job) async {
+    final c = _c;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) return null;
+    final row = await c
+        .from('jobs')
+        .update(_jobToInsert(job, uid))
+        .eq('id', job.id)
+        .eq('client_id', uid)
+        .select()
+        .maybeSingle();
+    if (row == null) return null;
+    final saved = await _savedJobIds(uid);
+    return _rowToJob(Map<String, dynamic>.from(row as Map), saved.toSet());
   }
 }

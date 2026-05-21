@@ -146,10 +146,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   List<String> _suggestedPool() {
     if (!_catalogReady || _selectedCategory == null) return [];
     return SkillsCatalogService.instance
-        .suggestFromDescription(
-          _descriptionController.text,
-          _selectedCategory!,
-        )
+        .suggestFromDescription(_descriptionController.text, _selectedCategory!)
         .where((s) => !_skills.contains(s))
         .toList();
   }
@@ -264,6 +261,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         status: 'open',
         isUserPosted: true,
         listingKind: JobListingKinds.jobOffer,
+        clientId: appState.currentUser.id,
       ),
       currentUserName: appState.currentUser.name,
       currentUserAvatar: appState.currentUser.avatarUrl,
@@ -302,6 +300,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         status: 'open',
         isUserPosted: true,
         listingKind: JobListingKinds.freelancerSeeking,
+        clientId: appState.currentUser.id,
       ),
       currentUserName: appState.currentUser.name,
       currentUserAvatar: appState.currentUser.avatarUrl,
@@ -424,11 +423,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     }
     final minH = double.tryParse(_minHourlyController.text.trim());
     final maxH = double.tryParse(_maxHourlyController.text.trim());
-    if (minH == null ||
-        maxH == null ||
-        minH <= 0 ||
-        maxH <= 0 ||
-        maxH < minH) {
+    if (minH == null || maxH == null || minH <= 0 || maxH <= 0 || maxH < minH) {
       _showError('Please enter a valid target hourly range.');
       return false;
     }
@@ -511,8 +506,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ),
                 ],
                 style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor:
-                      AppColors.primary.withValues(alpha: 0.2),
+                  selectedBackgroundColor: AppColors.primary.withValues(
+                    alpha: 0.2,
+                  ),
                   selectedForegroundColor: AppColors.primary,
                 ),
                 showSelectedIcon: false,
@@ -581,7 +577,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isActive ? AppColors.primary : Theme.of(context).colorScheme.outlineVariant,
+                    color: isActive
+                        ? AppColors.primary
+                        : Theme.of(context).colorScheme.outlineVariant,
                   ),
                 );
               }),
@@ -590,10 +588,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: (_currentStep + 1) / 3,
-            backgroundColor:
-                Theme.of(context).colorScheme.surfaceContainerHighest,
-            valueColor:
-                const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             borderRadius: BorderRadius.circular(4),
           ),
         ],
@@ -631,8 +629,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedCategory,
-            dropdownColor:
-                Theme.of(context).colorScheme.surfaceContainerHigh,
+            dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
@@ -670,8 +667,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: 6),
           Text(
             'Minimum 15 words required',
-            style: AppTextStyles.caption
-                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: AppTextStyles.caption.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -707,10 +705,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
             _selectedCategory == null
                 ? 'Choose a category in Step 1 to load relevant skills.'
                 : (!_catalogReady
-                    ? 'Loading skill catalog…'
-                    : 'Tap chips to add, or search below for any skill in the catalog.'),
-            style: AppTextStyles.caption
-                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ? 'Loading skill catalog…'
+                      : 'Tap chips to add, or search below for any skill in the catalog.'),
+            style: AppTextStyles.caption.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
           if (suggested.isNotEmpty) ...[
@@ -768,8 +767,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
               _selectedCategory == null)
             Text(
               'Pick a category in Step 1 to show category skills, or type above to search the whole catalog.',
-              style: AppTextStyles.caption
-                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: AppTextStyles.caption.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           if (_skillSearchController.text.trim().isNotEmpty &&
               quick.isEmpty &&
@@ -778,8 +778,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 'No matching skills. Try another keyword.',
-                style: AppTextStyles.caption
-                    .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: AppTextStyles.caption.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           Wrap(
@@ -813,10 +814,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   label: Text(skill),
                   deleteIcon: const Icon(Iconsax.close_circle, size: 18),
                   onDeleted: () => _removeSkill(skill),
-                  backgroundColor:
-                      AppColors.primary.withValues(alpha: 0.12),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                   side: BorderSide(
-                      color: AppColors.primary.withValues(alpha: 0.3)),
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
                 );
               }).toList(),
             ),
@@ -844,8 +845,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               value: level,
               groupValue: _experienceLevel,
               activeColor: AppColors.primary,
-              onChanged: (value) =>
-                  setState(() => _experienceLevel = value!),
+              onChanged: (value) => setState(() => _experienceLevel = value!),
             );
           }),
           const SizedBox(height: AppConstants.paddingLg),
@@ -860,8 +860,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _selectedDuration,
-            dropdownColor:
-                Theme.of(context).colorScheme.surfaceContainerHigh,
+            dropdownColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurface,
@@ -890,13 +889,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    decoration: _postJobInputDecoration(context).copyWith(
-                      labelText: 'Years',
-                      helperText: '0–10 max',
-                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: _postJobInputDecoration(
+                      context,
+                    ).copyWith(labelText: 'Years', helperText: '0–10 max'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -907,13 +903,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    decoration: _postJobInputDecoration(context).copyWith(
-                      labelText: 'Months',
-                      helperText: '0–12',
-                    ),
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: _postJobInputDecoration(
+                      context,
+                    ).copyWith(labelText: 'Months', helperText: '0–12'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -924,9 +917,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: _postJobInputDecoration(context).copyWith(
                       labelText: 'Days',
                       helperText: '0–30 (30 d → 1 mo)',
@@ -938,8 +929,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
             const SizedBox(height: 8),
             Text(
               'When you tap Next, values normalize: 30 days roll into a month, 12 months into a year (max 10 years).',
-              style: AppTextStyles.caption
-                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: AppTextStyles.caption.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -967,7 +959,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
               color: AppColors.secondary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppConstants.radiusMd),
               border: Border.all(
-                  color: AppColors.secondary.withValues(alpha: 0.25)),
+                color: AppColors.secondary.withValues(alpha: 0.25),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -989,8 +982,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Demo: escrow-style payouts will connect to payments later (Stripe / Supabase).',
-                  style: AppTextStyles.caption
-                      .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: AppTextStyles.caption.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -1005,30 +999,31 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     builder: (ctx) {
                       final scheme = Theme.of(ctx).colorScheme;
                       return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _isFixedPrice
-                          ? AppColors.primary.withValues(alpha: 0.15)
-                          : scheme.surfaceContainerHigh,
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusMd),
-                      border: Border.all(
-                        color: _isFixedPrice
-                            ? AppColors.primary
-                            : scheme.outlineVariant,
-                        width: _isFixedPrice ? 2 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      'Fixed Price',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        color: _isFixedPrice
-                            ? AppColors.primary
-                            : scheme.onSurface,
-                      ),
-                    ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _isFixedPrice
+                              ? AppColors.primary.withValues(alpha: 0.15)
+                              : scheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusMd,
+                          ),
+                          border: Border.all(
+                            color: _isFixedPrice
+                                ? AppColors.primary
+                                : scheme.outlineVariant,
+                            width: _isFixedPrice ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Fixed Price',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            color: _isFixedPrice
+                                ? AppColors.primary
+                                : scheme.onSurface,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -1042,30 +1037,31 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     builder: (ctx) {
                       final scheme = Theme.of(ctx).colorScheme;
                       return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: !_isFixedPrice
-                          ? AppColors.primary.withValues(alpha: 0.15)
-                          : scheme.surfaceContainerHigh,
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusMd),
-                      border: Border.all(
-                        color: !_isFixedPrice
-                            ? AppColors.primary
-                            : scheme.outlineVariant,
-                        width: !_isFixedPrice ? 2 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      'Hourly Rate',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        color: !_isFixedPrice
-                            ? AppColors.primary
-                            : scheme.onSurface,
-                      ),
-                    ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: !_isFixedPrice
+                              ? AppColors.primary.withValues(alpha: 0.15)
+                              : scheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusMd,
+                          ),
+                          border: Border.all(
+                            color: !_isFixedPrice
+                                ? AppColors.primary
+                                : scheme.outlineVariant,
+                            width: !_isFixedPrice ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Hourly Rate',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            color: !_isFixedPrice
+                                ? AppColors.primary
+                                : scheme.onSurface,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -1092,9 +1088,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: _postJobInputDecoration(context).copyWith(
                       hintText: 'Min',
                       prefixText: '\$ ',
@@ -1113,9 +1107,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     style: GoogleFonts.poppins(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: _postJobInputDecoration(context).copyWith(
                       hintText: 'Max',
                       prefixText: '\$ ',
@@ -1211,7 +1203,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: 6),
           Text(
             'Minimum 15 words required',
-            style: AppTextStyles.caption.copyWith(color: scheme.onSurfaceVariant),
+            style: AppTextStyles.caption.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -1261,8 +1255,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
               setState(() {
                 _selectedCategory = value;
                 if (value != null && _catalogReady) {
-                  final allowed =
-                      SkillsCatalogService.instance.skillsForCategory(value).toSet();
+                  final allowed = SkillsCatalogService.instance
+                      .skillsForCategory(value)
+                      .toSet();
                   _skills.removeWhere((s) => !allowed.contains(s));
                 }
               });
@@ -1282,10 +1277,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
             _selectedCategory == null
                 ? 'Select a category to load curated skills.'
                 : (!_catalogReady
-                    ? 'Loading skill catalog…'
-                    : 'Tap chips below or search the full catalog.'),
-            style:
-                AppTextStyles.caption.copyWith(color: scheme.onSurfaceVariant),
+                      ? 'Loading skill catalog…'
+                      : 'Tap chips below or search the full catalog.'),
+            style: AppTextStyles.caption.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
           if (suggested.isNotEmpty) ...[
@@ -1302,10 +1298,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
               spacing: 8,
               runSpacing: 8,
               children: suggested
-                  .map((skill) => ActionChip(
-                        label: Text(skill),
-                        onPressed: () => _toggleSkill(skill),
-                      ))
+                  .map(
+                    (skill) => ActionChip(
+                      label: Text(skill),
+                      onPressed: () => _toggleSkill(skill),
+                    ),
+                  )
                   .toList(),
             ),
             const SizedBox(height: 16),
@@ -1341,18 +1339,21 @@ class _PostJobScreenState extends State<PostJobScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 'No matching skills. Try another keyword.',
-                style:
-                    AppTextStyles.caption.copyWith(color: scheme.onSurfaceVariant),
+                style: AppTextStyles.caption.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ),
           Wrap(
             spacing: 8,
             runSpacing: 10,
             children: quick
-                .map((skill) => ActionChip(
-                      label: Text(skill),
-                      onPressed: () => _toggleSkill(skill),
-                    ))
+                .map(
+                  (skill) => ActionChip(
+                    label: Text(skill),
+                    onPressed: () => _toggleSkill(skill),
+                  ),
+                )
                 .toList(),
           ),
           if (_skills.isNotEmpty) ...[
@@ -1375,7 +1376,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   deleteIcon: const Icon(Iconsax.close_circle, size: 18),
                   onDeleted: () => _removeSkill(skill),
                   backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+                  side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                  ),
                 );
               }).toList(),
             ),
@@ -1410,13 +1413,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
             return RadioListTile<String>(
               title: Text(
                 level,
-                style: GoogleFonts.poppins(fontSize: 15, color: scheme.onSurface),
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: scheme.onSurface,
+                ),
               ),
               value: level,
               groupValue: _experienceLevel,
               activeColor: AppColors.primary,
-              onChanged: (value) =>
-                  setState(() => _experienceLevel = value!),
+              onChanged: (value) => setState(() => _experienceLevel = value!),
             );
           }),
           const SizedBox(height: AppConstants.paddingLg),
@@ -1456,10 +1461,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     keyboardType: TextInputType.number,
                     style: GoogleFonts.poppins(color: scheme.onSurface),
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: _postJobInputDecoration(context).copyWith(
-                      labelText: 'Years',
-                      helperText: '0–10 max',
-                    ),
+                    decoration: _postJobInputDecoration(
+                      context,
+                    ).copyWith(labelText: 'Years', helperText: '0–10 max'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1469,10 +1473,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     keyboardType: TextInputType.number,
                     style: GoogleFonts.poppins(color: scheme.onSurface),
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: _postJobInputDecoration(context).copyWith(
-                      labelText: 'Months',
-                      helperText: '0–12',
-                    ),
+                    decoration: _postJobInputDecoration(
+                      context,
+                    ).copyWith(labelText: 'Months', helperText: '0–12'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1493,8 +1496,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
             const SizedBox(height: 8),
             Text(
               'Normalize on publish: rolls up weeks/months (max 10 years).',
-              style: AppTextStyles.caption
-                  .copyWith(color: scheme.onSurfaceVariant),
+              style: AppTextStyles.caption.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: AppConstants.paddingLg),
@@ -1509,7 +1513,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
           const SizedBox(height: AppConstants.paddingSm),
           Text(
             'Other opportunities see this as target compensation.',
-            style: AppTextStyles.caption.copyWith(color: scheme.onSurfaceVariant),
+            style: AppTextStyles.caption.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 10),
           Row(
@@ -1572,23 +1578,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
         children: [
           if (_currentStep > 0)
             Expanded(
-              child: CustomOutlinedButton(
-                label: 'Back',
-                onPressed: _prevStep,
-              ),
+              child: CustomOutlinedButton(label: 'Back', onPressed: _prevStep),
             ),
           if (_currentStep > 0) const SizedBox(width: 12),
           Expanded(
             child: CustomButton(
               label: _currentStep == 2
                   ? (_intent == _ListingIntent.hireTalent
-                      ? 'Post job'
-                      : 'Publish listing')
+                        ? 'Post job'
+                        : 'Publish listing')
                   : 'Next',
               onPressed: _currentStep == 2
                   ? (_intent == _ListingIntent.hireTalent
-                      ? _postJob
-                      : _postSeekListing)
+                        ? _postJob
+                        : _postSeekListing)
                   : _nextStep,
             ),
           ),

@@ -60,7 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<JobModel> _filteredJobs(List<JobModel> source) {
     final selected = _categories[_selectedCategoryIndex];
     return source.where((job) {
-      final categoryOk = selected == 'All' ||
+      final categoryOk =
+          selected == 'All' ||
           job.category.toLowerCase().contains(selected.toLowerCase());
       final filterOk = _browseFilters.matchesJob(
         job,
@@ -94,8 +95,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openFiltersSheet() async {
-    final next =
-        await showJobBrowseFiltersSheet(context, initial: _browseFilters);
+    final next = await showJobBrowseFiltersSheet(
+      context,
+      initial: _browseFilters,
+    );
     if (!mounted || next == null) return;
     setState(() => _browseFilters = next);
   }
@@ -121,8 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _searchFocus.unfocus();
       _searchController.value = TextEditingValue(
         text: suggestion.label,
-        selection:
-            TextSelection.collapsed(offset: suggestion.label.length),
+        selection: TextSelection.collapsed(offset: suggestion.label.length),
       );
       setState(() {});
     }
@@ -137,8 +139,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final out = <_HomeSearchSuggestion>[];
     final seen = <String>{};
 
-    for (final sk
-        in SkillsCatalogService.instance.searchSkills(raw, limit: 12)) {
+    for (final sk in SkillsCatalogService.instance.searchSkills(
+      raw,
+      limit: 12,
+    )) {
       final key = 'sk:$sk';
       if (seen.add(key)) {
         out.add(_HomeSearchSuggestion.skill(sk));
@@ -172,15 +176,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final allJobs = jobsProvider.jobs.where((j) {
       if (j.status == 'pending_review') return false;
       if (j.isUserPosted &&
-          j.clientName == appState.currentUser.name &&
+          jobsProvider.isOwnedByCurrentUser(
+            j,
+            appState.currentUser.id,
+            fallbackUserName: appState.currentUser.name,
+          ) &&
           jobsProvider.shouldHideApprovedJobFromOwnerHome(j.id)) {
         return false;
       }
       return true;
     }).toList();
     final filtered = _filteredJobs(allJobs);
-    final recommendedJobs =
-        filtered.where((j) => !j.isUserPosted).take(4).toList();
+    final recommendedJobs = filtered
+        .where((j) => !j.isUserPosted)
+        .take(4)
+        .toList();
     final userPosted = filtered.where((j) => j.isUserPosted).toList()
       ..sort((a, b) => b.postedDate.compareTo(a.postedDate));
     final rest = filtered.where((j) => !j.isUserPosted).toList()
@@ -197,277 +207,306 @@ class _HomeScreenState extends State<HomeScreen> {
         clipBehavior: Clip.none,
         children: [
           ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          // ─── Gradient Header ──────────────────────────────────────────
-          _HomeHeader(
-            userName: appState.currentUser.name,
-            unreadNotifications:
-                context.watch<NotificationRepository>().unreadCount,
-            proposalAttentionCount: proposalAttention,
-            onProposals: () => context.push('/my-proposals'),
-            onFavorites: () => context.push('/favorites'),
-            onNotifications: () => context.push('/notifications'),
-          ),
+            padding: EdgeInsets.zero,
+            children: [
+              // ─── Gradient Header ──────────────────────────────────────────
+              _HomeHeader(
+                userName: appState.currentUser.name,
+                unreadNotifications: context
+                    .watch<NotificationRepository>()
+                    .unreadCount,
+                proposalAttentionCount: proposalAttention,
+                onProposals: () => context.push('/my-proposals'),
+                onFavorites: () => context.push('/favorites'),
+                onNotifications: () => context.push('/notifications'),
+              ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-
-          const SizedBox(height: 20),
-          FadeInDown(
-            duration: const Duration(milliseconds: 500),
-            delay: const Duration(milliseconds: 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: scheme.outlineVariant),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocus,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: scheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      icon: Icon(
-                        Iconsax.search_normal_1,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      hintText: 'Search jobs, skills, or clients…',
-                      hintStyle: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                Builder(
-                  builder: (ctx) {
-                    final sug = _composeSuggestions(allJobs);
-                    if (sug.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Material(
-                        elevation: 3,
-                        color: scheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        clipBehavior: Clip.antiAlias,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          child: ListView.separated(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: sug.length,
-                            separatorBuilder: (context, _) =>
-                                Divider(height: 1, color: scheme.outlineVariant),
-                            itemBuilder: (context, index) {
-                              final item = sug[index];
-                              return ListTile(
-                                dense: true,
-                                leading: Icon(
-                                  item.isSkill
-                                      ? Iconsax.flash_1
-                                      : Iconsax.briefcase,
-                                  size: 18,
-                                  color: scheme.primary,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 500),
+                      delay: const Duration(milliseconds: 100),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: scheme.outlineVariant),
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocus,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: scheme.onSurface,
+                              ),
+                              decoration: InputDecoration(
+                                icon: Icon(
+                                  Iconsax.search_normal_1,
+                                  color: scheme.onSurfaceVariant,
                                 ),
-                                title: Text(
-                                  item.label,
-                                  style: GoogleFonts.poppins(fontSize: 13),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                hintText: 'Search jobs, skills, or clients…',
+                                hintStyle: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: scheme.onSurfaceVariant,
                                 ),
-                                subtitle: item.isSkill
-                                    ? Text(
-                                        'Skill filter',
-                                        style: GoogleFonts.poppins(fontSize: 11),
-                                      )
-                                    : Text(
-                                        'Search title',
-                                        style: GoogleFonts.poppins(fontSize: 11),
+                                border: InputBorder.none,
+                              ),
+                            ),
+                          ),
+                          Builder(
+                            builder: (ctx) {
+                              final sug = _composeSuggestions(allJobs);
+                              if (sug.isEmpty) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Material(
+                                  elevation: 3,
+                                  color: scheme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 220,
+                                    ),
+                                    child: ListView.separated(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: sug.length,
+                                      separatorBuilder: (context, _) => Divider(
+                                        height: 1,
+                                        color: scheme.outlineVariant,
                                       ),
-                                onTap: () => _applySuggestion(item),
+                                      itemBuilder: (context, index) {
+                                        final item = sug[index];
+                                        return ListTile(
+                                          dense: true,
+                                          leading: Icon(
+                                            item.isSkill
+                                                ? Iconsax.flash_1
+                                                : Iconsax.briefcase,
+                                            size: 18,
+                                            color: scheme.primary,
+                                          ),
+                                          title: Text(
+                                            item.label,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          subtitle: item.isSkill
+                                              ? Text(
+                                                  'Skill filter',
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 11,
+                                                  ),
+                                                )
+                                              : Text(
+                                                  'Search title',
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                          onTap: () => _applySuggestion(item),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 500),
+                      delay: const Duration(milliseconds: 125),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 40,
+                              child: !_catalogSkillsReady
+                                  ? Center(
+                                      child: SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: scheme.primary,
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _skillCatalogSorted.length,
+                                      separatorBuilder: (context, _) =>
+                                          const SizedBox(width: 8),
+                                      itemBuilder: (context, index) {
+                                        final skill =
+                                            _skillCatalogSorted[index];
+                                        final sel = _browseFilters
+                                            .selectedSkills
+                                            .any(
+                                              (x) =>
+                                                  x.toLowerCase() ==
+                                                  skill.toLowerCase(),
+                                            );
+                                        return ChoiceChip(
+                                          label: Text(
+                                            skill,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          selected: sel,
+                                          onSelected: (_) =>
+                                              _toggleStripSkill(skill),
+                                          labelStyle: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: sel
+                                                ? scheme.onPrimary
+                                                : scheme.onSurface,
+                                          ),
+                                          backgroundColor:
+                                              scheme.surfaceContainerHigh,
+                                          selectedColor: scheme.primary,
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'All filters',
+                            onPressed: _openFiltersSheet,
+                            icon: Icon(
+                              Iconsax.filter_search,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 500),
+                      delay: const Duration(milliseconds: 150),
+                      child: SizedBox(
+                        height: 44,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _categories.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            return CategoryChip(
+                              label: _categories[index],
+                              isSelected: _selectedCategoryIndex == index,
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategoryIndex = index;
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 500),
+                      delay: const Duration(milliseconds: 200),
+                      child: _SectionHeader(
+                        title: 'Recommended Jobs',
+                        onSeeAll: widget.onSeeAllRecommended,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 230,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: recommendedJobs.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 16),
+                        itemBuilder: (context, index) {
+                          return FadeInRight(
+                            duration: const Duration(milliseconds: 400),
+                            delay: Duration(milliseconds: 250 + (index * 80)),
+                            child: SizedBox(
+                              width: 300,
+                              child: JobCard(
+                                job: recommendedJobs[index],
+                                matchPercent: _matchPercent(
+                                  recommendedJobs[index],
+                                  appState.currentUser.skills,
+                                ),
+                                onTap: () => context.push(
+                                  '/jobs/${recommendedJobs[index].id}',
+                                ),
+                                onSaveToggle: (saved) {
+                                  jobsProvider.toggleFavorite(
+                                    recommendedJobs[index].id,
+                                    saved,
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 500),
+                      delay: const Duration(milliseconds: 300),
+                      child: _SectionHeader(
+                        title: 'Recent Jobs',
+                        onSeeAll: widget.onSeeAllRecent,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...List.generate(recentJobs.length, (index) {
+                      return FadeInUp(
+                        duration: const Duration(milliseconds: 400),
+                        delay: Duration(milliseconds: 350 + (index * 60)),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: JobCard(
+                            job: recentJobs[index],
+                            matchPercent: _matchPercent(
+                              recentJobs[index],
+                              appState.currentUser.skills,
+                            ),
+                            onTap: () =>
+                                context.push('/jobs/${recentJobs[index].id}'),
+                            onSaveToggle: (saved) {
+                              jobsProvider.toggleFavorite(
+                                recentJobs[index].id,
+                                saved,
                               );
                             },
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          FadeInDown(
-            duration: const Duration(milliseconds: 500),
-            delay: const Duration(milliseconds: 125),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: !_catalogSkillsReady
-                        ? Center(
-                            child: SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: scheme.primary,
-                              ),
-                            ),
-                          )
-                        : ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _skillCatalogSorted.length,
-                            separatorBuilder: (context, _) =>
-                                const SizedBox(width: 8),
-                            itemBuilder: (context, index) {
-                              final skill = _skillCatalogSorted[index];
-                              final sel = _browseFilters.selectedSkills.any(
-                                    (x) =>
-                                        x.toLowerCase() == skill.toLowerCase(),
-                                  );
-                              return ChoiceChip(
-                                label: Text(
-                                  skill,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                selected: sel,
-                                onSelected: (_) => _toggleStripSkill(skill),
-                                labelStyle: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: sel
-                                      ? scheme.onPrimary
-                                      : scheme.onSurface,
-                                ),
-                                backgroundColor: scheme.surfaceContainerHigh,
-                                selectedColor: scheme.primary,
-                              );
-                            },
-                          ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'All filters',
-                  onPressed: _openFiltersSheet,
-                  icon: Icon(Iconsax.filter_search, color: scheme.onSurface),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          FadeInDown(
-            duration: const Duration(milliseconds: 500),
-            delay: const Duration(milliseconds: 150),
-            child: SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  return CategoryChip(
-                    label: _categories[index],
-                    isSelected: _selectedCategoryIndex == index,
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryIndex = index;
-                      });
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          FadeInUp(
-            duration: const Duration(milliseconds: 500),
-            delay: const Duration(milliseconds: 200),
-            child: _SectionHeader(
-              title: 'Recommended Jobs',
-              onSeeAll: widget.onSeeAllRecommended,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 230,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: recommendedJobs.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 16),
-              itemBuilder: (context, index) {
-                return FadeInRight(
-                  duration: const Duration(milliseconds: 400),
-                  delay: Duration(milliseconds: 250 + (index * 80)),
-                  child: SizedBox(
-                    width: 300,
-                    child: JobCard(
-                      job: recommendedJobs[index],
-                      matchPercent: _matchPercent(
-                        recommendedJobs[index],
-                        appState.currentUser.skills,
-                      ),
-                      onTap: () => context.push(
-                            '/jobs/${recommendedJobs[index].id}',
-                          ),
-                      onSaveToggle: (saved) {
-                        jobsProvider.toggleFavorite(recommendedJobs[index].id, saved);
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 32),
-          FadeInUp(
-            duration: const Duration(milliseconds: 500),
-            delay: const Duration(milliseconds: 300),
-            child: _SectionHeader(
-              title: 'Recent Jobs',
-              onSeeAll: widget.onSeeAllRecent,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...List.generate(recentJobs.length, (index) {
-            return FadeInUp(
-              duration: const Duration(milliseconds: 400),
-              delay: Duration(milliseconds: 350 + (index * 60)),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: JobCard(
-                  job: recentJobs[index],
-                  matchPercent: _matchPercent(
-                    recentJobs[index],
-                    appState.currentUser.skills,
-                  ),
-                  onTap: () =>
-                      context.push('/jobs/${recentJobs[index].id}'),
-                  onSaveToggle: (saved) {
-                    jobsProvider.toggleFavorite(recentJobs[index].id, saved);
-                  },
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 32),
-        ], // Column children
-            ), // Column
-          ), // Padding
-        ],
+                      );
+                    }),
+                    const SizedBox(height: 32),
+                  ], // Column children
+                ), // Column
+              ), // Padding
+            ],
           ),
           if (appState.showProposalSentCelebration)
             Positioned(
@@ -509,7 +548,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Text(
                                   appState.t(
-                                      'Proposal sent!', 'Teklif gönderildi!'),
+                                    'Proposal sent!',
+                                    'Teklif gönderildi!',
+                                  ),
                                   style: GoogleFonts.poppins(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 16,
@@ -543,10 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _HomeSearchSuggestion {
-  const _HomeSearchSuggestion._({
-    required this.label,
-    required this.isSkill,
-  });
+  const _HomeSearchSuggestion._({required this.label, required this.isSkill});
 
   factory _HomeSearchSuggestion.skill(String skill) =>
       _HomeSearchSuggestion._(label: skill, isSkill: true);
@@ -611,14 +649,17 @@ class _HomeHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hello, $firstName 👋',
-                          style: GoogleFonts.poppins(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
-                          ),
-                        ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
+                              'Hello, $firstName 👋',
+                              style: GoogleFonts.poppins(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
+                              ),
+                            )
+                            .animate()
+                            .fadeIn(duration: 500.ms)
+                            .slideX(begin: -0.1, end: 0),
                         Text(
                           'Find your next project',
                           style: GoogleFonts.poppins(
@@ -660,20 +701,26 @@ class _HomeHeader extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: onFavorites,
-                    icon: const Icon(Iconsax.heart,
-                        color: Colors.white, size: 22),
+                    icon: const Icon(
+                      Iconsax.heart,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     tooltip: 'Favorites',
                   ),
                   badges.Badge(
                     showBadge: unreadNotifications > 0,
                     badgeContent: unreadNotifications > 9
-                        ? const Text('9+',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 9))
+                        ? const Text(
+                            '9+',
+                            style: TextStyle(color: Colors.white, fontSize: 9),
+                          )
                         : Text(
                             '$unreadNotifications',
                             style: const TextStyle(
-                                color: Colors.white, fontSize: 9),
+                              color: Colors.white,
+                              fontSize: 9,
+                            ),
                           ),
                     badgeStyle: const badges.BadgeStyle(
                       badgeColor: Color(0xFFFF5252),
@@ -681,8 +728,11 @@ class _HomeHeader extends StatelessWidget {
                     ),
                     child: IconButton(
                       onPressed: onNotifications,
-                      icon: const Icon(Iconsax.notification,
-                          color: Colors.white, size: 22),
+                      icon: const Icon(
+                        Iconsax.notification,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ],
@@ -715,9 +765,7 @@ class _StatsStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -750,10 +798,7 @@ class _StatsStrip extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.onSeeAll,
-  });
+  const _SectionHeader({required this.title, required this.onSeeAll});
 
   final String title;
   final VoidCallback onSeeAll;

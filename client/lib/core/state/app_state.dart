@@ -17,6 +17,7 @@ enum RegisterOutcome { loggedIn, needsEmailConfirmation, failed }
 class RegisterResult {
   const RegisterResult(this.outcome, [this.message]);
   final RegisterOutcome outcome;
+
   /// Set when [outcome] is [RegisterOutcome.failed] (API / network message).
   final String? message;
 }
@@ -54,10 +55,10 @@ class AppState extends ChangeNotifier {
   ThemePreference get themePreference => _themePreference;
 
   ThemeMode get themeMode => switch (_themePreference) {
-        ThemePreference.light => ThemeMode.light,
-        ThemePreference.dark => ThemeMode.dark,
-        ThemePreference.system => ThemeMode.system,
-      };
+    ThemePreference.light => ThemeMode.light,
+    ThemePreference.dark => ThemeMode.dark,
+    ThemePreference.system => ThemeMode.system,
+  };
 
   bool get darkMode => _themePreference == ThemePreference.dark;
   String get languageCode => _languageCode;
@@ -65,8 +66,7 @@ class AppState extends ChangeNotifier {
 
   bool get showProposalSentCelebration => _showProposalSentCelebration;
 
-  ThemeData get lightTheme =>
-      AppTheme.lightTheme(dynamicScheme: _lightDynamic);
+  ThemeData get lightTheme => AppTheme.lightTheme(dynamicScheme: _lightDynamic);
   ThemeData get darkTheme => AppTheme.darkTheme(dynamicScheme: _darkDynamic);
 
   /// English-only product: always returns [en]. Optional second argument kept for call-site compatibility.
@@ -123,8 +123,9 @@ class AppState extends ChangeNotifier {
       _themePreference = ThemePreference.fromStored(storedPref);
     } else if (prefs.containsKey(_kDarkMode)) {
       final legacyDark = prefs.getBool(_kDarkMode) ?? false;
-      _themePreference =
-          legacyDark ? ThemePreference.dark : ThemePreference.light;
+      _themePreference = legacyDark
+          ? ThemePreference.dark
+          : ThemePreference.light;
       await prefs.setString(_kThemePreference, _themePreference.name);
     } else {
       _themePreference = ThemePreference.system;
@@ -142,8 +143,9 @@ class AppState extends ChangeNotifier {
         final u = await AuthService.instance.loadProfileAsUserModel();
         if (u != null) _currentUser = u;
       }
-      _authSubscription =
-          AuthService.instance.authStateChanges().listen((data) async {
+      _authSubscription = AuthService.instance.authStateChanges().listen((
+        data,
+      ) async {
         final session = data.session;
         final next = session != null;
         _isLoggedIn = next;
@@ -175,6 +177,16 @@ class AppState extends ChangeNotifier {
     if (!SupabaseConfig.isEnabled) return false;
     try {
       await AuthService.instance.signInWithGoogle();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> loginWithApple() async {
+    if (!SupabaseConfig.isEnabled) return false;
+    try {
+      await AuthService.instance.signInWithApple();
       return true;
     } catch (_) {
       return false;
@@ -242,8 +254,9 @@ class AppState extends ChangeNotifier {
             avatarUrl:
                 'https://i.pravatar.cc/150?img=${DateTime.now().millisecond % 60}',
             title: isFreelancer ? 'New Freelancer' : 'Project Owner',
-            bio:
-                isFreelancer ? 'New freelancer profile.' : 'New client profile.',
+            bio: isFreelancer
+                ? 'New freelancer profile.'
+                : 'New client profile.',
             hourlyRate: 0,
             website: '',
             rating: 0,

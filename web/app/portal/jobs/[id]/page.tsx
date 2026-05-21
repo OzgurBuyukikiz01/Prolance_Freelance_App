@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { acceptProposal, rejectProposal } from '@/app/portal/jobs/[id]/actions';
+import { PortalRealtimeRefresh } from '@/components/portal/PortalRealtimeRefresh';
 import { ProposalForm } from '@/components/portal/ProposalForm';
 import { MagicCard } from '@/components/ui/magic-card';
-import { acceptProposal, rejectProposal } from '@/app/portal/jobs/[id]/actions';
 import { createClient } from '@/lib/supabase/server';
 import {
   PROPOSAL_STATUS_LABELS,
@@ -29,7 +30,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('role')
     .eq('id', user.id)
     .single();
 
@@ -55,19 +56,20 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
   if (isOwner) {
     const { data: rawProposals } = await supabase
       .from('proposals')
-      .select('id, job_id, freelancer_id, bid, delivery_days, cover_letter, status, created_at')
+      .select('id, freelancer_id, bid, delivery_days, cover_letter, status, created_at')
       .eq('job_id', id)
       .order('created_at', { ascending: false });
 
     proposalRows = await Promise.all(
-      (rawProposals ?? []).map(async (p) => {
+      (rawProposals ?? []).map(async (proposal) => {
         const { data: freelancer } = await supabase
           .from('profiles')
           .select('full_name, title')
-          .eq('id', p.freelancer_id)
+          .eq('id', proposal.freelancer_id)
           .maybeSingle();
+
         return {
-          ...p,
+          ...proposal,
           freelancerName: freelancer?.full_name ?? 'Freelancer',
           freelancerTitle: freelancer?.title ?? '',
         };
@@ -89,8 +91,16 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
 
   return (
     <div className="space-y-6">
+      <PortalRealtimeRefresh
+        channelKey={`job-detail:${id}`}
+        targets={[
+          { table: 'jobs', filter: `id=eq.${id}` },
+          { table: 'proposals', filter: `job_id=eq.${id}` },
+        ]}
+      />
+
       <Link href="/portal/jobs" className="text-sm font-medium text-brand hover:text-brand-dark">
-        ← Back to Jobs
+        Back to Jobs
       </Link>
 
       {query.error && (
@@ -110,10 +120,10 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
       )}
 
       <MagicCard innerClassName="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-white">{job.title}</h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="mt-1 text-sm text-slate-500">
               {job.client_name} · {formatRelativeTime(job.posted_date)} · {job.category}
             </p>
           </div>
@@ -121,74 +131,81 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
             {formatBudget(job.budget_min, job.budget_max, job.budget_type)}
           </span>
         </div>
-        <p className="text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">{job.description}</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-400">{job.description}</p>
         {skills.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="mt-4 flex flex-wrap gap-2">
             {skills.map((skill) => (
               <span
                 key={skill}
-                className="text-xs font-medium px-2.5 py-1 rounded-lg bg-brand-light text-brand"
+                className="rounded-lg bg-brand-light px-2.5 py-1 text-xs font-medium text-brand"
               >
                 {skill}
               </span>
             ))}
           </div>
         )}
-        <p className="text-xs text-slate-400 mt-4">{job.proposal_count} proposals · {job.duration}</p>
+        <p className="mt-4 text-xs text-slate-400">{job.proposal_count} proposals · {job.duration}</p>
       </MagicCard>
 
       {isOwner && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-white mb-4">Received Proposals</h2>
+          <h2 className="mb-4 text-lg font-bold text-white">Received Proposals</h2>
           {!proposalRows.length ? (
             <p className="text-sm text-slate-400">No proposals yet.</p>
           ) : (
             <ul className="space-y-4">
-              {proposalRows.map((p) => {
-                const statusMeta = PROPOSAL_STATUS_LABELS[p.status] ?? PROPOSAL_STATUS_LABELS.pending;
+              {proposalRows.map((proposal) => {
+                const statusMeta =
+                  PROPOSAL_STATUS_LABELS[proposal.status] ?? PROPOSAL_STATUS_LABELS.pending;
+
                 return (
-                  <li
-                    key={p.id}
-                    className="border border-white/8 rounded-2xl p-4 bg-white/4"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                  <li key={proposal.id} className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                    <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="font-semibold text-white">{p.freelancerName}</p>
-                        {p.freelancerTitle && (
-                          <p className="text-xs text-slate-500">{p.freelancerTitle}</p>
+                        <p className="font-semibold text-white">{proposal.freelancerName}</p>
+                        {proposal.freelancerTitle && (
+                          <p className="text-xs text-slate-500">{proposal.freelancerTitle}</p>
                         )}
                       </div>
                       <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${statusMeta.className}`}
+                        className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusMeta.className}`}
                       >
                         {statusMeta.label}
                       </span>
                     </div>
-                    <p className="text-sm font-bold text-brand mb-2">₺{p.bid.toLocaleString('tr-TR')}</p>
-                    <p className="text-sm text-slate-400 whitespace-pre-wrap mb-3">{p.cover_letter}</p>
-                    <p className="text-xs text-slate-500 mb-3">
-                      {p.delivery_days} days · {formatRelativeTime(p.created_at)}
+                    <p className="mb-2 text-sm font-bold text-brand">
+                      ${proposal.bid.toLocaleString('en-US')}
                     </p>
-                    {p.status === 'pending' && (
+                    <p className="mb-3 whitespace-pre-wrap text-sm text-slate-400">
+                      {proposal.cover_letter}
+                    </p>
+                    <p className="mb-3 text-xs text-slate-500">
+                      {proposal.delivery_days} days · {formatRelativeTime(proposal.created_at)}
+                    </p>
+                    {proposal.status === 'pending' && (
                       <div className="flex gap-2">
                         <form action={acceptProposal}>
-                          <input type="hidden" name="proposal_id" value={p.id} />
+                          <input type="hidden" name="proposal_id" value={proposal.id} />
                           <input type="hidden" name="job_id" value={id} />
-                          <input type="hidden" name="freelancer_id" value={p.freelancer_id} />
-                          <input type="hidden" name="bid" value={p.bid} />
+                          <input
+                            type="hidden"
+                            name="freelancer_id"
+                            value={proposal.freelancer_id}
+                          />
+                          <input type="hidden" name="bid" value={proposal.bid} />
                           <button
                             type="submit"
-                            className="text-sm font-semibold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                           >
                             Accept
                           </button>
                         </form>
                         <form action={rejectProposal}>
-                          <input type="hidden" name="proposal_id" value={p.id} />
+                          <input type="hidden" name="proposal_id" value={proposal.id} />
                           <input type="hidden" name="job_id" value={id} />
                           <button
                             type="submit"
-                            className="text-sm font-semibold px-4 py-2 rounded-xl border border-slate-200 hover:bg-red-50 hover:text-red-600 text-slate-600"
+                            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600"
                           >
                             Decline
                           </button>
@@ -205,7 +222,7 @@ export default async function PortalJobDetailPage({ params, searchParams }: Page
 
       {isFreelancer && !isOwner && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-white mb-4">Submit a Proposal</h2>
+          <h2 className="mb-4 text-lg font-bold text-white">Submit a Proposal</h2>
           {existingProposal ? (
             <p className="text-sm text-slate-400">
               You&apos;ve already submitted a proposal for this job (

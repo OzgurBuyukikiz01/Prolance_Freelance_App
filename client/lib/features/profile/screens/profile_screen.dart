@@ -59,8 +59,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final user = context.read<AppState>().currentUser;
-    _reviewsFuture ??=
-        context.read<ReviewRepository>().loadReviewsForProfile(user.id);
+    _reviewsFuture ??= context.read<ReviewRepository>().loadReviewsForProfile(
+      user.id,
+    );
   }
 
   @override
@@ -68,8 +69,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final state = context.watch<AppState>();
     final user = state.currentUser;
     final scheme = Theme.of(context).colorScheme;
-    final activeJobs =
-        context.watch<JobsProvider>().activeJobsForUser(user.name);
+    final activeJobs = context.watch<JobsProvider>().activeJobsForUser(
+      user.id,
+      fallbackUserName: user.name,
+    );
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -93,9 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
             },
           ),
@@ -130,7 +131,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 pendingCents: context
                     .watch<ProposalRepository>()
                     .myProposals
-                    .where((p) => p.lifecyclePhase == ProposalLifecycle.payoutPending)
+                    .where(
+                      (p) =>
+                          p.lifecyclePhase == ProposalLifecycle.payoutPending,
+                    )
                     .fold(0, (sum, p) => sum + (p.fundedAmountCents ?? 0)),
               ),
             ),
@@ -203,10 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
-          UserAvatar(
-            imageUrl: user.avatarUrl,
-            size: UserAvatarSize.xlarge,
-          ),
+          UserAvatar(imageUrl: user.avatarUrl, size: UserAvatarSize.xlarge),
           const SizedBox(height: AppConstants.paddingMd),
           Text(
             user.name,
@@ -252,11 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Iconsax.dollar_circle,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
+                Icon(Iconsax.dollar_circle, size: 16, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
                   '\$${_rateLabel(user.hourlyRate)}/hr',
@@ -272,10 +269,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (user.website.trim().isNotEmpty) ...[
             const SizedBox(height: 4),
             TextButton(
-              onPressed: () => confirmAndLaunchExternalUrl(
-                context,
-                rawUrl: user.website,
-              ),
+              onPressed: () =>
+                  confirmAndLaunchExternalUrl(context, rawUrl: user.website),
               child: Text(
                 _displayWebsite(user.website),
                 style: GoogleFonts.poppins(
@@ -292,10 +287,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (user.rating > 0)
             RatingBarIndicator(
               rating: user.rating,
-              itemBuilder: (context, index) => const Icon(
-                Iconsax.star1,
-                color: AppColors.warning,
-              ),
+              itemBuilder: (context, index) =>
+                  const Icon(Iconsax.star1, color: AppColors.warning),
               itemCount: 5,
               itemSize: 20,
               unratedColor: AppColors.grey300,
@@ -303,7 +296,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           else
             Text(
               'No rating yet',
-              style: GoogleFonts.poppins(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
         ],
       ),
@@ -397,7 +393,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -647,10 +645,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             spacing: 8,
             runSpacing: 8,
             children: user.skills
-                .map((skill) => SkillChip(
-                      label: skill,
-                      variant: SkillChipVariant.primary,
-                    ))
+                .map(
+                  (skill) => SkillChip(
+                    label: skill,
+                    variant: SkillChipVariant.primary,
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -681,35 +681,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (jobs.isEmpty)
             Text(
               'No active jobs yet.',
-              style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: GoogleFonts.poppins(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             )
           else
-            ...jobs.take(5).map(
-                  (job) {
-                    final statusLabel = switch (job.status) {
-                      'pending_review' => 'Pending review',
-                      'rejected' => 'Rejected',
-                      'open' => 'Published',
-                      'in_progress' => 'In progress',
-                      _ => job.status,
-                    };
-                    final subtitle = job.status == 'rejected' &&
-                            (job.rejectionReason?.isNotEmpty ?? false)
-                        ? '${job.category} · $statusLabel: ${job.rejectionReason}'
-                        : '${job.category} · $statusLabel';
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(job.title),
-                      subtitle: Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: const Icon(Iconsax.arrow_right_3, size: 18),
-                      onTap: () => context.push('/jobs/${job.id}'),
-                    );
-                  },
+            ...jobs.take(5).map((job) {
+              final statusLabel = switch (job.status) {
+                'pending_review' => 'Pending review',
+                'rejected' => 'Rejected',
+                'open' => 'Published',
+                'in_progress' => 'In progress',
+                _ => job.status,
+              };
+              final subtitle =
+                  job.status == 'rejected' &&
+                      (job.rejectionReason?.isNotEmpty ?? false)
+                  ? '${job.category} · $statusLabel: ${job.rejectionReason}'
+                  : '${job.category} · $statusLabel';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(job.title),
+                subtitle: Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                trailing: IconButton(
+                  tooltip: 'Edit job',
+                  onPressed: () => context.push('/edit-job/${job.id}'),
+                  icon: const Icon(Iconsax.edit_2, size: 18),
+                ),
+                onTap: () => context.push('/jobs/${job.id}'),
+              );
+            }),
         ],
       ),
     );
@@ -741,10 +746,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       if (!mounted) return;
       setState(() {
-        _portfolioItems.add(PortfolioItem(
-          file: file,
-          thumbnailBytes: thumb,
-        ));
+        _portfolioItems.add(PortfolioItem(file: file, thumbnailBytes: thumb));
       });
     }
   }
@@ -824,7 +826,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                    border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: scheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -845,7 +849,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   onTap: () => _showFullPreview(context, item),
                                   child: Padding(
                                     padding: const EdgeInsets.all(6),
-                                    child: Icon(Iconsax.maximize_3, size: 16, color: scheme.onSurface),
+                                    child: Icon(
+                                      Iconsax.maximize_3,
+                                      size: 16,
+                                      color: scheme.onSurface,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -862,16 +870,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               item.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${item.typeLabel} · ${item.sizeLabel}',
-                              style: GoogleFonts.poppins(fontSize: 10, color: scheme.onSurfaceVariant),
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
                             Text(
                               dateFmt.format(item.addedAt),
-                              style: GoogleFonts.poppins(fontSize: 10, color: scheme.onSurfaceVariant),
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Row(
@@ -880,10 +898,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   child: SizedBox(
                                     height: 28,
                                     child: OutlinedButton(
-                                      onPressed: () => _downloadPortfolioFile(item.file),
+                                      onPressed: () =>
+                                          _downloadPortfolioFile(item.file),
                                       style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                                        textStyle: GoogleFonts.poppins(fontSize: 10),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        textStyle: GoogleFonts.poppins(
+                                          fontSize: 10,
+                                        ),
                                       ),
                                       child: const Text('Save'),
                                     ),
@@ -895,8 +918,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   height: 28,
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
-                                    onPressed: () => setState(() => _portfolioItems.removeAt(index)),
-                                    icon: Icon(Iconsax.trash, size: 16, color: scheme.error),
+                                    onPressed: () => setState(
+                                      () => _portfolioItems.removeAt(index),
+                                    ),
+                                    icon: Icon(
+                                      Iconsax.trash,
+                                      size: 16,
+                                      color: scheme.error,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -916,16 +945,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildPortfolioThumbnail(PortfolioItem item) {
     if (item.isImage && item.file.bytes != null) {
-      return Image.memory(
-        item.file.bytes!,
-        fit: BoxFit.cover,
-      );
+      return Image.memory(item.file.bytes!, fit: BoxFit.cover);
     }
     if (item.isPdf && item.thumbnailBytes != null) {
-      return Image.memory(
-        item.thumbnailBytes!,
-        fit: BoxFit.cover,
-      );
+      return Image.memory(item.thumbnailBytes!, fit: BoxFit.cover);
     }
     return Center(
       child: Icon(
@@ -1027,8 +1050,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         placeholder: (context, url) => Container(
                           color: AppColors.grey200,
                           child: const Center(
-                            child:
-                                CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
                         errorWidget: (context, url, error) => Container(
@@ -1101,7 +1123,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final months = (diff.inDays / 30).floor();
       return '$months month${months > 1 ? 's' : ''} ago';
     }
-    if (diff.inDays > 0) return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+    if (diff.inDays > 0)
+      return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     return 'Just now';
   }
@@ -1112,7 +1135,8 @@ class _PortfolioPreviewDialog extends StatefulWidget {
   final PortfolioItem item;
 
   @override
-  State<_PortfolioPreviewDialog> createState() => _PortfolioPreviewDialogState();
+  State<_PortfolioPreviewDialog> createState() =>
+      _PortfolioPreviewDialogState();
 }
 
 class _PortfolioPreviewDialogState extends State<_PortfolioPreviewDialog> {
@@ -1174,7 +1198,10 @@ class _PortfolioPreviewDialogState extends State<_PortfolioPreviewDialog> {
           AppBar(
             title: Text(
               widget.item.name,
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             leading: IconButton(
               icon: const Icon(Iconsax.close_circle),
@@ -1186,24 +1213,30 @@ class _PortfolioPreviewDialogState extends State<_PortfolioPreviewDialog> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : widget.item.isImage && widget.item.file.bytes != null
-                    ? InteractiveViewer(
-                        minScale: 0.5,
-                        maxScale: 4.0,
-                        child: Image.memory(widget.item.file.bytes!, fit: BoxFit.contain),
-                      )
-                    : widget.item.isPdf && _currentImage?.bytes != null
-                        ? InteractiveViewer(
-                            minScale: 0.5,
-                            maxScale: 4.0,
-                            child: Image.memory(_currentImage!.bytes, fit: BoxFit.contain),
-                          )
-                        : Center(
-                            child: Icon(
-                              Icons.insert_drive_file,
-                              size: 80,
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
+                ? InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.memory(
+                      widget.item.file.bytes!,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : widget.item.isPdf && _currentImage?.bytes != null
+                ? InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.memory(
+                      _currentImage!.bytes,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : Center(
+                    child: Icon(
+                      Icons.insert_drive_file,
+                      size: 80,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
           ),
           if (widget.item.isPdf && _pageCount > 1)
             SafeArea(
@@ -1214,7 +1247,9 @@ class _PortfolioPreviewDialogState extends State<_PortfolioPreviewDialog> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: _currentPage > 1 ? () => _renderPage(_currentPage - 1) : null,
+                      onPressed: _currentPage > 1
+                          ? () => _renderPage(_currentPage - 1)
+                          : null,
                       icon: const Icon(Iconsax.arrow_left_2),
                     ),
                     Text(
@@ -1226,7 +1261,9 @@ class _PortfolioPreviewDialogState extends State<_PortfolioPreviewDialog> {
                       ),
                     ),
                     IconButton(
-                      onPressed: _currentPage < _pageCount ? () => _renderPage(_currentPage + 1) : null,
+                      onPressed: _currentPage < _pageCount
+                          ? () => _renderPage(_currentPage + 1)
+                          : null,
                       icon: const Icon(Iconsax.arrow_right_3),
                     ),
                   ],

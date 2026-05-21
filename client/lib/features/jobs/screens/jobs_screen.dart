@@ -17,12 +17,7 @@ import '../../../core/state/jobs_provider.dart';
 import '../../../core/widgets/overlays/prolance_bottom_sheet.dart';
 import '../../../core/widgets/user_avatar.dart';
 
-enum JobSortOption {
-  newest,
-  budgetHighLow,
-  budgetLowHigh,
-  mostProposals,
-}
+enum JobSortOption { newest, budgetHighLow, budgetLowHigh, mostProposals }
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
@@ -44,9 +39,11 @@ class _JobsScreenState extends State<JobsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _nav ??= context.read<MainNavController>()..addListener(_onRepoOrNavChanged);
+    _nav ??= context.read<MainNavController>()
+      ..addListener(_onRepoOrNavChanged);
     _app ??= context.read<AppState>()..addListener(_onRepoOrNavChanged);
-    _jobsProvider ??= context.read<JobsProvider>()..addListener(_onRepoOrNavChanged);
+    _jobsProvider ??= context.read<JobsProvider>()
+      ..addListener(_onRepoOrNavChanged);
     _refreshFromSource();
   }
 
@@ -69,16 +66,26 @@ class _JobsScreenState extends State<JobsScreen> {
     final source = jobsProvider.jobs.where((j) {
       if (j.status == 'pending_review') return false;
       if (j.isUserPosted &&
-          j.clientName == appState.currentUser.name &&
+          jobsProvider.isOwnedByCurrentUser(
+            j,
+            appState.currentUser.id,
+            fallbackUserName: appState.currentUser.name,
+          ) &&
           jobsProvider.shouldHideApprovedJobFromOwnerHome(j.id)) {
         return false;
       }
       return true;
     }).toList();
-    final mode = _nav?.jobsSeeAllMode ?? context.read<MainNavController>().jobsSeeAllMode;
+    final mode =
+        _nav?.jobsSeeAllMode ??
+        context.read<MainNavController>().jobsSeeAllMode;
     final query = _searchController.text;
     _jobs = source.where((job) {
-      return _browseFilters.matchesJob(job, query: query, useBroadSearch: false);
+      return _browseFilters.matchesJob(
+        job,
+        query: query,
+        useBroadSearch: false,
+      );
     }).toList();
 
     if (mode == JobsSeeAllMode.recommended) {
@@ -122,8 +129,10 @@ class _JobsScreenState extends State<JobsScreen> {
   }
 
   Future<void> _openFilters() async {
-    final next =
-        await showJobBrowseFiltersSheet(context, initial: _browseFilters);
+    final next = await showJobBrowseFiltersSheet(
+      context,
+      initial: _browseFilters,
+    );
     if (!mounted || next == null) return;
     setState(() {
       _browseFilters = next;
@@ -231,7 +240,9 @@ class _JobsScreenState extends State<JobsScreen> {
                           ),
                           TextButton(
                             onPressed: () {
-                              context.read<MainNavController>().clearJobsSeeAllMode();
+                              context
+                                  .read<MainNavController>()
+                                  .clearJobsSeeAllMode();
                               setState(_refreshFromSource);
                             },
                             child: const Text('Clear'),
@@ -254,36 +265,42 @@ class _JobsScreenState extends State<JobsScreen> {
                         builder: (ctx) {
                           final sc = Theme.of(ctx).colorScheme;
                           return Container(
-                        decoration: BoxDecoration(
-                          color: sc.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                          border: Border.all(
-                            color: sc.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: sc.shadow.withValues(alpha: 0.12),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                            decoration: BoxDecoration(
+                              color: sc.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(
+                                AppConstants.radiusMd,
+                              ),
+                              border: Border.all(
+                                color: sc.outlineVariant.withValues(alpha: 0.5),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: sc.shadow.withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          style: TextStyle(color: sc.onSurface),
-                          decoration: InputDecoration(
-                            hintText: 'Search jobs...',
-                            hintStyle: TextStyle(color: sc.onSurfaceVariant),
-                            prefixIcon: Icon(Iconsax.search_normal_1,
-                                color: sc.onSurfaceVariant),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppConstants.paddingMd,
-                              vertical: AppConstants.paddingMd,
+                            child: TextField(
+                              controller: _searchController,
+                              style: TextStyle(color: sc.onSurface),
+                              decoration: InputDecoration(
+                                hintText: 'Search jobs...',
+                                hintStyle: TextStyle(
+                                  color: sc.onSurfaceVariant,
+                                ),
+                                prefixIcon: Icon(
+                                  Iconsax.search_normal_1,
+                                  color: sc.onSurfaceVariant,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppConstants.paddingMd,
+                                  vertical: AppConstants.paddingMd,
+                                ),
+                              ),
+                              onChanged: (_) => setState(_refreshFromSource),
                             ),
-                          ),
-                          onChanged: (_) => setState(_refreshFromSource),
-                        ),
                           );
                         },
                       ),
@@ -316,26 +333,23 @@ class _JobsScreenState extends State<JobsScreen> {
               ),
             ),
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final job = _jobs[index];
-                  return FadeInUp(
-                    delay: Duration(milliseconds: 50 * index),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.paddingMd,
-                        vertical: AppConstants.paddingSm,
-                      ),
-                      child: _JobCard(
-                        job: job,
-                        formatBudget: _formatBudget,
-                        onTap: () => context.push('/jobs/${job.id}'),
-                      ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final job = _jobs[index];
+                return FadeInUp(
+                  delay: Duration(milliseconds: 50 * index),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.paddingMd,
+                      vertical: AppConstants.paddingSm,
                     ),
-                  );
-                },
-                childCount: _jobs.length,
-              ),
+                    child: _JobCard(
+                      job: job,
+                      formatBudget: _formatBudget,
+                      onTap: () => context.push('/jobs/${job.id}'),
+                    ),
+                  ),
+                );
+              }, childCount: _jobs.length),
             ),
           ],
         ),
@@ -347,7 +361,9 @@ class _JobsScreenState extends State<JobsScreen> {
     final isSelected = _sortOption == option;
     return ListTile(
       title: Text(label),
-      trailing: isSelected ? const Icon(Iconsax.tick_circle5, color: AppColors.primary) : null,
+      trailing: isSelected
+          ? const Icon(Iconsax.tick_circle5, color: AppColors.primary)
+          : null,
       onTap: () => _onSortSelected(option),
     );
   }
@@ -431,8 +447,7 @@ class _FilterChip extends StatelessWidget {
             Text(
               value ?? label,
               style: AppTextStyles.bodySmall.copyWith(
-                color:
-                    hasValue ? AppColors.primary : scheme.onSurfaceVariant,
+                color: hasValue ? AppColors.primary : scheme.onSurfaceVariant,
                 fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
@@ -470,7 +485,9 @@ class _JobCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-          border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.35)),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.35),
+          ),
           boxShadow: [
             BoxShadow(
               color: scheme.shadow.withValues(alpha: 0.12),
@@ -509,8 +526,9 @@ class _JobCard extends StatelessWidget {
                             child: Text(
                               job.clientName,
                               style: AppTextStyles.bodySmallSecondary.copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -569,7 +587,11 @@ class _JobCard extends StatelessWidget {
             const SizedBox(height: AppConstants.paddingSm),
             Row(
               children: [
-                Icon(Iconsax.document_text, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(
+                  Iconsax.document_text,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppConstants.paddingXs),
                 Text(
                   '${job.proposalCount} proposals',

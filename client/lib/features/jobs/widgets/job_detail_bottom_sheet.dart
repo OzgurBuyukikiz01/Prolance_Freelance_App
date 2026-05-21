@@ -25,10 +25,7 @@ void showJobDetailBottomSheet(BuildContext context, JobModel job) {
     isScrollControlled: true,
     showDragHandle: false,
     showTitleBar: false,
-    child: SafeArea(
-      top: false,
-      child: JobDetailBottomSheet(job: job),
-    ),
+    child: SafeArea(top: false, child: JobDetailBottomSheet(job: job)),
   );
 }
 
@@ -56,7 +53,8 @@ class JobDetailBottomSheet extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: scheme.surface,
                   borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24)),
+                    top: Radius.circular(24),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -109,8 +107,10 @@ class JobDetailBottomSheet extends StatelessWidget {
                               fit: BoxFit.cover,
                               errorWidget: (_, _, _) => Container(
                                 color: scheme.surfaceContainerHighest,
-                                child: Icon(Iconsax.user,
-                                    color: scheme.onSurfaceVariant),
+                                child: Icon(
+                                  Iconsax.user,
+                                  color: scheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                           ),
@@ -124,7 +124,9 @@ class JobDetailBottomSheet extends StatelessWidget {
                     // Tab bar
                     TabBar(
                       labelStyle: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600, fontSize: 14),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                       unselectedLabelStyle: GoogleFonts.poppins(fontSize: 14),
                       labelColor: AppColors.primary,
                       unselectedLabelColor: scheme.onSurfaceVariant,
@@ -281,8 +283,7 @@ class _SummaryTab extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           'Description',
-          style: AppTextStyles.heading6
-              .copyWith(color: scheme.onSurface),
+          style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
         ),
         const SizedBox(height: 8),
         Text(
@@ -297,8 +298,7 @@ class _SummaryTab extends StatelessWidget {
         if (job.skills.isNotEmpty) ...[
           Text(
             'Required skills',
-            style: AppTextStyles.heading6
-                .copyWith(color: scheme.onSurface),
+            style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -307,14 +307,11 @@ class _SummaryTab extends StatelessWidget {
             children: job.skills
                 .map(
                   (s) => Chip(
-                    label: Text(
-                      s,
-                      style: GoogleFonts.poppins(fontSize: 12),
-                    ),
-                    backgroundColor:
-                        AppColors.primary.withValues(alpha: 0.08),
+                    label: Text(s, style: GoogleFonts.poppins(fontSize: 12)),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.08),
                     side: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.2)),
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
                   ),
                 )
                 .toList(),
@@ -347,7 +344,8 @@ class _ClientTab extends StatelessWidget {
               color: scheme.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: scheme.outlineVariant.withValues(alpha: 0.35)),
+                color: scheme.outlineVariant.withValues(alpha: 0.35),
+              ),
             ),
             child: Row(
               children: [
@@ -379,10 +377,8 @@ class _ClientTab extends StatelessWidget {
                       const SizedBox(height: 4),
                       RatingBarIndicator(
                         rating: 4.5,
-                        itemBuilder: (context, index) => const Icon(
-                          Icons.star_rounded,
-                          color: Colors.amber,
-                        ),
+                        itemBuilder: (context, index) =>
+                            const Icon(Icons.star_rounded, color: Colors.amber),
                         itemSize: 16,
                       ),
                       const SizedBox(height: 4),
@@ -456,11 +452,11 @@ class _ProposalTabState extends State<_ProposalTab> {
 
   bool get _isJobOwner {
     final user = context.read<AppState>().currentUser;
-    final cid = widget.job.clientId;
-    if (cid != null && cid.isNotEmpty && cid == user.id) {
-      return true;
-    }
-    return widget.job.clientName == user.name;
+    return context.read<JobsProvider>().isOwnedByCurrentUser(
+      widget.job,
+      user.id,
+      fallbackUserName: user.name,
+    );
   }
 
   bool _ownerLoadScheduled = false;
@@ -476,8 +472,9 @@ class _ProposalTabState extends State<_ProposalTab> {
 
   Future<void> _loadIncoming() async {
     setState(() => _loadingIncoming = true);
-    final rows =
-        await context.read<ProposalRepository>().fetchForJob(widget.job.id);
+    final rows = await context.read<ProposalRepository>().fetchForJob(
+      widget.job.id,
+    );
     if (mounted) {
       setState(() {
         _incoming = rows;
@@ -492,11 +489,11 @@ class _ProposalTabState extends State<_ProposalTab> {
     final appState = context.read<AppState>();
     final jobs = context.read<JobsProvider>();
     final ok = await repo.acceptProposal(
-          proposalId: row.id,
-          jobId: row.jobId,
-          freelancerId: row.freelancerId,
-          bid: row.bid,
-        );
+      proposalId: row.id,
+      jobId: row.jobId,
+      freelancerId: row.freelancerId,
+      bid: row.bid,
+    );
     if (!mounted) return;
     setState(() => _actingOnProposalId = null);
     if (ok) {
@@ -519,22 +516,18 @@ class _ProposalTabState extends State<_ProposalTab> {
               'Bu teklif tutarı için demo cüzdan bakiyesi yetersiz.',
             )
           : code == 'job_already_accepted'
-              ? appState.t(
-                  'Another proposal for this job is already accepted.',
-                  'Bu iş için başka bir teklif zaten kabul edilmiş.',
-                )
-              : appState.t(
-                  'Could not accept proposal.',
-                  'Teklif kabul edilemedi.',
-                );
+          ? appState.t(
+              'Another proposal for this job is already accepted.',
+              'Bu iş için başka bir teklif zaten kabul edilmiş.',
+            )
+          : appState.t('Could not accept proposal.', 'Teklif kabul edilemedi.');
       ProlanceMessenger.error(context, msg);
     }
   }
 
   Future<void> _reject(JobProposalRow row) async {
     setState(() => _actingOnProposalId = row.id);
-    final ok =
-        await context.read<ProposalRepository>().rejectProposal(row.id);
+    final ok = await context.read<ProposalRepository>().rejectProposal(row.id);
     if (!mounted) return;
     setState(() => _actingOnProposalId = null);
     if (ok) {
@@ -608,8 +601,7 @@ class _ProposalTabState extends State<_ProposalTab> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.tick_circle,
-                color: AppColors.success, size: 56),
+            Icon(Iconsax.tick_circle, color: AppColors.success, size: 56),
             const SizedBox(height: 16),
             Text(
               'Proposal sent!',
@@ -640,8 +632,7 @@ class _ProposalTabState extends State<_ProposalTab> {
         children: [
           Text(
             'Your proposal',
-            style: AppTextStyles.heading6
-                .copyWith(color: scheme.onSurface),
+            style: AppTextStyles.heading6.copyWith(color: scheme.onSurface),
           ),
           const SizedBox(height: 16),
           // Cover letter
@@ -649,19 +640,18 @@ class _ProposalTabState extends State<_ProposalTab> {
             controller: _coverController,
             maxLines: 6,
             decoration: InputDecoration(
-              hintText:
-                  'Explain why you are a great fit for this job...',
+              hintText: 'Explain why you are a great fit for this job...',
               hintStyle: GoogleFonts.poppins(
-                  fontSize: 13, color: scheme.onSurfaceVariant),
+                fontSize: 13,
+                color: scheme.onSurfaceVariant,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide:
-                    BorderSide(color: scheme.outlineVariant),
+                borderSide: BorderSide(color: scheme.outlineVariant),
               ),
               contentPadding: const EdgeInsets.all(16),
             ),
-            style: GoogleFonts.poppins(
-                fontSize: 14, color: scheme.onSurface),
+            style: GoogleFonts.poppins(fontSize: 14, color: scheme.onSurface),
           ),
           const SizedBox(height: 16),
           // Price
@@ -675,8 +665,7 @@ class _ProposalTabState extends State<_ProposalTab> {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            style: GoogleFonts.poppins(
-                fontSize: 14, color: scheme.onSurface),
+            style: GoogleFonts.poppins(fontSize: 14, color: scheme.onSurface),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -772,9 +761,11 @@ class _ProposalTabState extends State<_ProposalTab> {
                 ),
               ],
               if (row.status == 'accepted' &&
-                  (row.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
+                  (row.lifecyclePhase ==
+                          ProposalLifecycle.awaitingClientReview ||
                       row.lifecyclePhase == ProposalLifecycle.delivered ||
-                      row.lifecyclePhase == ProposalLifecycle.payoutPending)) ...[
+                      row.lifecyclePhase ==
+                          ProposalLifecycle.payoutPending)) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -785,9 +776,9 @@ class _ProposalTabState extends State<_ProposalTab> {
                     icon: const Icon(Iconsax.tick_square, size: 18),
                     label: Text(
                       context.read<AppState>().t(
-                            'Accept delivery',
-                            'Teslimi kabul et',
-                          ),
+                        'Accept delivery',
+                        'Teslimi kabul et',
+                      ),
                     ),
                   ),
                 ),
@@ -861,8 +852,7 @@ class _InfoChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

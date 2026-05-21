@@ -62,6 +62,14 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
       _nativePaymentOpen ||
       _webPaymentWindowOpened;
 
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      startIyzicoPaymentResultListener(_handleWebPaymentResult);
+    }
+  }
+
   static bool _isHostFlowEndUrl(String url) {
     final u = Uri.tryParse(url);
     if (u == null) return false;
@@ -91,6 +99,33 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
       closeIyzicoPaymentWindow();
       unawaited(_runPostCloseSequence(sessionGen));
     });
+  }
+
+  void _handleWebPaymentResult(String outcome) {
+    if (!mounted) return;
+    if (!_webPaymentWindowOpened && !_checkingPopup && !_paying) return;
+
+    _onIyzicoHostFlowEnded();
+
+    final app = context.read<AppState>();
+    final message = switch (outcome) {
+      'success' => app.t(
+        'Payment completed. We are verifying your balance update.',
+        'Ödeme tamamlandı. Bakiye güncellemesi doğrulanıyor.',
+      ),
+      'not_paid' || 'failed' || 'amount_mismatch' || 'credit_error' => app.t(
+        'Payment did not complete successfully.',
+        'Ödeme başarıyla tamamlanmadı.',
+      ),
+      _ => app.t(
+        'Payment flow finished. We are checking the result.',
+        'Ödeme akışı tamamlandı. Sonuç kontrol ediliyor.',
+      ),
+    };
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _runPostCloseSequence(int generation) async {
@@ -247,9 +282,9 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
         SnackBar(
           content: Text(
             context.read<AppState>().t(
-                  'Could not start iyzico checkout: $e',
-                  'iyzico ödemesi başlatılamadı: $e',
-                ),
+              'Could not start iyzico checkout: $e',
+              'iyzico ödemesi başlatılamadı: $e',
+            ),
           ),
         ),
       );
@@ -261,6 +296,9 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
   @override
   void dispose() {
     _hostCloseTimer?.cancel();
+    if (kIsWeb) {
+      stopIyzicoPaymentResultListener();
+    }
     super.dispose();
   }
 
@@ -278,7 +316,10 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
           onPressed: _checkoutBusy ? null : () => context.pop(),
         ),
         title: Text(
-          app.t('Add demo balance (iyzico sandbox)', 'Bakiye ekle (iyzico sandbox)'),
+          app.t(
+            'Add demo balance (iyzico sandbox)',
+            'Bakiye ekle (iyzico sandbox)',
+          ),
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
             color: scheme.onSurface,
@@ -302,7 +343,11 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Iconsax.shield_tick, color: scheme.primary, size: 22),
+                      Icon(
+                        Iconsax.shield_tick,
+                        color: scheme.primary,
+                        size: 22,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -374,8 +419,12 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
                   Container(
                     padding: const EdgeInsets.all(AppConstants.paddingMd),
                     decoration: BoxDecoration(
-                      color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                      color: scheme.surfaceContainerHighest.withValues(
+                        alpha: 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusMd,
+                      ),
                       border: Border.all(color: scheme.outlineVariant),
                     ),
                     child: Column(
@@ -386,14 +435,21 @@ class _IyzicoTopupScreenState extends State<IyzicoTopupScreen> {
                             'When you have finished paying in the other tab, tap below. The app cannot detect the bank tab automatically on web.',
                             'Diğer sekmede ödemeyi bitirdiğinizde aşağıya basın. Web’de banka sekmesi otomatik algılanamaz.',
                           ),
-                          style: GoogleFonts.poppins(fontSize: 13, height: 1.35),
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            height: 1.35,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         FilledButton.tonal(
-                          onPressed: _hostEndCloseArmed ? null : _onIyzicoHostFlowEnded,
+                          onPressed: _hostEndCloseArmed
+                              ? null
+                              : _onIyzicoHostFlowEnded,
                           child: Text(
                             app.t('I finished paying', 'Ödemeyi tamamladım'),
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],

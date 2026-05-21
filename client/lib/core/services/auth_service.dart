@@ -35,6 +35,14 @@ class AuthService {
 
   static const String mobileOAuthRedirect = 'io.prolance.app://login-callback';
 
+  bool get supportsAppleOAuth {
+    if (kIsWeb) return false;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => true,
+      _ => false,
+    };
+  }
+
   Future<void> signInWithGoogle() async {
     final c = _client;
     if (c == null) {
@@ -42,6 +50,21 @@ class AuthService {
     }
     await c.auth.signInWithOAuth(
       OAuthProvider.google,
+      redirectTo: kIsWeb ? null : mobileOAuthRedirect,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
+  }
+
+  Future<void> signInWithApple() async {
+    final c = _client;
+    if (c == null) {
+      throw StateError('Supabase is not enabled');
+    }
+    if (!supportsAppleOAuth) {
+      throw StateError('Apple sign-in is not supported on this platform');
+    }
+    await c.auth.signInWithOAuth(
+      OAuthProvider.apple,
       redirectTo: kIsWeb ? null : mobileOAuthRedirect,
       authScreenLaunchMode: LaunchMode.externalApplication,
     );
@@ -72,10 +95,7 @@ class AuthService {
     return c.auth.signUp(
       email: email.trim(),
       password: password,
-      data: {
-        'full_name': fullName,
-        'role': role,
-      },
+      data: {'full_name': fullName, 'role': role},
     );
   }
 
@@ -101,11 +121,7 @@ class AuthService {
     final u = rawUser;
     if (c == null || u == null) return null;
 
-    final row = await c
-        .from('profiles')
-        .select()
-        .eq('id', u.id)
-        .maybeSingle();
+    final row = await c.from('profiles').select().eq('id', u.id).maybeSingle();
 
     if (row == null) {
       return UserModel(
@@ -189,14 +205,15 @@ class AuthService {
       'role': user.isFreelancer ? 'FREELANCER' : 'CLIENT',
     };
 
-    final updated =
-        await c.from('profiles').update(payload).eq('id', uid).select('id').maybeSingle();
+    final updated = await c
+        .from('profiles')
+        .update(payload)
+        .eq('id', uid)
+        .select('id')
+        .maybeSingle();
 
     if (updated == null) {
-      await c.from('profiles').insert({
-        'id': uid,
-        ...payload,
-      });
+      await c.from('profiles').insert({'id': uid, ...payload});
     }
   }
 

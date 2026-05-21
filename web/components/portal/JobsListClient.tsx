@@ -32,32 +32,36 @@ export function JobsListClient({ jobs, isClient }: JobsListClientProps) {
     const q = query.trim().toLowerCase();
     if (!q) return jobs;
     return jobs.filter(
-      (j) =>
-        j.title.toLowerCase().includes(q) ||
-        j.description.toLowerCase().includes(q) ||
-        parseSkills(j.skills).some((s) => s.toLowerCase().includes(q)),
+      (job) =>
+        job.title.toLowerCase().includes(q) ||
+        job.description.toLowerCase().includes(q) ||
+        parseSkills(job.skills).some((skill) => skill.toLowerCase().includes(q)),
     );
   }, [jobs, query]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-bold text-white">Job Board</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          {isClient ? 'Manage your listings or post a new job.' : 'Browse open listings and submit proposals.'}
+        <h1 className="text-3xl font-display font-bold tracking-tight text-white">Job Board</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          {isClient
+            ? 'Track your live listings, review incoming demand, and keep posted roles current.'
+            : 'Browse active listings, compare budgets, and send proposals without leaving the portal.'}
         </p>
       </div>
 
-      <input
-        type="search"
-        placeholder="Search by title, description or skill…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
-      />
+      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_18px_60px_rgba(15,23,42,0.22)]">
+        <input
+          type="search"
+          placeholder="Search by title, description, or skill"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+        />
+      </div>
 
       {filtered.length === 0 ? (
-        <MagicCard innerClassName="p-8 text-center text-slate-500 text-sm">
+        <MagicCard innerClassName="p-8 text-center text-sm text-slate-400">
           {jobs.length === 0 ? 'No open jobs yet.' : 'No jobs match your search.'}
         </MagicCard>
       ) : (
@@ -67,35 +71,41 @@ export function JobsListClient({ jobs, isClient }: JobsListClientProps) {
             return (
               <li key={job.id}>
                 <Link href={`/portal/jobs/${job.id}`}>
-                  <MagicCard className="block hover:shadow-card-hover transition-shadow">
+                  <MagicCard className="block transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
                     <div className="p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h2 className="font-bold text-slate-900 truncate">{job.title}</h2>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <h2 className="truncate text-lg font-bold text-white">{job.title}</h2>
+                          <p className="mt-1 text-xs text-slate-400">
                             {job.client_name} · {formatRelativeTime(job.posted_date)}
                           </p>
                         </div>
-                        <span className="text-sm font-bold text-brand whitespace-nowrap">
+                        <span className="whitespace-nowrap text-sm font-bold text-brand">
                           {formatBudget(job.budget_min, job.budget_max, job.budget_type)}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-400 mt-3 line-clamp-2">{job.description}</p>
+                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-300">
+                        {job.description}
+                      </p>
                       {skills.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-3">
+                        <div className="mt-3 flex flex-wrap gap-1.5">
                           {skills.map((skill) => (
                             <span
                               key={skill}
-                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white/8 text-slate-400"
+                              className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-slate-300"
                             >
                               {skill}
                             </span>
                           ))}
                         </div>
                       )}
-                      <p className="text-xs text-slate-500 mt-3">
-                        {job.proposal_count} {job.proposal_count === 1 ? 'proposal' : 'proposals'} · {job.category}
-                      </p>
+                      <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-400">
+                        <p>
+                          {job.proposal_count} {job.proposal_count === 1 ? 'proposal' : 'proposals'} ·{' '}
+                          {job.category}
+                        </p>
+                        <span className="font-medium text-slate-500">Open</span>
+                      </div>
                     </div>
                   </MagicCard>
                 </Link>

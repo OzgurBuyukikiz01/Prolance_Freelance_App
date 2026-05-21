@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * iyzico Checkout Form callback — POST with `token` (no JWT).
+ * iyzico Checkout Form callback - POST with `token` (no JWT).
  * Retrieves payment; on success credits profiles.demo_balance_cents.
  */
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
@@ -8,7 +8,72 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import Iyzipay from 'npm:iyzipay@2.0.67';
 
 function htmlRedirect(outcome: string): Response {
-  const body = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>location.replace("io.prolance.app://iyzico-result?outcome=${encodeURIComponent(outcome)}");</script></head><body><p>Returning to app…</p></body></html>`;
+  const encodedOutcome = JSON.stringify(outcome);
+  const deepLink = `io.prolance.app://iyzico-result?outcome=${encodeURIComponent(outcome)}`;
+  const body = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Completing payment</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0f172a;
+        color: #e2e8f0;
+        font: 14px/1.5 system-ui, sans-serif;
+      }
+      .card {
+        max-width: 420px;
+        padding: 24px;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(15, 23, 42, 0.88);
+        box-shadow: 0 18px 48px rgba(2, 6, 23, 0.32);
+        text-align: center;
+      }
+      .title {
+        margin-bottom: 8px;
+        font-size: 16px;
+        font-weight: 700;
+      }
+      .copy {
+        color: #94a3b8;
+      }
+    </style>
+    <script>
+      (() => {
+        const outcome = ${encodedOutcome};
+        const payload = JSON.stringify({ type: 'prolance-iyzico-result', outcome });
+
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(payload, '*');
+          }
+        } catch (_) {}
+
+        setTimeout(() => {
+          try {
+            window.close();
+          } catch (_) {}
+        }, 80);
+
+        setTimeout(() => {
+          location.replace(${JSON.stringify(deepLink)});
+        }, 240);
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <div class="title">Completing payment</div>
+      <div class="copy">You can return to Prolance. This window will close automatically when possible.</div>
+    </div>
+  </body>
+</html>`;
   return new Response(body, {
     status: 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -61,8 +126,7 @@ serve(async (req) => {
 
   const apiKey = Deno.env.get('IYZICO_API_KEY') ?? '';
   const secretKey = Deno.env.get('IYZICO_SECRET_KEY') ?? '';
-  const baseUri =
-    Deno.env.get('IYZICO_URI') ?? 'https://sandbox-api.iyzipay.com';
+  const baseUri = Deno.env.get('IYZICO_URI') ?? 'https://sandbox-api.iyzipay.com';
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 

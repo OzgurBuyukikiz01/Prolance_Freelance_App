@@ -15,6 +15,7 @@ import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/messages/screens/video_call_screen.dart';
 import '../../features/post_job/screens/post_job_screen.dart';
+import '../../features/profile/screens/edit_active_job_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/user_profile_screen.dart';
 import '../../features/wallet/screens/iyzico_topup_screen.dart';
@@ -52,10 +53,7 @@ class AppRouter {
         return null;
       },
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const SplashScreen(),
-        ),
+        GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
         GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingScreen(),
@@ -103,9 +101,8 @@ class AppRouter {
         ),
         GoRoute(
           path: '/jobs/:id',
-          builder: (context, state) => RoutedJobDetailScreen(
-            jobId: state.pathParameters['id']!,
-          ),
+          builder: (context, state) =>
+              RoutedJobDetailScreen(jobId: state.pathParameters['id']!),
         ),
         GoRoute(
           path: '/chat/:id',
@@ -117,8 +114,7 @@ class AppRouter {
         GoRoute(
           path: '/video-call/:id',
           builder: (context, state) {
-            final voiceOnly =
-                state.uri.queryParameters['voice'] == '1';
+            final voiceOnly = state.uri.queryParameters['voice'] == '1';
             return VideoCallScreen(
               conversationId: state.pathParameters['id']!,
               voiceOnly: voiceOnly,
@@ -131,9 +127,8 @@ class AppRouter {
         ),
         GoRoute(
           path: '/escrow/:jobId',
-          builder: (context, state) => RoutedEscrowScreen(
-            jobId: state.pathParameters['jobId']!,
-          ),
+          builder: (context, state) =>
+              RoutedEscrowScreen(jobId: state.pathParameters['jobId']!),
         ),
         GoRoute(
           path: '/review/:jobId',
@@ -147,14 +142,18 @@ class AppRouter {
           builder: (context, state) => const EditProfileScreen(),
         ),
         GoRoute(
+          path: '/edit-job/:jobId',
+          builder: (context, state) =>
+              EditActiveJobScreen(jobId: state.pathParameters['jobId']!),
+        ),
+        GoRoute(
           path: '/iyzico-topup',
           builder: (context, state) => const IyzicoTopupScreen(),
         ),
         GoRoute(
           path: '/user/:userId',
-          builder: (context, state) => UserProfileScreen(
-            userId: state.pathParameters['userId']!,
-          ),
+          builder: (context, state) =>
+              UserProfileScreen(userId: state.pathParameters['userId']!),
         ),
       ],
     );
@@ -163,11 +162,7 @@ class AppRouter {
 
 /// Hosts [MaterialApp.router] after [GoRouter] is created once (see [didChangeDependencies]).
 class RoutedMaterialApp extends StatefulWidget {
-  const RoutedMaterialApp({
-    super.key,
-    this.lightDynamic,
-    this.darkDynamic,
-  });
+  const RoutedMaterialApp({super.key, this.lightDynamic, this.darkDynamic});
 
   final ColorScheme? lightDynamic;
   final ColorScheme? darkDynamic;

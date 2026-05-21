@@ -10,18 +10,13 @@ void main() {
   testWidgets('QuickReplyBar renders at least one chip', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: QuickReplyBar(onSelect: (_) {}),
-        ),
+        home: Scaffold(body: QuickReplyBar(onSelect: (_) {})),
       ),
     );
     await tester.pump();
 
     // Should contain the first reply text.
-    expect(
-      find.textContaining('Merhaba'),
-      findsWidgets,
-    );
+    expect(find.textContaining('Hi!'), findsWidgets);
   });
 
   testWidgets('QuickReplyBar fires onSelect with correct text', (tester) async {

@@ -7,8 +7,8 @@ import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/state/app_state.dart';
-import '../../../core/widgets/coming_soon_dialog.dart';
 import '../../../core/widgets/overlays/prolance_messenger.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -60,13 +60,29 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  Future<void> _onAppleSignIn() async {
+    setState(() => _isLoading = true);
+    final ok = await context.read<AppState>().loginWithApple();
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (!ok) {
+      ProlanceMessenger.error(
+        context,
+        context.read<AppState>().t(
+          'Could not start Apple sign-in.',
+          'Apple ile giriş başlatılamadı.',
+        ),
+      );
+    }
+  }
+
   Future<void> _onSignIn() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isLoading = true);
     final ok = await context.read<AppState>().login(
-          username: _emailController.text,
-          password: _passwordController.text,
-        );
+      username: _emailController.text,
+      password: _passwordController.text,
+    );
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (ok) {
@@ -86,6 +102,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = scheme.brightness == Brightness.dark;
+    final supportsAppleOAuth = AuthService.instance.supportsAppleOAuth;
 
     return Scaffold(
       body: Stack(
@@ -135,8 +152,7 @@ class _LoginScreenState extends State<LoginScreen>
 
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -149,31 +165,32 @@ class _LoginScreenState extends State<LoginScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.35),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryGradient,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              'P',
-                              style: GoogleFonts.poppins(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                              child: Center(
+                                child: Text(
+                                  'P',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        )
+                            )
                             .animate()
                             .scale(
                               begin: const Offset(0.5, 0.5),
@@ -185,15 +202,15 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(height: 28),
 
                         Text(
-                          'Welcome\nback 👋',
-                          style: GoogleFonts.poppins(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: scheme.onSurface,
-                            letterSpacing: -0.5,
-                            height: 1.1,
-                          ),
-                        )
+                              'Welcome\nback 👋',
+                              style: GoogleFonts.poppins(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: scheme.onSurface,
+                                letterSpacing: -0.5,
+                                height: 1.1,
+                              ),
+                            )
                             .animate()
                             .fadeIn(delay: 100.ms, duration: 500.ms)
                             .slideX(begin: -0.1, end: 0),
@@ -206,9 +223,7 @@ class _LoginScreenState extends State<LoginScreen>
                             fontSize: 15,
                             color: scheme.onSurfaceVariant,
                           ),
-                        )
-                            .animate()
-                            .fadeIn(delay: 150.ms, duration: 500.ms),
+                        ).animate().fadeIn(delay: 150.ms, duration: 500.ms),
                       ],
                     ),
 
@@ -221,9 +236,8 @@ class _LoginScreenState extends State<LoginScreen>
                       icon: Iconsax.sms,
                       keyboardType: TextInputType.emailAddress,
                       delay: 200,
-                      validator: (v) => (v == null || v.isEmpty)
-                          ? 'Email is required'
-                          : null,
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'Email is required' : null,
                     ),
 
                     const SizedBox(height: 14),
@@ -250,7 +264,9 @@ class _LoginScreenState extends State<LoginScreen>
                         onPressed: () => context.push('/forgot-password'),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 4),
+                            horizontal: 4,
+                            vertical: 4,
+                          ),
                         ),
                         child: Text(
                           'Forgot password?',
@@ -278,8 +294,7 @@ class _LoginScreenState extends State<LoginScreen>
                     // Divider
                     Row(
                       children: [
-                        Expanded(
-                            child: Divider(color: scheme.outlineVariant)),
+                        Expanded(child: Divider(color: scheme.outlineVariant)),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
@@ -290,8 +305,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                         ),
-                        Expanded(
-                            child: Divider(color: scheme.outlineVariant)),
+                        Expanded(child: Divider(color: scheme.outlineVariant)),
                       ],
                     ).animate().fadeIn(delay: 450.ms, duration: 400.ms),
 
@@ -307,15 +321,16 @@ class _LoginScreenState extends State<LoginScreen>
                             onTap: _isLoading ? () {} : _onGoogleSignIn,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SocialButton(
-                            icon: Icons.apple,
-                            label: 'Apple',
-                            onTap: () => showComingSoonDialog(context,
-                                feature: 'Apple Sign-In'),
+                        if (supportsAppleOAuth) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Icons.apple,
+                              label: 'Apple',
+                              onTap: _isLoading ? () {} : _onAppleSignIn,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
 
@@ -411,64 +426,66 @@ class _AnimatedFieldState extends State<_AnimatedField> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-        border: Border.all(
-          color: _focused
-              ? AppColors.primary
-              : scheme.outlineVariant,
-          width: _focused ? 2 : 1,
-        ),
-        boxShadow: _focused
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ]
-            : [],
-      ),
-      child: TextFormField(
-        controller: widget.controller,
-        focusNode: _focus,
-        keyboardType: widget.keyboardType,
-        obscureText: widget.obscure,
-        validator: widget.validator,
-        style: GoogleFonts.poppins(
-            fontSize: 14, color: scheme.onSurface),
-        decoration: InputDecoration(
-          hintText: widget.hint,
-          hintStyle: GoogleFonts.poppins(
-            fontSize: 14,
-            color: scheme.onSurfaceVariant,
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+            border: Border.all(
+              color: _focused ? AppColors.primary : scheme.outlineVariant,
+              width: _focused ? 2 : 1,
+            ),
+            boxShadow: _focused
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : [],
           ),
-          prefixIcon: Icon(
-            widget.icon,
-            color: _focused ? AppColors.primary : scheme.onSurfaceVariant,
-            size: 20,
+          child: TextFormField(
+            controller: widget.controller,
+            focusNode: _focus,
+            keyboardType: widget.keyboardType,
+            obscureText: widget.obscure,
+            validator: widget.validator,
+            style: GoogleFonts.poppins(fontSize: 14, color: scheme.onSurface),
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 14,
+                color: scheme.onSurfaceVariant,
+              ),
+              prefixIcon: Icon(
+                widget.icon,
+                color: _focused ? AppColors.primary : scheme.onSurfaceVariant,
+                size: 20,
+              ),
+              suffixIcon: widget.onToggleObscure != null
+                  ? IconButton(
+                      icon: Icon(
+                        widget.obscure ? Iconsax.eye_slash : Iconsax.eye,
+                        color: scheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                      onPressed: widget.onToggleObscure,
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              errorStyle: GoogleFonts.poppins(fontSize: 11),
+            ),
           ),
-          suffixIcon: widget.onToggleObscure != null
-              ? IconButton(
-                  icon: Icon(
-                    widget.obscure ? Iconsax.eye_slash : Iconsax.eye,
-                    color: scheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                  onPressed: widget.onToggleObscure,
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          errorStyle: GoogleFonts.poppins(fontSize: 11),
-        ),
-      ),
-    )
+        )
         .animate()
-        .fadeIn(delay: Duration(milliseconds: widget.delay), duration: 400.ms)
+        .fadeIn(
+          delay: Duration(milliseconds: widget.delay),
+          duration: 400.ms,
+        )
         .slideY(begin: 0.2, end: 0);
   }
 }
@@ -500,7 +517,9 @@ class _GradientButtonState extends State<_GradientButton>
   void initState() {
     super.initState();
     _pressAnim = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 100));
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
   }
 
   @override
@@ -512,61 +531,65 @@ class _GradientButtonState extends State<_GradientButton>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _pressing = true);
-        _pressAnim.forward();
-      },
-      onTapUp: (_) {
-        setState(() => _pressing = false);
-        _pressAnim.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () {
-        setState(() => _pressing = false);
-        _pressAnim.reverse();
-      },
-      child: AnimatedScale(
-        scale: _pressing ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: _pressing ? 0.2 : 0.4),
-                blurRadius: _pressing ? 6 : 16,
-                offset: Offset(0, _pressing ? 2 : 8),
-              ),
-            ],
-          ),
-          child: Center(
-            child: widget.isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
+          onTapDown: (_) {
+            setState(() => _pressing = true);
+            _pressAnim.forward();
+          },
+          onTapUp: (_) {
+            setState(() => _pressing = false);
+            _pressAnim.reverse();
+            widget.onTap();
+          },
+          onTapCancel: () {
+            setState(() => _pressing = false);
+            _pressAnim.reverse();
+          },
+          child: AnimatedScale(
+            scale: _pressing ? 0.97 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(
+                      alpha: _pressing ? 0.2 : 0.4,
                     ),
-                  )
-                : Text(
-                    widget.label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
+                    blurRadius: _pressing ? 6 : 16,
+                    offset: Offset(0, _pressing ? 2 : 8),
                   ),
+                ],
+              ),
+              child: Center(
+                child: widget.isLoading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        widget.label,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+              ),
+            ),
           ),
-        ),
-      ),
-    )
+        )
         .animate()
         .fadeIn(
-            delay: Duration(milliseconds: widget.delay), duration: 500.ms)
+          delay: Duration(milliseconds: widget.delay),
+          duration: 500.ms,
+        )
         .slideY(begin: 0.2, end: 0);
   }
 }

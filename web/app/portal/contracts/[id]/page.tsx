@@ -1,22 +1,20 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { MagicCard } from '@/components/ui/magic-card';
-import { createClient } from '@/lib/supabase/server';
 import {
-  LIFECYCLE_LABELS,
-  formatCents,
-  formatDeadlineCountdown,
-  formatRelativeTime,
-} from '@/lib/portal/format';
-import {
-  submitDelivery,
   acceptDelivery,
-  declineDelivery,
-  reportIssue,
   claimEarnings,
+  declineDelivery,
   demoExpireDeadline,
+  reportIssue,
+  submitDelivery,
   submitReview,
 } from './actions';
+import { LiveCountdown } from '@/components/portal/LiveCountdown';
+import { PortalRealtimeRefresh } from '@/components/portal/PortalRealtimeRefresh';
+import { QuickMessageButton } from '@/components/portal/QuickMessageButton';
+import { MagicCard } from '@/components/ui/magic-card';
+import { createClient } from '@/lib/supabase/server';
+import { LIFECYCLE_LABELS, formatCents, formatRelativeTime } from '@/lib/portal/format';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -101,14 +99,19 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
 
   return (
     <div className="space-y-5">
-      <Link
-        href="/portal/contracts"
-        className="text-sm font-medium text-brand hover:text-brand-dark"
-      >
-        ← Back to My Contracts
+      <PortalRealtimeRefresh
+        channelKey={`contract:${id}`}
+        targets={[
+          { table: 'proposals', filter: `id=eq.${id}` },
+          { table: 'proposal_deliveries', filter: `proposal_id=eq.${id}` },
+          { table: 'reviews', filter: `job_id=eq.${proposal.job_id}` },
+        ]}
+      />
+
+      <Link href="/portal/contracts" className="text-sm font-medium text-brand hover:text-brand-dark">
+        Back to My Contracts
       </Link>
 
-      {/* Alerts */}
       {query.error && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
           {decodeURIComponent(query.error)}
@@ -136,7 +139,7 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
       )}
       {query.success === 'claimed' && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
-          Payment transferred to your balance!
+          Payment transferred to your balance.
         </div>
       )}
       {query.success === 'deadline_expired' && (
@@ -150,61 +153,71 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         </div>
       )}
 
-      {/* Contract Header */}
       <MagicCard innerClassName="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-extrabold text-white">{job.title}</h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="mt-1 text-xs text-slate-400">
               {isClient ? 'Freelancer' : 'Client'}:{' '}
-              <span className="font-medium text-slate-300">{otherParty?.full_name ?? '—'}</span>
+              <span className="font-medium text-slate-300">{otherParty?.full_name ?? '-'}</span>
               {otherParty?.title ? ` · ${otherParty.title}` : ''}
             </p>
           </div>
-          <span
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${phaseMeta.className}`}
-          >
-            {phaseMeta.label}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${phaseMeta.className}`}
+            >
+              {phaseMeta.label}
+            </span>
+            <QuickMessageButton
+              currentUserId={user.id}
+              otherUserId={otherPartyId}
+              label={isClient ? 'Message freelancer' : 'Message client'}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-brand/30 hover:bg-brand/10 hover:text-white"
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/8">
+        <div className="grid grid-cols-2 gap-4 border-t border-white/8 pt-4 sm:grid-cols-3">
           <div>
             <p className="text-xs text-slate-400">Escrow Amount</p>
-            <p className="font-bold text-white mt-0.5">{formatCents(fundedCents)}</p>
+            <p className="mt-0.5 font-bold text-white">{formatCents(fundedCents)}</p>
           </div>
           {phase === 'payout_pending' && (
             <div>
               <p className="text-xs text-slate-400">
                 {isClient ? '24h Dispute Window' : 'Pending Payment'}
               </p>
-              <p className="font-bold text-white mt-0.5">
-                {isClient
-                  ? formatDeadlineCountdown(proposal.delivery_dispute_deadline)
-                  : formatCents(proposal.freelancer_payout_cents)}
-              </p>
+              {isClient ? (
+                <LiveCountdown
+                  deadline={proposal.delivery_dispute_deadline}
+                  expiredText="Dispute window closed"
+                  className="mt-0.5 block font-bold text-white"
+                />
+              ) : (
+                <p className="mt-0.5 font-bold text-white">
+                  {formatCents(proposal.freelancer_payout_cents ?? fundedCents)}
+                </p>
+              )}
             </div>
           )}
           <div>
             <p className="text-xs text-slate-400">Delivery Time</p>
-            <p className="font-bold text-white mt-0.5">{proposal.bid} days</p>
+            <p className="mt-0.5 font-bold text-white">{proposal.delivery_days} days</p>
           </div>
         </div>
       </MagicCard>
 
-      {/* === FREELANCER VIEWS === */}
-
-      {/* Freelancer: submit delivery */}
       {!isClient && phase === 'escrow_funded' && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-white mb-1">Submit Delivery</h2>
-          <p className="text-sm text-slate-400 mb-5">
+          <h2 className="mb-1 text-lg font-bold text-white">Submit Delivery</h2>
+          <p className="mb-5 text-sm text-slate-400">
             Add a note and optional link for your completed work.
           </p>
           <form action={submitDelivery} className="space-y-4">
             <input type="hidden" name="proposal_id" value={id} />
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">
                 Delivery Note <span className="text-red-400">*</span>
               </label>
               <textarea
@@ -212,24 +225,22 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
                 rows={4}
                 required
                 minLength={5}
-                placeholder="Describe the work you've delivered..."
-                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
+                placeholder="Describe the work you delivered"
+                className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Link (optional)
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">Link (optional)</label>
               <input
                 type="url"
                 name="url"
                 placeholder="https://drive.google.com/... or GitHub link"
-                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
             </div>
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors"
+              className="w-full rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark sm:w-auto"
             >
               Submit Delivery
             </button>
@@ -237,111 +248,97 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         </MagicCard>
       )}
 
-      {/* Freelancer: waiting for client review */}
       {!isClient && phase === 'awaiting_client_review' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">⏳</span>
-          </div>
-          <h2 className="font-bold text-white mb-1">Awaiting Review</h2>
-          <p className="text-sm text-slate-400">Your client is reviewing the delivery. Payment will begin once accepted.</p>
+          <h2 className="mb-1 font-bold text-white">Awaiting Review</h2>
+          <p className="text-sm text-slate-400">
+            Your client is reviewing the delivery. Payment begins once accepted.
+          </p>
         </MagicCard>
       )}
 
-      {/* Freelancer: payout pending */}
       {!isClient && phase === 'payout_pending' && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-white mb-1">Payment Approved</h2>
-          <p className="text-sm text-slate-400 mb-4">
+          <h2 className="mb-1 text-lg font-bold text-white">Payment Approved</h2>
+          <p className="mb-4 text-sm text-slate-400">
             Your client accepted the delivery. You can claim payment after the 24-hour dispute window.
           </p>
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-violet-500/10 border border-violet-500/20 mb-5">
-            <span className="text-2xl">💰</span>
+          <div className="mb-5 flex items-center gap-3 rounded-xl border border-violet-500/20 bg-violet-500/10 p-4">
             <div>
-              <p className="text-xs text-violet-400 font-medium">Pending Payment</p>
+              <p className="text-xs font-medium text-violet-400">Pending Payment</p>
               <p className="text-xl font-extrabold text-violet-300">
                 {formatCents(proposal.freelancer_payout_cents ?? fundedCents)}
               </p>
             </div>
           </div>
-          {deadlinePassed ? (
+          {canClaimEarnings ? (
             <form action={claimEarnings}>
               <input type="hidden" name="proposal_id" value={id} />
               <button
                 type="submit"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                className="w-full rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 sm:w-auto"
               >
                 Claim Payment
               </button>
             </form>
           ) : (
-            <p className="text-sm text-slate-400">
-              Time remaining: {formatDeadlineCountdown(proposal.delivery_dispute_deadline)}
-            </p>
+            <LiveCountdown
+              deadline={proposal.delivery_dispute_deadline}
+              prefix="Time remaining: "
+              expiredText="Ready to claim"
+              className="text-sm font-medium text-slate-300"
+            />
           )}
         </MagicCard>
       )}
 
-      {/* Freelancer: closed */}
       {!isClient && phase === 'closed' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">🎉</span>
-          </div>
-          <h2 className="font-bold text-white mb-1">Project Complete</h2>
-          <p className="text-sm text-slate-400 mb-4">
+          <h2 className="mb-1 font-bold text-white">Project Complete</h2>
+          <p className="mb-4 text-sm text-slate-400">
             Payment has been added to your balance.{' '}
             <span className="font-semibold text-emerald-400">
               {formatCents(proposal.freelancer_payout_cents ?? fundedCents)}
             </span>
           </p>
-          <Link
-            href="/portal/profile"
-            className="text-sm font-semibold text-brand hover:text-brand-dark"
-          >
-            View Your Profile →
+          <Link href="/portal/profile" className="text-sm font-semibold text-brand hover:text-brand-dark">
+            View Your Profile
           </Link>
         </MagicCard>
       )}
 
-      {/* === CLIENT VIEWS === */}
-
-      {/* Client: waiting for delivery */}
       {isClient && phase === 'escrow_funded' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">🔄</span>
-          </div>
-          <h2 className="font-bold text-white mb-1">Awaiting Delivery</h2>
-          <p className="text-sm text-slate-400">The freelancer is working on your project. You can review it here once submitted.</p>
+          <h2 className="mb-1 font-bold text-white">Awaiting Delivery</h2>
+          <p className="text-sm text-slate-400">
+            The freelancer is working on your project. You can review it here once submitted.
+          </p>
         </MagicCard>
       )}
 
-      {/* Client: delivery ready for review */}
       {isClient && phase === 'awaiting_client_review' && deliveries && deliveries.length > 0 && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-white mb-4">Review Delivery</h2>
-          <div className="space-y-3 mb-6">
-            {deliveries.map((d) => (
+          <h2 className="mb-4 text-lg font-bold text-white">Review Delivery</h2>
+          <div className="mb-6 space-y-3">
+            {deliveries.map((delivery) => (
               <div
-                key={d.id}
-                className="flex items-start gap-3 p-4 rounded-xl border border-white/8 bg-white/4"
+                key={delivery.id}
+                className="flex items-start gap-3 rounded-xl border border-white/8 bg-white/4 p-4"
               >
-                <span className="text-xl mt-0.5">📦</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white text-sm">{d.file_name}</p>
-                  {d.storage_path && d.storage_path !== 'demo://no-file' && (
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-white">{delivery.file_name}</p>
+                  {delivery.storage_path && delivery.storage_path !== 'demo://no-file' && (
                     <a
-                      href={d.storage_path}
+                      href={delivery.storage_path}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline mt-0.5 inline-block truncate max-w-xs"
+                      className="mt-0.5 inline-block max-w-xs truncate text-xs text-brand hover:underline"
                     >
-                      {d.storage_path}
+                      {delivery.storage_path}
                     </a>
                   )}
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {formatRelativeTime(d.created_at)}
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {formatRelativeTime(delivery.created_at)}
                   </p>
                 </div>
               </div>
@@ -352,16 +349,16 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
               <input type="hidden" name="proposal_id" value={id} />
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
               >
-                ✓ Accept Delivery
+                Accept Delivery
               </button>
             </form>
             <form action={declineDelivery}>
               <input type="hidden" name="proposal_id" value={id} />
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl border border-white/10 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 text-slate-300 text-sm font-semibold transition-colors"
+                className="rounded-xl border border-white/10 px-5 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
               >
                 Request Revision
               </button>
@@ -370,25 +367,25 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         </MagicCard>
       )}
 
-      {/* Client: payout pending — 24h window + optional report issue */}
       {isClient && phase === 'payout_pending' && (
         <MagicCard innerClassName="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">✅</span>
-            <div>
-              <h2 className="font-bold text-white">Delivery Accepted</h2>
-              <p className="text-sm text-slate-400">
-                {deadlinePassed
-                  ? 'Dispute window closed. Payment released.'
-                  : `Dispute window: ${formatDeadlineCountdown(proposal.delivery_dispute_deadline)}`}
-              </p>
-            </div>
+          <div className="mb-4">
+            <h2 className="font-bold text-white">Delivery Accepted</h2>
+            {deadlinePassed ? (
+              <p className="text-sm text-slate-400">Dispute window closed. Payment released.</p>
+            ) : (
+              <LiveCountdown
+                deadline={proposal.delivery_dispute_deadline}
+                prefix="Dispute window: "
+                className="mt-1 block text-sm font-medium text-slate-300"
+              />
+            )}
           </div>
 
           {canReportIssue && (
             <details className="mt-2">
-              <summary className="text-sm font-semibold text-red-400 cursor-pointer hover:text-red-300 select-none">
-                ⚠ Report an Issue (Dispute)
+              <summary className="cursor-pointer select-none text-sm font-semibold text-red-400 hover:text-red-300">
+                Report an Issue (Dispute)
               </summary>
               <form action={reportIssue} className="mt-3 space-y-3">
                 <input type="hidden" name="proposal_id" value={id} />
@@ -397,12 +394,12 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
                   rows={3}
                   required
                   minLength={10}
-                  placeholder="Describe the issue..."
-                  className="w-full rounded-xl border border-red-500/30 bg-red-500/10 text-white px-3 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 resize-none"
+                  placeholder="Describe the issue"
+                  className="w-full resize-none rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20"
                 />
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+                  className="rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                 >
                   Submit Issue
                 </button>
@@ -410,17 +407,16 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
             </details>
           )}
 
-          {/* Demo acceleration — clearly marked */}
           {!deadlinePassed && (
-            <div className="mt-4 pt-4 border-t border-dashed border-white/10">
-              <p className="text-xs text-slate-500 mb-2 font-mono">DEMO MODE</p>
+            <div className="mt-4 border-t border-dashed border-white/10 pt-4">
+              <p className="mb-2 text-xs font-mono text-slate-500">DEMO MODE</p>
               <form action={demoExpireDeadline}>
                 <input type="hidden" name="proposal_id" value={id} />
                 <button
                   type="submit"
-                  className="text-xs px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 font-medium transition-colors"
+                  className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-400 transition-colors hover:bg-purple-500/20"
                 >
-                  ⚡ Demo: Skip 24 Hours (for presentation)
+                  Demo: Skip 24 Hours
                 </button>
               </form>
             </div>
@@ -428,61 +424,50 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         </MagicCard>
       )}
 
-      {/* Client: project closed */}
       {isClient && phase === 'closed' && (
         <MagicCard innerClassName="p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">🏁</span>
-          </div>
-          <h2 className="font-bold text-white mb-1">Project Complete</h2>
-          <p className="text-sm text-slate-400">Great collaboration!</p>
+          <h2 className="mb-1 font-bold text-white">Project Complete</h2>
+          <p className="text-sm text-slate-400">Great collaboration.</p>
         </MagicCard>
       )}
 
-      {/* Disputed state */}
       {phase === 'disputed' && (
         <MagicCard innerClassName="p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">⚠️</span>
-            <h2 className="font-bold text-white">Dispute Opened</h2>
-          </div>
-          <p className="text-sm text-slate-400 mb-3">
-            This contract has been disputed.{' '}
-            {proposal.dispute_note ? (
-              <span>Note: {proposal.dispute_note}</span>
-            ) : (
-              'Escrow funds have been refunded to the client.'
-            )}
+          <h2 className="mb-2 font-bold text-white">Dispute Opened</h2>
+          <p className="mb-3 text-sm text-slate-400">
+            {proposal.dispute_note
+              ? `Note: ${proposal.dispute_note}`
+              : 'This contract has been disputed and escrow funds have been refunded to the client.'}
           </p>
           {proposal.admin_resolution_note && (
             <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-              <p className="text-xs font-semibold text-amber-400 mb-1">⚖️ Admin Decision</p>
+              <p className="mb-1 text-xs font-semibold text-amber-400">Admin Decision</p>
               <p className="text-sm text-amber-300">{proposal.admin_resolution_note}</p>
             </div>
           )}
         </MagicCard>
       )}
 
-      {/* === REVIEW SECTION (CLIENT only, after payout_pending or closed) === */}
       {showReviewSection && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-lg font-bold text-white mb-1">Review the Freelancer</h2>
-          <p className="text-sm text-slate-400 mb-5">
-            Share your experience working with <span className="font-medium text-slate-200">{otherParty?.full_name}</span>.
+          <h2 className="mb-1 text-lg font-bold text-white">Review the Freelancer</h2>
+          <p className="mb-5 text-sm text-slate-400">
+            Share your experience working with{' '}
+            <span className="font-medium text-slate-200">{otherParty?.full_name}</span>.
           </p>
           <form action={submitReview} className="space-y-4">
             <input type="hidden" name="proposal_id" value={id} />
             <input type="hidden" name="job_id" value={proposal.job_id} />
             <input type="hidden" name="reviewee_id" value={proposal.freelancer_id} />
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
                 Rating <span className="text-red-400">*</span>
               </label>
               <div className="flex gap-2">
-                {STAR_VALUES.map((v) => (
-                  <label key={v} className="cursor-pointer">
-                    <input type="radio" name="rating" value={v} required className="sr-only peer" />
-                    <span className="text-2xl text-slate-600 peer-checked:text-amber-400 hover:text-amber-300 transition-colors select-none">
+                {STAR_VALUES.map((value) => (
+                  <label key={value} className="cursor-pointer">
+                    <input type="radio" name="rating" value={value} required className="sr-only peer" />
+                    <span className="select-none text-2xl text-slate-600 transition-colors hover:text-amber-300 peer-checked:text-amber-400">
                       ★
                     </span>
                   </label>
@@ -490,19 +475,17 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Comment (optional)
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">Comment (optional)</label>
               <textarea
                 name="comment"
                 rows={3}
-                placeholder="Describe your experience..."
-                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand resize-none"
+                placeholder="Describe your experience"
+                className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors"
+              className="rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
             >
               Submit Review
             </button>
@@ -510,43 +493,52 @@ export default async function ContractDetailPage({ params, searchParams }: PageP
         </MagicCard>
       )}
 
-      {/* Existing review display */}
       {isClient && existingReview && (
         <MagicCard innerClassName="p-5">
-          <h3 className="text-sm font-bold text-slate-300 mb-2">Your Submitted Review</h3>
-          <div className="flex items-center gap-1 mb-1">
-            {STAR_VALUES.map((v) => (
-              <span key={v} className={v <= existingReview.rating ? 'text-amber-400' : 'text-slate-600'}>★</span>
+          <h3 className="mb-2 text-sm font-bold text-slate-300">Your Submitted Review</h3>
+          <div className="mb-1 flex items-center gap-1">
+            {STAR_VALUES.map((value) => (
+              <span
+                key={value}
+                className={value <= existingReview.rating ? 'text-amber-400' : 'text-slate-600'}
+              >
+                ★
+              </span>
             ))}
-            <span className="text-xs text-slate-400 ml-2">{formatRelativeTime(existingReview.created_at)}</span>
+            <span className="ml-2 text-xs text-slate-400">
+              {formatRelativeTime(existingReview.created_at)}
+            </span>
           </div>
           {existingReview.comment && (
-            <p className="text-sm text-slate-400 mt-1">{existingReview.comment}</p>
+            <p className="mt-1 text-sm text-slate-400">{existingReview.comment}</p>
           )}
         </MagicCard>
       )}
 
-      {/* Delivery history */}
       {!isClient && deliveries && deliveries.length > 0 && (
         <MagicCard innerClassName="p-6">
-          <h2 className="text-base font-bold text-white mb-3">Submitted Deliveries</h2>
+          <h2 className="mb-3 text-base font-bold text-white">Submitted Deliveries</h2>
           <div className="space-y-2">
-            {deliveries.map((d) => (
-              <div key={d.id} className="flex items-start gap-3 p-3 rounded-xl border border-white/8 bg-white/4">
-                <span className="text-lg mt-0.5">📄</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{d.file_name}</p>
-                  {d.storage_path && d.storage_path !== 'demo://no-file' && (
+            {deliveries.map((delivery) => (
+              <div
+                key={delivery.id}
+                className="flex items-start gap-3 rounded-xl border border-white/8 bg-white/4 p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">{delivery.file_name}</p>
+                  {delivery.storage_path && delivery.storage_path !== 'demo://no-file' && (
                     <a
-                      href={d.storage_path}
+                      href={delivery.storage_path}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-brand hover:underline truncate max-w-xs inline-block"
+                      className="inline-block max-w-xs truncate text-xs text-brand hover:underline"
                     >
-                      {d.storage_path}
+                      {delivery.storage_path}
                     </a>
                   )}
-                  <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(d.created_at)}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {formatRelativeTime(delivery.created_at)}
+                  </p>
                 </div>
               </div>
             ))}

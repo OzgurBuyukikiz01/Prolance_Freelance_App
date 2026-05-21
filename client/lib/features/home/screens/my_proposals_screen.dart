@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
@@ -16,15 +18,40 @@ import '../../../core/utils/project_duration_ymd.dart';
 import '../../../core/widgets/prolance_empty_state.dart';
 import 'proposal_detail_screen.dart';
 
-class MyProposalsScreen extends StatelessWidget {
+class MyProposalsScreen extends StatefulWidget {
   const MyProposalsScreen({super.key});
+
+  @override
+  State<MyProposalsScreen> createState() => _MyProposalsScreenState();
+}
+
+class _MyProposalsScreenState extends State<MyProposalsScreen> {
+  Timer? _ticker;
+  String? _busyProposalId;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
 
   static bool _canMessageEmployer(SubmittedProposalStatus s) {
     return s == SubmittedProposalStatus.awaitingResponse ||
         s == SubmittedProposalStatus.accepted;
   }
 
-  static void _openEmployerChat(BuildContext context, SubmittedProposal p) {
+  Future<void> _openEmployerChat(
+    BuildContext context,
+    SubmittedProposal p,
+  ) async {
     final jobs = context.read<JobsProvider>().jobs;
     JobModel? job;
     for (final j in jobs) {
@@ -35,14 +62,98 @@ class MyProposalsScreen extends StatelessWidget {
     }
     final name = job?.clientName ?? 'Employer';
     final avatar = job?.clientAvatar ?? 'https://i.pravatar.cc/150?img=12';
-    final cid = context.read<MessageRepository>().ensureConversationForJob(
+    final repo = context.read<MessageRepository>();
+    String cid;
+    final clientId = job?.clientId;
+    if (clientId != null && clientId.isNotEmpty) {
+      final directId = await repo.ensureDirectConversation(
+        otherUserId: clientId,
+      );
+      if (directId.startsWith('local_dm_')) {
+        cid = repo.ensureConversationForJob(
           jobId: p.jobId,
           employerName: name,
           employerAvatar: avatar,
         );
+      } else {
+        cid = directId;
+      }
+    } else {
+      cid = repo.ensureConversationForJob(
+        jobId: p.jobId,
+        employerName: name,
+        employerAvatar: avatar,
+      );
+    }
+    if (!context.mounted) return;
     context.push(
       '/chat/$cid?name=${Uri.encodeComponent(name)}'
-      '&avatar=${Uri.encodeComponent(avatar)}',
+      '&avatar=${Uri.encodeComponent(avatar)}'
+      '&peer=${Uri.encodeComponent(clientId ?? '')}',
+    );
+  }
+
+  String _formatLiveCountdown(DateTime deadline) {
+    final diff = deadline.difference(DateTime.now());
+    if (diff.isNegative || diff.inSeconds <= 0) return '0m';
+    final hours = diff.inHours;
+    final minutes = diff.inMinutes.remainder(60);
+    final seconds = diff.inSeconds.remainder(60);
+    if (hours > 0) return '${hours}h ${minutes}m ${seconds}s';
+    if (minutes > 0) return '${minutes}m ${seconds}s';
+    return '${seconds}s';
+  }
+
+  Future<void> _acceptClientProposal(
+    BuildContext context,
+    ClientIncomingProposal proposal,
+  ) async {
+    setState(() => _busyProposalId = proposal.proposalId);
+    final repo = context.read<ProposalRepository>();
+    final app = context.read<AppState>();
+    final ok = await repo.acceptProposal(
+      proposalId: proposal.proposalId,
+      jobId: proposal.jobId,
+      freelancerId: proposal.freelancerId,
+      bid: proposal.bid,
+    );
+    if (!mounted) return;
+    setState(() => _busyProposalId = null);
+    if (ok) {
+      await repo.reloadFromRemote();
+      await app.refreshProfileFromServer();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Proposal accepted. Contract is now live.'),
+        ),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Could not accept proposal.')));
+  }
+
+  Future<void> _rejectClientProposal(
+    BuildContext context,
+    ClientIncomingProposal proposal,
+  ) async {
+    setState(() => _busyProposalId = proposal.proposalId);
+    final repo = context.read<ProposalRepository>();
+    final ok = await repo.rejectProposal(proposal.proposalId);
+    if (!mounted) return;
+    setState(() => _busyProposalId = null);
+    if (ok) {
+      await repo.reloadFromRemote();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Proposal declined.')));
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not decline proposal.')),
     );
   }
 
@@ -86,11 +197,7 @@ class MyProposalsScreen extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Iconsax.briefcase,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
+                  Icon(Iconsax.briefcase, color: AppColors.primary, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -184,23 +291,27 @@ class MyProposalsScreen extends StatelessWidget {
         ? '${preview.substring(0, 120)}…'
         : preview;
 
-    final canAcceptDelivery = p.status == 'accepted' &&
+    final canAcceptDelivery =
+        p.status == 'accepted' &&
         (p.lifecyclePhase == ProposalLifecycle.awaitingClientReview ||
             p.lifecyclePhase == ProposalLifecycle.delivered);
 
-    final completedDeliveryAsClient = p.status == 'accepted' &&
+    final completedDeliveryAsClient =
+        p.status == 'accepted' &&
         p.lifecyclePhase != ProposalLifecycle.disputed &&
         (p.lifecyclePhase == ProposalLifecycle.payoutPending ||
             p.lifecyclePhase == ProposalLifecycle.closed);
 
     final deliveryDeadline = p.deliveryDisputeDeadline;
-    final within24hDisputeWindow = deliveryDeadline != null &&
+    final within24hDisputeWindow =
+        deliveryDeadline != null &&
         DateTime.now().isBefore(deliveryDeadline) &&
         p.lifecyclePhase == ProposalLifecycle.payoutPending &&
         !p.payoutFinalized;
 
     final showReportWithPreview =
         completedDeliveryAsClient && within24hDisputeWindow;
+    final busy = _busyProposalId == p.proposalId;
 
     return Material(
       color: scheme.surfaceContainerHigh,
@@ -220,7 +331,9 @@ class MyProposalsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        p.freelancerName.isEmpty ? 'Freelancer' : p.freelancerName,
+                        p.freelancerName.isEmpty
+                            ? 'Freelancer'
+                            : p.freelancerName,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: scheme.onSurface,
@@ -273,6 +386,36 @@ class MyProposalsScreen extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
+            if (p.status == 'pending') ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy
+                          ? null
+                          : () => _rejectClientProposal(context, p),
+                      child: busy
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(app.t('Decline', 'Reddet')),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: busy
+                          ? null
+                          : () => _acceptClientProposal(context, p),
+                      child: Text(app.t('Accept proposal', 'Teklifi kabul et')),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (canAcceptDelivery) ...[
               const SizedBox(height: 12),
               SizedBox(
@@ -281,14 +424,25 @@ class MyProposalsScreen extends StatelessWidget {
                   onPressed: () =>
                       context.push('/review-delivery/${p.proposalId}'),
                   icon: const Icon(Iconsax.tick_square, size: 20),
-                  label: Text(
-                    app.t('Accept delivery', 'Teslimi kabul et'),
-                  ),
+                  label: Text(app.t('Accept delivery', 'Teslimi kabul et')),
                 ),
               ),
             ],
             if (completedDeliveryAsClient) ...[
               const SizedBox(height: 12),
+              if (showReportWithPreview) ...[
+                Text(
+                  app.t(
+                    'Dispute window: ${_formatLiveCountdown(deliveryDeadline!)}',
+                    'İtiraz süresi: ${_formatLiveCountdown(deliveryDeadline!)}',
+                  ),
+                  style: AppTextStyles.caption.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -355,7 +509,9 @@ class MyProposalsScreen extends StatelessWidget {
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.22),
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.22,
+                        ),
                         ProlanceEmptyState.proposals(),
                       ],
                     )
@@ -401,7 +557,9 @@ class MyProposalsScreen extends StatelessWidget {
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
-                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.22),
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.22,
+                        ),
                         Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -423,7 +581,12 @@ class MyProposalsScreen extends StatelessWidget {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final p = incoming[index];
-                        return _buildClientIncomingCard(context, scheme, app, p);
+                        return _buildClientIncomingCard(
+                          context,
+                          scheme,
+                          app,
+                          p,
+                        );
                       },
                     ),
             ),

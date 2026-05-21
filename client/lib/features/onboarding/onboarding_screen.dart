@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:rive/rive.dart' hide LinearGradient;
+import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
@@ -40,7 +41,8 @@ const _slides = [
     fallbackEmoji: '👋',
     fallbackIcon: Iconsax.people,
     title: 'Welcome to\nProlance',
-    subtitle: 'The smartest way to hire top freelancers or land great projects.',
+    subtitle:
+        'The smartest way to hire top freelancers or land great projects.',
     tags: ['5,000+ freelancers', 'Verified profiles', 'Global talent'],
   ),
   _SlideData(
@@ -50,7 +52,8 @@ const _slides = [
     fallbackEmoji: '🔍',
     fallbackIcon: Iconsax.search_normal_1,
     title: 'Discover top\ntalent fast',
-    subtitle: 'Browse profiles, read reviews and get proposals from skilled freelancers.',
+    subtitle:
+        'Browse profiles, read reviews and get proposals from skilled freelancers.',
     tags: ['AI matching', 'Instant proposals', 'Skill filters'],
   ),
   _SlideData(
@@ -60,7 +63,8 @@ const _slides = [
     fallbackEmoji: '🚀',
     fallbackIcon: Iconsax.document_upload,
     title: 'Post your\nproject',
-    subtitle: 'Share project details in minutes. Get proposals and start working fast.',
+    subtitle:
+        'Share project details in minutes. Get proposals and start working fast.',
     tags: ['Free to post', 'Smart matching', 'Quick setup'],
   ),
   _SlideData(
@@ -70,7 +74,8 @@ const _slides = [
     fallbackEmoji: '🔒',
     fallbackIcon: Iconsax.shield_tick,
     title: 'Pay safely\nwith escrow',
-    subtitle: 'Funds are held securely until work is approved. Zero risk on both sides.',
+    subtitle:
+        'Funds are held securely until work is approved. Zero risk on both sides.',
     tags: ['Escrow protection', 'AES-256 encrypted', 'Dispute support'],
   ),
 ];
@@ -142,7 +147,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             child: Column(
               children: [
                 // Top bar
-                _TopBar(page: _page, total: _slides.length, onBack: _prev, onSkip: () => context.go('/login')),
+                _TopBar(
+                  page: _page,
+                  total: _slides.length,
+                  onBack: _prev,
+                  onSkip: () => context.go('/login'),
+                ),
 
                 // Illustration area (top 55%)
                 Expanded(
@@ -208,9 +218,15 @@ class _TopBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withValues(alpha: 0.2),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                  ),
                 ),
-                child: const Icon(Iconsax.arrow_left_2, color: Colors.white, size: 18),
+                child: const Icon(
+                  Iconsax.arrow_left_2,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -259,11 +275,36 @@ class _RiveOrFallback extends StatefulWidget {
 
 class _RiveOrFallbackState extends State<_RiveOrFallback> {
   bool _riveError = false;
+  bool _assetChecked = false;
+  bool _canUseRive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _probeRiveAsset();
+  }
+
+  Future<void> _probeRiveAsset() async {
+    try {
+      await rootBundle.load(widget.slide.riveAsset);
+      if (!mounted) return;
+      setState(() {
+        _assetChecked = true;
+        _canUseRive = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _assetChecked = true;
+        _canUseRive = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Show Rive if asset exists and no error; otherwise fallback
-    final riveWidget = !_riveError
+    // Show Rive only when the asset exists locally; otherwise use the fallback.
+    final riveWidget = _assetChecked && _canUseRive && !_riveError
         ? RiveAnimation.asset(
             widget.slide.riveAsset,
             fit: BoxFit.contain,
@@ -272,11 +313,14 @@ class _RiveOrFallbackState extends State<_RiveOrFallback> {
           )
         : null;
 
-    final illustration = _riveError
+    final illustration = riveWidget == null
         ? _FallbackIllustration(slide: widget.slide)
-        : _RiveWrapper(child: riveWidget!, onError: () {
-            if (mounted) setState(() => _riveError = true);
-          });
+        : _RiveWrapper(
+            child: riveWidget!,
+            onError: () {
+              if (mounted) setState(() => _riveError = true);
+            },
+          );
 
     return illustration
         .animate(target: widget.isActive ? 1 : 0)
@@ -325,7 +369,10 @@ class _FallbackIllustration extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppConstants.radius3xl),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -339,7 +386,11 @@ class _FallbackIllustration extends StatelessWidget {
         children: [
           Text(slide.fallbackEmoji, style: const TextStyle(fontSize: 60)),
           const SizedBox(height: 6),
-          Icon(slide.fallbackIcon, size: 32, color: Colors.white.withValues(alpha: 0.7)),
+          Icon(
+            slide.fallbackIcon,
+            size: 32,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
         ],
       ),
     );
@@ -379,15 +430,15 @@ class _BottomCard extends StatelessWidget {
           children: [
             // Title
             Text(
-              slide.title,
-              style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                height: 1.2,
-                letterSpacing: -0.5,
-              ),
-            )
+                  slide.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    height: 1.2,
+                    letterSpacing: -0.5,
+                  ),
+                )
                 .animate(key: ValueKey('title_$page'))
                 .fadeIn(duration: 350.ms)
                 .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
@@ -396,13 +447,13 @@ class _BottomCard extends StatelessWidget {
 
             // Subtitle
             Text(
-              slide.subtitle,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: AppColors.neutral500,
-                height: 1.6,
-              ),
-            )
+                  slide.subtitle,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: AppColors.neutral500,
+                    height: 1.6,
+                  ),
+                )
                 .animate(key: ValueKey('sub_$page'))
                 .fadeIn(delay: 80.ms, duration: 350.ms),
 
@@ -414,22 +465,30 @@ class _BottomCard extends StatelessWidget {
               runSpacing: 8,
               children: slide.tags.asMap().entries.map((e) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary100,
-                    borderRadius: BorderRadius.circular(AppConstants.radiusFull),
-                  ),
-                  child: Text(
-                    e.value,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppColors.primary700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                )
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary100,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusFull,
+                        ),
+                      ),
+                      child: Text(
+                        e.value,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppColors.primary700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    )
                     .animate(key: ValueKey('tag_${page}_${e.key}'))
-                    .fadeIn(delay: Duration(milliseconds: 120 + e.key * 60), duration: 300.ms)
+                    .fadeIn(
+                      delay: Duration(milliseconds: 120 + e.key * 60),
+                      duration: 300.ms,
+                    )
                     .slideX(begin: 0.15, end: 0);
               }).toList(),
             ),
@@ -449,8 +508,12 @@ class _BottomCard extends StatelessWidget {
                       width: active ? 22 : 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: active ? AppColors.primary500 : AppColors.neutral200,
-                        borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                        color: active
+                            ? AppColors.primary500
+                            : AppColors.neutral200,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusFull,
+                        ),
                       ),
                     );
                   }),
@@ -467,7 +530,9 @@ class _BottomCard extends StatelessWidget {
                     width: page == total - 1 ? 160 : 52,
                     decoration: BoxDecoration(
                       gradient: AppColors.coralGradient,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusFull,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary500.withValues(alpha: 0.35),
@@ -490,10 +555,18 @@ class _BottomCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                const Icon(Iconsax.flash_1, color: Colors.white, size: 18),
+                                const Icon(
+                                  Iconsax.flash_1,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                               ],
                             )
-                          : const Icon(Iconsax.arrow_right_3, color: Colors.white, size: 22),
+                          : const Icon(
+                              Iconsax.arrow_right_3,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                     ),
                   ),
                 ),

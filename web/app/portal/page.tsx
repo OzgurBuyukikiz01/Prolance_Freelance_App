@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { logout } from '@/app/login/actions';
+import { PortalRealtimeRefresh } from '@/components/portal/PortalRealtimeRefresh';
 import { createClient } from '@/lib/supabase/server';
 import { MagicCard } from '@/components/ui/magic-card';
 import { PortalStats } from '@/components/portal/PortalStats';
@@ -59,6 +60,14 @@ export default async function PortalPage() {
 
   return (
     <div>
+      <PortalRealtimeRefresh
+        channelKey={`portal-home:${user.id}`}
+        targets={[
+          { table: 'profiles', filter: `id=eq.${user.id}` },
+          { table: 'proposals', filter: `freelancer_id=eq.${user.id}` },
+          { table: 'jobs', filter: `client_id=eq.${user.id}` },
+        ]}
+      />
       <MagicCard innerClassName="p-8 mb-6">
         <div className="flex items-center gap-5 mb-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand to-indigo-500 flex items-center justify-center text-white text-2xl font-extrabold shadow-brand flex-shrink-0">

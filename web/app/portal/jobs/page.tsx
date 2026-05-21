@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { JobsListClient } from '@/components/portal/JobsListClient';
+import { PortalRealtimeRefresh } from '@/components/portal/PortalRealtimeRefresh';
 import { MagicCard } from '@/components/ui/magic-card';
 import { createClient } from '@/lib/supabase/server';
 
@@ -35,5 +36,10 @@ export default async function PortalJobsPage() {
     );
   }
 
-  return <JobsListClient jobs={jobs ?? []} isClient={isClient} />;
+  return (
+    <>
+      <PortalRealtimeRefresh channelKey={`jobs:${user.id}`} targets={[{ table: 'jobs' }]} />
+      <JobsListClient jobs={jobs ?? []} isClient={isClient} />
+    </>
+  );
 }

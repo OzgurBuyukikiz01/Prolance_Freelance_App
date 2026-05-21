@@ -23,6 +23,7 @@ class ClientDeliveryReviewScreen extends StatefulWidget {
   });
 
   final String proposalId;
+
   /// When true (e.g. `?dispute=1` from My proposals), opens the dispute dialog once if allowed.
   final bool openDisputeOnLoad;
 
@@ -43,6 +44,7 @@ class _ClientDeliveryReviewScreenState
   bool _acting = false;
   bool _autoDisputePromptShown = false;
   ProposalRepository? _repo;
+  Timer? _countdownTicker;
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _ClientDeliveryReviewScreenState
 
   @override
   void dispose() {
+    _countdownTicker?.cancel();
     _repo?.removeListener(_onProposalRepoChanged);
     super.dispose();
   }
@@ -124,13 +127,17 @@ class _ClientDeliveryReviewScreenState
 
       if (!mounted) return;
       setState(() {
-        _lifecycle = '${prop['lifecycle_phase'] ?? ProposalLifecycle.submitted}';
+        _lifecycle =
+            '${prop['lifecycle_phase'] ?? ProposalLifecycle.submitted}';
         _status = '${prop['status']}';
-        _deadline = DateTime.tryParse('${prop['delivery_dispute_deadline'] ?? ''}');
+        _deadline = DateTime.tryParse(
+          '${prop['delivery_dispute_deadline'] ?? ''}',
+        );
         _payoutFinalized = prop['payout_finalized'] == true;
         _files = deliveries;
         _loading = false;
       });
+      _syncCountdownTicker();
 
       if (widget.openDisputeOnLoad &&
           !_autoDisputePromptShown &&
@@ -146,6 +153,7 @@ class _ClientDeliveryReviewScreenState
       }
     } catch (e) {
       if (!mounted) return;
+      _countdownTicker?.cancel();
       setState(() {
         _loading = false;
         _accessError = 'Could not load proposal.';
@@ -153,12 +161,32 @@ class _ClientDeliveryReviewScreenState
     }
   }
 
+  void _syncCountdownTicker() {
+    _countdownTicker?.cancel();
+    if (_lifecycle != ProposalLifecycle.payoutPending ||
+        _payoutFinalized ||
+        _deadline == null ||
+        !_deadline!.isAfter(DateTime.now())) {
+      return;
+    }
+    _countdownTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final deadline = _deadline;
+      if (deadline == null || !deadline.isAfter(DateTime.now())) {
+        _countdownTicker?.cancel();
+      }
+      setState(() {});
+    });
+  }
+
   Future<void> _onAcceptDelivery() async {
     final repo = context.read<ProposalRepository>();
     final app = context.read<AppState>();
     setState(() => _acting = true);
-    final res =
-        await repo.clientReviewDelivery(proposalId: widget.proposalId, accept: true);
+    final res = await repo.clientReviewDelivery(
+      proposalId: widget.proposalId,
+      accept: true,
+    );
     if (!mounted) return;
     setState(() => _acting = false);
     if (res['ok'] == true) {
@@ -214,7 +242,10 @@ class _ClientDeliveryReviewScreenState
     if (!mounted) return;
     setState(() => _acting = false);
     if (res['ok'] == true) {
-      ProlanceMessenger.success(context, app.t('Delivery declined.', 'Teslim reddedildi.'));
+      ProlanceMessenger.success(
+        context,
+        app.t('Delivery declined.', 'Teslim reddedildi.'),
+      );
       await repo.reloadFromRemote();
       await app.refreshProfileFromServer();
       if (mounted) context.pop();
@@ -294,7 +325,10 @@ class _ClientDeliveryReviewScreenState
     if (url == null) {
       ProlanceMessenger.error(
         context,
-        app.t('Could not create download link.', 'İndirme bağlantısı oluşturulamadı.'),
+        app.t(
+          'Could not create download link.',
+          'İndirme bağlantısı oluşturulamadı.',
+        ),
       );
       return;
     }
@@ -334,7 +368,8 @@ class _ClientDeliveryReviewScreenState
       );
     }
 
-    final canClientReviewDelivery = _status == 'accepted' &&
+    final canClientReviewDelivery =
+        _status == 'accepted' &&
         (_lifecycle == ProposalLifecycle.awaitingClientReview ||
             _lifecycle == ProposalLifecycle.delivered);
     final payoutPending = _lifecycle == ProposalLifecycle.payoutPending;
@@ -345,9 +380,7 @@ class _ClientDeliveryReviewScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(app.t('Review delivery', 'Teslimi incele')),
-      ),
+      appBar: AppBar(title: Text(app.t('Review delivery', 'Teslimi incele'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -358,11 +391,14 @@ class _ClientDeliveryReviewScreenState
                     'Her dosyayı indirip inceleyin; ardından teslimi kabul veya reddedin.',
                   )
                 : payoutPending
-                    ? app.t(
-                        'Delivery was accepted. You can report an issue during the window below; the freelancer does not see this button.',
-                        'Teslim kabul edildi. Aşağıdaki süre içinde sorun bildirebilirsiniz; bu düğme serbest çalışanda görünmez.',
-                      )
-                    : app.t('Delivery status for this proposal.', 'Bu teklifin teslim durumu.'),
+                ? app.t(
+                    'Delivery was accepted. You can report an issue during the window below; the freelancer does not see this button.',
+                    'Teslim kabul edildi. Aşağıdaki süre içinde sorun bildirebilirsiniz; bu düğme serbest çalışanda görünmez.',
+                  )
+                : app.t(
+                    'Delivery status for this proposal.',
+                    'Bu teklifin teslim durumu.',
+                  ),
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 16),
@@ -379,8 +415,14 @@ class _ClientDeliveryReviewScreenState
                   leading: Icon(Iconsax.document, color: scheme.primary),
                   title: Text(f.fileName),
                   subtitle: Text(
-                    app.t('Signed link · opens in a new tab', 'İmzalı bağlantı · yeni sekmede açılır'),
-                    style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                    app.t(
+                      'Signed link · opens in a new tab',
+                      'İmzalı bağlantı · yeni sekmede açılır',
+                    ),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                   trailing: IconButton(
                     tooltip: app.t('Download', 'İndir'),
@@ -444,7 +486,9 @@ class _ClientDeliveryReviewScreenState
                   'The 24-hour dispute window has closed. Payment will be released to the freelancer.',
                   '24 saatlik itiraz süresi doldu. Ödeme serbest çalışana aktarılacak.',
                 ),
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ],
@@ -455,7 +499,9 @@ class _ClientDeliveryReviewScreenState
   String _formatDuration(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
-    if (h > 0) return '${h}h ${m}m';
-    return '${m}m';
+    final s = d.inSeconds.remainder(60);
+    if (h > 0) return '${h}h ${m}m ${s}s';
+    if (m > 0) return '${m}m ${s}s';
+    return '${s}s';
   }
 }
